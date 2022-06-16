@@ -84,15 +84,46 @@ tcTerm TrustMe (Just ty) = return ty
 tcTerm TyUnit Nothing = return Type
 tcTerm LitUnit Nothing = return TyUnit
 -- i-bool
-tcTerm TyBool Nothing = Env.err [DS "unimplemented"]
+tcTerm TyBool Nothing = return Type
 -- i-true/false
-tcTerm (LitBool b) Nothing = Env.err [DS "unimplemented"]
+tcTerm (LitBool b) Nothing = return TyBool
 -- c-if
-tcTerm t@(If t1 t2 t3) (Just ty) = Env.err [DS "unimplemented"]
+tcTerm t@(If t1 t2 t3) (Just ty) = do
+  tb <- checkType t1 (TyBool)
+  tt <- checkType t1 (ty)
+  te <- checkType t2 (ty)
+  return ty
 tcTerm (Let rhs bnd) ann = Env.err [DS "unimplemented"]
-tcTerm t@(Sigma tyA bnd) Nothing = Env.err [DS "unimplemented"]
-tcTerm t@(Prod a b) (Just ty) = Env.err [DS "unimplemented"]
-tcTerm t@(LetPair p bnd) (Just ty) = Env.err [DS "unimplemented"]
+tcTerm t@(Sigma tyA bnd) Nothing = do
+  checkType tyA Type
+  (x, body) <- Unbound.unbind bnd
+  Env.extendCtx (mkSig x tyA) (checkType body Type)
+  return Type
+tcTerm t@(Prod a bnd) (Just (Sigma tyA tyBnd)) = do
+  checkType a tyA
+  (x, tyB) <- Unbound.unbind tyBnd
+  checkType bnd (Unbound.subst x a tyB)
+  return (Sigma tyA tyBnd)
+tcTerm (Prod _ _) (Just nf) =
+  Env.err [DS "Prod expression should have a sigma type, not ", DD nf]
+tcTerm t@(LetPair p bnd) (Just ty) = do
+  ((x,y), body) <- Unbound.unbind bnd
+
+  typ <- inferType p
+  let ensureSigma :: Type -> TcMonad (TName, Type, Type)
+      ensureSigma (Ann a _) = ensureSigma a
+      ensureSigma (Pos _ a) = ensureSigma a
+      ensureSigma (Sigma tyA tyBnd) = do
+        (x, tyB) <- Unbound.unbind tyBnd
+        return (x, tyA, tyB)
+      ensureSigma ty = Env.err [DS "Expected a sigma type but found ", DD ty]
+  (xp, tyA, tyB) <- ensureSigma typ
+
+  let sigX = mkSig x tyA
+      typY = Unbound.subst xp (Var x) tyB
+      sigY = mkSig y typY
+  Env.extendCtxs [sigX, sigY] $ checkType body ty
+  return ty
 tcTerm PrintMe (Just ty) = do
   gamma <- Env.getLocalCtx
   Env.warn
@@ -102,7 +133,6 @@ tcTerm PrintMe (Just ty) = do
       DD ty
     ]
   return ty
-
 -- c-infer
 tcTerm tm (Just ty) = do
   ty' <- inferType tm
