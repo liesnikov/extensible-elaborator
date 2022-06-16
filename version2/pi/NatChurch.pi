@@ -4,10 +4,10 @@ module NatChurch where
 
 nat : Type
 nat = (x:Type) -> x -> (x -> x) -> x
-	 
+
 z : nat
 z = \x zf sf. zf
-	 
+
 s : nat -> nat
 s = \n. \x zf sf. sf (n x zf sf)
 
@@ -31,11 +31,14 @@ spec1 = \n m . Refl
 
 -- this one is *really* tricky!
 
+fst : (A:Type) -> (B : A -> Type) -> { x : A | B x } -> A
+fst = \A B p. let (x0,y) = p in x0
+
 pred : nat -> nat
-pred = TRUSTME
+pred = \n. fst nat (\b. nat) (n (nat * nat) (z, z) (\x. let (p, c) = x in (c, s c)))
 
 test_pred : pred two = one
-test_pred = TRUSTME -- replace with Refl
+test_pred = Refl
 
 -- Since pi-forall allows recursive definitions, we also have Scott encodings
 -- of datatypes available. (See http://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding.
@@ -62,14 +65,14 @@ scott_three = scott_s (scott_s (scott_s scott_z))
 -- Write the predecessor function, it is much easier here
 
 scott_pred : scott_nat -> scott_nat
-scott_pred = TRUSTME
+scott_pred = \n. n scott_nat scott_z (\m. m)
 
 test1 : scott_pred scott_two = scott_one
-test1 = TRUSTME -- replace with Refl
+test1 = Refl
 
 -- Now write plus: with Scott encoded nats, note that you need to use recursion.
 
-scott_plus : scott_nat -> scott_nat -> scott_nat 
+scott_plus : scott_nat -> scott_nat -> scott_nat
 scott_plus = TRUSTME
 
 test2 : scott_plus scott_one scott_two = scott_three
