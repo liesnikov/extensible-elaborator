@@ -1,5 +1,4 @@
 {- pi-forall -}
-
 -- | The main routines for type-checking
 module TypeCheck (tcModules, inferType, checkType) where
 
@@ -35,18 +34,18 @@ checkType tm ty = do
   void $ tcTerm tm (Just nf)
 
 
-  
+
 -- | Make sure that the term is a type (i.e. has type 'Type')
 tcType :: Term -> TcMonad ()
 tcType tm = void $ {- SOLN EP -}Env.withStage Irr $ {- STUBWITH -}checkType tm Type
-    
+
 -- | check a term, producing its type
 -- The second argument is 'Nothing' in inference mode and an expected type in checking mode
 tcTerm :: Term -> Maybe Type -> TcMonad Type
 -- i-var
 tcTerm t@(Var x) Nothing = do
   sig <- Env.lookupTy x   -- make sure the variable is accessible
-  Env.checkStage (sigEp sig) 
+  Env.checkStage (sigEp sig)
   return (sigType sig)
 -- i-type
 tcTerm Type Nothing = return Type
@@ -61,7 +60,7 @@ tcTerm (Lam bnd) (Just (Pi tyA bnd2)) = do
   -- unbind the variables in the lambda expression and pi type
   ({- SOLN EP -}(x,ep1){- STUBWITH x -}, body,{- SOLN EP -}(_,ep2){- STUBWITH _ -}, tyB) <- Unbound.unbind2Plus bnd bnd2
 -- epsilons should match up
-  guard (ep1 == ep2) 
+  guard (ep1 == ep2)
   -- check the type of the body of the lambda expression
   Env.extendCtx (TypeSig (Sig x ep1 tyA)) (checkType body tyB)
   return (Pi tyA bnd2)
@@ -69,29 +68,28 @@ tcTerm (Lam _) (Just nf) =
   Env.err [DS "Lambda expression should have a function type, not ", DD nf]
 -- i-app
 tcTerm (App t1 t2) Nothing = do
-  ty1 <- inferType t1 
-  let ensurePi = Equal.ensurePi 
+  ty1 <- inferType t1
+  let ensurePi = Equal.ensurePi
 
   (x, ep1, tyA, tyB) <- ensurePi ty1
-  guard (ep1 == argEp t2) 
+  guard (ep1 == argEp t2)
   Env.withStage ep1 $ checkType (unArg t2) tyA
   return (Unbound.subst x (unArg t2) tyB)
-  
-  
+
 
 -- i-ann
 tcTerm (Ann tm ty) Nothing = do
   tcType ty
   checkType tm ty
   return ty
-  
+
 -- practicalities
 -- remember the current position in the type checking monad
 tcTerm (Pos p tm) mTy =
   Env.extendSourceLocation p tm $ tcTerm tm mTy
 -- ignore term, just return type annotation
 tcTerm TrustMe (Just ty) = return ty
-  
+
 -- i-unit
 tcTerm TyUnit Nothing = return Type
 tcTerm LitUnit Nothing = return TyUnit
@@ -117,7 +115,7 @@ tcTerm t@(If t1 t2 t3) (Just ty) = do
 
 tcTerm (Let rhs bnd) ann = do
   (x, body) <- Unbound.unbind bnd
-  aty <- inferType rhs 
+  aty <- inferType rhs
   ty <- Env.extendCtxs [mkSig x aty, Def x rhs] $
       tcTerm body ann
   when (x `elem` Unbound.toListOf Unbound.fv ty) $
@@ -160,7 +158,7 @@ tcTerm t@(DCon c args) Nothing = do
           ]
       tcArgTele args deltai
       return $ TCon tname []
-      
+
     [_] ->
       Env.err
         [ DS "Cannot infer the parameters to data constructors.",
@@ -208,7 +206,7 @@ tcTerm t@(Case scrut alts) (Just ty) = do
         -- could fail if branch is in-accessible
         decls' <- Equal.unify [] scrut' (pat2Term pat)
         Env.extendCtxs (decls ++ decls') $ checkType body ty
-        
+
         return ()
   let pats = map (\(Match bnd) -> fst (unsafeUnbind bnd)) alts
   mapM_ checkAlt alts
@@ -222,7 +220,7 @@ tcTerm (TyEq a b) Nothing = do
 tcTerm Refl (Just ty@(TyEq a b)) = do
   Equal.equate a b
   return ty
-tcTerm Refl (Just ty) = 
+tcTerm Refl (Just ty) =
   Env.err [DS "Refl annotated with ", DD ty]
 tcTerm t@(Subst a b) (Just ty) = do
   -- infer the type of the proof 'b'
@@ -241,11 +239,11 @@ tcTerm t@(Contra p) (Just ty) = do
   a' <- Equal.whnf a
   b' <- Equal.whnf b
   case (a', b') of
-    
+
     (DCon da _, DCon db _)
       | da /= db ->
         return ty
-    
+
     (LitBool b1, LitBool b2)
       | b1 /= b2 ->
         return ty
@@ -309,7 +307,7 @@ tcTerm tm (Just ty) = do
 
   return ty'
 
-tcTerm tm Nothing = 
+tcTerm tm Nothing =
   Env.err [DS "Must have a type annotation to check ", DD tm]
 
 ---------------------------------------------------------------------
@@ -335,7 +333,7 @@ tcArgTele [] [] = return ()
 tcArgTele args (Def x ty : tele) = do
   tele' <- doSubst [(x,ty)] tele
   tcArgTele args tele'
-tcArgTele (Arg ep1 tm : terms) (TypeSig (Sig x ep2 ty) : tele) 
+tcArgTele (Arg ep1 tm : terms) (TypeSig (Sig x ep2 ty) : tele)
   | ep1 == ep2 = do
       Env.withStage ep1 $ checkType tm ty
       tele' <- doSubst [(x, tm)] tele
@@ -351,7 +349,7 @@ tcArgTele [] _ =
   Env.err [DD "Too few arguments provided."]
 tcArgTele _ [] =
   Env.err [DD "Too many arguments provided."]
-tcArgTele _  tele = 
+tcArgTele _  tele =
   Env.err [DS "Invalid telescope", DD tele]
 
 -- | Substitute a list of terms for the variables bound in a telescope
@@ -383,7 +381,7 @@ doSubst ss (TypeSig sig : tele') = do
   let sig' = sig{sigType = tynf}
   tele'' <- doSubst ss tele'
   return $ TypeSig sig' : tele''
-doSubst _ tele = 
+doSubst _ tele =
   Env.err [DS "Invalid telescope ", DD tele]
 
 -----------------------------------------------------------
@@ -391,7 +389,7 @@ doSubst _ tele =
 -- | Create a binding for each of the variables in the pattern
 declarePat :: Pattern -> Epsilon -> Type -> TcMonad [Decl]
 declarePat (PatVar x)       ep ty  = return [TypeSig (Sig x ep ty)]
-declarePat (PatCon dc pats) Rel ty = do 
+declarePat (PatCon dc pats) Rel ty = do
   (tc,params) <- Equal.ensureTCon ty
   (Telescope delta, Telescope deltai) <- Env.lookupDCon dc tc
   tele <- substTele delta params deltai
@@ -399,8 +397,8 @@ declarePat (PatCon dc pats) Rel ty = do
 declarePat pat Irr _ty =
   Env.err [DS "Cannot pattern match irrelevant arguments in pattern ", DD pat]
 
--- | Given a list of pattern arguments and a telescope, create a binding for 
--- each of the variables in the pattern, 
+-- | Given a list of pattern arguments and a telescope, create a binding for
+-- each of the variables in the pattern,
 declarePats :: DCName -> [(Pattern, Epsilon)] -> [Decl] -> TcMonad [Decl]
 declarePats dc pats (Def x ty : tele) = do
   let ds1 = [Def x ty]
@@ -416,17 +414,17 @@ declarePats dc []    _ = Env.err [DS "Not enough patterns in match for data cons
 declarePats dc pats [] = Env.err [DS "Too many patterns in match for data constructor", DD dc]
 declarePats dc _    _ = Env.err [DS "Invalid telescope", DD dc]
 
--- | Convert a pattern to a term 
+-- | Convert a pattern to a term
 pat2Term :: Pattern ->  Term
 pat2Term (PatVar x) = Var x
-pat2Term (PatCon dc pats) = DCon dc (pats2Terms pats) 
+pat2Term (PatCon dc pats) = DCon dc (pats2Terms pats)
   where
     pats2Terms :: [(Pattern, Epsilon)] -> [Arg]
     pats2Terms [] = []
     pats2Terms ((p, ep) : ps) = Arg ep t : ts where
-      t = pat2Term p 
+      t = pat2Term p
       ts = pats2Terms ps
-       
+
 
 -- | Check all of the types contained within a telescope
 tcTypeTele :: [Decl] -> TcMonad ()
@@ -434,12 +432,12 @@ tcTypeTele [] = return ()
 tcTypeTele (Def x tm : tl) = do
   ty1 <- Env.withStage Irr $ inferType (Var x)
   Env.withStage Irr $ checkType tm ty1
-  let decls = [Def x tm] 
+  let decls = [Def x tm]
   Env.extendCtxs decls $ tcTypeTele tl
 tcTypeTele (TypeSig sig : tl) = do
   tcType (sigType sig)
   Env.extendCtx (TypeSig sig) $ tcTypeTele tl
-tcTypeTele tele = 
+tcTypeTele tele =
   Env.err [DS "Invalid telescope: ", DD tele]
 
 
@@ -511,7 +509,7 @@ tcEntry (Def n term) = do
           let handler (Env.Err ps msg) = throwError $ Env.Err ps (msg $$ msg')
               msg' =
                 disp
-                  [ 
+                  [
                     DS "When checking the term ",
                     DD term,
                     DS "against the signature",

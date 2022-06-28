@@ -127,7 +127,7 @@ tcTerm (TyEq a b) Nothing = do
 tcTerm Refl (Just ty@(TyEq a b)) = do
   Equal.equate a b
   return ty
-tcTerm Refl (Just ty) = 
+tcTerm Refl (Just ty) =
   Env.err [DS "Refl annotated with ", DD ty]
 tcTerm t@(Subst a b) (Just ty) = do
   -- infer the type of the proof 'b'
@@ -146,8 +146,6 @@ tcTerm t@(Contra p) (Just ty) = do
   a' <- Equal.whnf a
   b' <- Equal.whnf b
   case (a', b') of
-    
-
     (LitBool b1, LitBool b2)
       | b1 /= b2 ->
         return ty
