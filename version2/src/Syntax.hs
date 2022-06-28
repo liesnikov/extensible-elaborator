@@ -45,11 +45,11 @@ data Term
   | -- | variables  `x`
     Var TName
   | -- | abstraction  `\x. a`
-    Lam (Unbound.Bind TName Term)
+    Lam  (Unbound.Bind TName Term)
   | -- | application `a b`
     App Term Term
   | -- | function type   `(x : A) -> B`
-    Pi Type (Unbound.Bind TName Type)
+    Pi  Type (Unbound.Bind TName Type)
   | -- | annotated terms `( a : A )`
     Ann Term Type
   | -- | marked source position, for error messages
@@ -77,7 +77,7 @@ data Term
     Prod Term Term
   | -- | elimination form for Sigma-types `let (x,y) = a in b`
     LetPair Term (Unbound.Bind (TName, TName) Term) 
-     | -- | tquality type  `a = b`
+  | -- | Equality type  `a = b`
     TyEq Term Term
   | -- | Proof of equality `Refl`
     Refl 
@@ -85,29 +85,11 @@ data Term
     Subst Term Term 
   | -- | witness to an equality contradiction
     Contra Term
-   
-   
+    
+
   deriving (Show, Generic)
 
--- | An argument to a function
 
-
--- | Epsilon annotates the stage of a variable
-data Epsilon
-  = Rel
-  | Irr
-  deriving
-    ( Eq,
-      Show,
-      Read,
-      Bounded,
-      Enum,
-      Ord,
-      Generic,
-      Unbound.Alpha,
-      Unbound.Subst Term
-    )
-{- STUBWITH -}
 
 
 -----------------------------------------
@@ -130,7 +112,7 @@ newtype ModuleImport = ModuleImport MName
   deriving (Show, Eq, Generic, Typeable)
 
 -- | A type declaration (or type signature)
-data Sig = Sig {sigName :: TName , sigType :: Type}
+data Sig = Sig {sigName :: TName  , sigType :: Type}
   deriving (Show, Generic, Typeable, Unbound.Alpha, Unbound.Subst Term)
 
 -- | Declare the type of a term
@@ -146,7 +128,9 @@ data Decl
     Def TName Term
   | -- | A potentially (recursive) definition of
     -- a particular name, must be declared
-    RecDef TName Term  
+    RecDef TName Term 
+ 
+
   deriving (Show, Generic, Typeable)
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
 
@@ -163,13 +147,9 @@ unPos :: Term -> Maybe SourcePos
 unPos (Pos p _) = Just p
 unPos _ = Nothing
 
--- | Tries to find a Pos anywhere inside a term
-unPosDeep :: Term -> Maybe SourcePos
-unPosDeep = unPos -- something (mkQ Nothing unPos) -- TODO: Generic version of this
-
 -- | Tries to find a Pos inside a term, otherwise just gives up.
 unPosFlaky :: Term -> SourcePos
-unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPosDeep t)
+unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPos t)
 
 
 -----------------
@@ -260,6 +240,7 @@ pi2 = Pi TyBool (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
 -- True
+-- 
 
 
 
@@ -285,7 +266,7 @@ instance Unbound.Alpha SourcePos where
   acompare' _ _ _ = EQ
 
 -- Substitutions ignore source positions
-instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id
+instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id; substBvs _ _ = id
 
 -- Internally generated source positions
 internalPos :: SourcePos

@@ -5,7 +5,10 @@ module Parser
   (
    parseModuleFile, 
    parseModuleImports,
-   parseExpr
+   parseExpr,
+   expr,
+   decl,
+   testParser
   )
   where
 
@@ -16,7 +19,6 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import Text.Parsec hiding (State,Empty)
 import Text.Parsec.Expr(Operator(..),Assoc(..),buildExpressionParser)
--- import qualified Text.Parsec.Token as Token
 import qualified LayoutToken as Token 
 
 import Control.Monad.State.Lazy hiding (join)
@@ -125,22 +127,22 @@ parseModuleImports name = do
      (runParserT (do { whiteSpace; moduleImports }) [] name contents)
 
 -- | Test an 'LParser' on a String.
-testParser :: LParser t -> String -> Either ParseError t
-testParser parser str = Unbound.runFreshM $ 
-   flip evalStateT emptyConstructorNames $
+testParser :: ConstructorNames ->  LParser t -> String -> Either ParseError t
+testParser cn parser str = Unbound.runFreshM $ 
+   flip evalStateT cn $
 
      runParserT (do { whiteSpace; v <- parser; eof; return v}) [] "<interactive>" str
 
 -- | Parse an expression.
 parseExpr :: String -> Either ParseError Term
-parseExpr = testParser expr
+parseExpr = testParser emptyConstructorNames expr
 
 -- * Lexer definitions
 type LParser a = ParsecT
                     String                      -- The input is a sequence of Char
                     [Column] (                  -- The internal state for Layout tabs
     StateT ConstructorNames 
-                    Unbound.FreshM)                  -- The internal state for generating fresh names, 
+                    Unbound.FreshM)             -- The internal state for generating fresh names, 
                     a                           -- the type of the object being parsed
 
 instance Unbound.Fresh (ParsecT s u (StateT ConstructorNames Unbound.FreshM))  where
@@ -299,7 +301,7 @@ telebindings = many teleBinding
     annot = do
       (x,ty) <-    try ((,) <$> varOrWildcard        <*> (colon >> expr))
                 <|>    ((,) <$> (Unbound.fresh wildcardName) <*> expr)
-      return (mkSig x ty:)
+      return (TypeSig (Sig x Rel ty):)
 
     imp = do
         v <- varOrWildcard
@@ -401,21 +403,22 @@ expr = do
         mkArrowType  = 
           do n <- Unbound.fresh wildcardName
              return $ \tyA tyB -> 
-               Pi tyA (Unbound.bind (n{- SOLN EP -},Rel{- STUBWITH -}) tyB)
+               Pi Rel tyA (Unbound.bind n tyB)
         mkTupleType = 
           do n <- Unbound.fresh wildcardName
              return $ \tyA tyB -> 
-               TCon sigmaName [Arg Rel tyA, Arg Rel $ Lam (Unbound.bind (n, Rel) tyB)]
+               TCon sigmaName [Arg Rel tyA, Arg Rel $ Lam Rel (Unbound.bind n tyB)]
 
                
 -- A "term" is either a function application or a constructor
 -- application.  Breaking it out as a seperate category both
 -- eliminates left-recursion in (<expr> := <expr> <expr>) and
 -- allows us to keep constructors fully applied in the abstract syntax.
-term = try dconapp <|>  try tconapp <|>  funapp
+term = try dconapp <|> try tconapp <|>  funapp
 
 arg :: LParser Arg
-arg = (Arg Irr) <$> brackets expr <|> (Arg Rel) <$> factor
+arg = try (Arg Irr <$> brackets expr)
+   <|> Arg Rel <$> factor
 
 dconapp :: LParser Term
 dconapp = do 
@@ -484,7 +487,7 @@ lambda = do reservedOp "\\"
             body <- expr
             return $ foldr lam body binds 
   where
-    lam (x, ep) m = Lam (Unbound.bind (x, ep) m)           
+    lam (x, ep) m = Lam ep (Unbound.bind x m)           
   
 
                             
@@ -549,7 +552,7 @@ impProd =
         <|> ((,) <$> Unbound.fresh wildcardName <*> expr))
      reservedOp "->" 
      tyB <- expr
-     return $ Pi tyA (Unbound.bind (x,Irr) tyB)
+     return $ Pi Irr tyA (Unbound.bind x tyB)
 
 
 -- Function types have the syntax '(x:A) -> B'.  This production deals
@@ -586,7 +589,7 @@ expProdOrAnnotOrParens =
          Colon (Var x) a ->
            option (Ann (Var x) a)
                   (do b <- afterBinder
-                      return $ Pi a (Unbound.bind (x{- SOLN EP -},Rel{- STUBWITH -}) b))
+                      return $ Pi Rel a (Unbound.bind x b))
          Colon a b -> return $ Ann a b
       
          Comma a b -> 
@@ -633,14 +636,14 @@ match =
   do pat <- pattern 
      reservedOp "->"
      pos <- getPosition
-     body <- term
+     body <- expr
      return $ Match (Unbound.bind pat (Pos pos body))
 
 caseExpr :: LParser Term
 caseExpr = do
     reserved "case"
     pos <- getPosition
-    scrut <- factor
+    scrut <- expr
     reserved "of"
     alts <- layout match (return ())
     return $ Case (Pos pos scrut) alts 
@@ -672,7 +675,7 @@ sigmaTy = do
   reservedOp "|"
   b <- expr
   reservedOp "}"
-  return $ TCon sigmaName [Arg Rel a, Arg Rel (Lam (Unbound.bind (x, Rel) b))]
+  return $ TCon sigmaName [Arg Rel a, Arg Rel (Lam Rel (Unbound.bind x b))]
 
   
   

@@ -5,7 +5,10 @@ module Parser
   (
    parseModuleFile, 
    parseModuleImports,
-   parseExpr
+   parseExpr,
+   expr,
+   decl,
+   testParser
   )
   where
 
@@ -16,7 +19,6 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import Text.Parsec hiding (State,Empty)
 import Text.Parsec.Expr(Operator(..),Assoc(..),buildExpressionParser)
--- import qualified Text.Parsec.Token as Token
 import qualified LayoutToken as Token 
 
 import Control.Monad.State.Lazy hiding (join)
@@ -102,21 +104,21 @@ parseModuleImports name = do
      (runParserT (do { whiteSpace; moduleImports }) [] name contents)
 
 -- | Test an 'LParser' on a String.
-testParser :: LParser t -> String -> Either ParseError t
-testParser parser str = Unbound.runFreshM $ 
+testParser ::  LParser t -> String -> Either ParseError t
+testParser  parser str = Unbound.runFreshM $ 
 
      runParserT (do { whiteSpace; v <- parser; eof; return v}) [] "<interactive>" str
 
 -- | Parse an expression.
 parseExpr :: String -> Either ParseError Term
-parseExpr = testParser expr
+parseExpr = testParser  expr
 
 -- * Lexer definitions
 type LParser a = ParsecT
                     String                      -- The input is a sequence of Char
                     [Column] (                  -- The internal state for Layout tabs
 
-                    Unbound.FreshM)                  -- The internal state for generating fresh names, 
+                    Unbound.FreshM)             -- The internal state for generating fresh names, 
                     a                           -- the type of the object being parsed
 
 instance Unbound.Fresh (ParsecT s u Unbound.FreshM)  where
@@ -274,7 +276,7 @@ expr = do
         mkArrowType  = 
           do n <- Unbound.fresh wildcardName
              return $ \tyA tyB -> 
-               Pi tyA (Unbound.bind (n) tyB)
+               Pi tyA (Unbound.bind n tyB)
         mkTupleType = 
           do n <- Unbound.fresh wildcardName
              return $ \tyA tyB -> 
@@ -419,7 +421,7 @@ expProdOrAnnotOrParens =
          Colon (Var x) a ->
            option (Ann (Var x) a)
                   (do b <- afterBinder
-                      return $ Pi a (Unbound.bind (x) b))
+                      return $ Pi a (Unbound.bind x b))
          Colon a b -> return $ Ann a b
       
          Comma a b -> 

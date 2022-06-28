@@ -50,11 +50,11 @@ data Term
   | -- | variables  `x`
     Var TName
   | -- | abstraction  `\x. a`
-    Lam (Unbound.Bind {- SOLN EP -}(TName, Epsilon){- STUBWITH TName -} Term)
+    Lam Epsilon (Unbound.Bind TName Term)
   | -- | application `a b`
-    App Term {- SOLN EP -}Arg{- STUBWITH Term -}
+    App Term Arg
   | -- | function type   `(x : A) -> B`
-    Pi Type (Unbound.Bind {- SOLN EP -}(TName, Epsilon){- STUBWITH TName -} Type)
+    Pi Epsilon Type (Unbound.Bind TName Type)
   | -- | annotated terms `( a : A )`
     Ann Term Type
   | -- | marked source position, for error messages
@@ -82,7 +82,7 @@ data Term
     Prod Term Term
   | -- | elimination form for Sigma-types `let (x,y) = a in b`
     LetPair Term (Unbound.Bind (TName, TName) Term) 
-     | -- | tquality type  `a = b`
+  | -- | Equality type  `a = b`
     TyEq Term Term
   | -- | Proof of equality `Refl`
     Refl 
@@ -90,8 +90,8 @@ data Term
     Subst Term Term 
   | -- | witness to an equality contradiction
     Contra Term
-   
-     | -- | type constructors (fully applied)
+    
+  | -- | type constructors (fully applied)
     TCon TCName [Arg]
   | -- | term constructors (fully applied)
     DCon DCName [Arg] 
@@ -103,7 +103,6 @@ data Term
 -- | An argument to a function
 data Arg = Arg {argEp :: Epsilon, unArg :: Term}
   deriving (Show, Generic, Unbound.Alpha, Unbound.Subst Term)
-
 
 -- | Epsilon annotates the stage of a variable
 data Epsilon
@@ -120,7 +119,7 @@ data Epsilon
       Unbound.Alpha,
       Unbound.Subst Term
     )
-{- STUBWITH -}
+
 -- | A 'Match' represents a case alternative
 newtype Match = Match (Unbound.Bind Pattern Term)
   deriving (Show, Generic, Typeable)
@@ -145,8 +144,8 @@ data Pattern
 data Module = Module
   { moduleName :: MName,
     moduleImports :: [ModuleImport],
-    moduleEntries :: [Decl] {- SOLN DATA -},
-    moduleConstructors :: ConstructorNames {- STUBWITH -}
+    moduleEntries :: [Decl] ,
+    moduleConstructors :: ConstructorNames 
   }
   deriving (Show, Generic, Typeable)
 
@@ -155,7 +154,7 @@ newtype ModuleImport = ModuleImport MName
   deriving (Show, Eq, Generic, Typeable)
 
 -- | A type declaration (or type signature)
-data Sig = Sig {sigName :: TName {- SOLN EP -}, sigEp :: Epsilon {- STUBWITH -}, sigType :: Type}
+data Sig = Sig {sigName :: TName , sigEp :: Epsilon  , sigType :: Type}
   deriving (Show, Generic, Typeable, Unbound.Alpha, Unbound.Subst Term)
 
 -- | Declare the type of a term
@@ -171,8 +170,10 @@ data Decl
     Def TName Term
   | -- | A potentially (recursive) definition of
     -- a particular name, must be declared
-    RecDef TName Term     -- | Adjust the context for relevance checking
-  | Demote Epsilon    | -- | Declaration for a datatype including all of
+    RecDef TName Term 
+    -- | Adjust the context for relevance checking
+  | Demote Epsilon  
+  | -- | Declaration for a datatype including all of
     -- its data constructors
     Data TCName Telescope [ConstructorDef]
   | -- | An abstract view of a datatype. Does
@@ -221,13 +222,9 @@ unPos :: Term -> Maybe SourcePos
 unPos (Pos p _) = Just p
 unPos _ = Nothing
 
--- | Tries to find a Pos anywhere inside a term
-unPosDeep :: Term -> Maybe SourcePos
-unPosDeep = unPos -- something (mkQ Nothing unPos) -- TODO: Generic version of this
-
 -- | Tries to find a Pos inside a term, otherwise just gives up.
 unPosFlaky :: Term -> SourcePos
-unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPosDeep t)
+unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPos t)
 
 -- | Is this the syntax of a literal (natural) number
 isNumeral :: Term -> Maybe Int
@@ -284,7 +281,7 @@ preludeDataDecls =
         sigmaTele = Telescope [TypeSig sigA, TypeSig sigB]
         prodConstructorDef = ConstructorDef internalPos prodName (Telescope [TypeSig sigX, TypeSig sigY])
         sigA = Sig aName Rel Type
-        sigB = Sig bName Rel (Pi (Var aName) (Unbound.bind (xName, Rel) Type))
+        sigB = Sig bName Rel (Pi Rel (Var aName) (Unbound.bind xName Type))
         sigX = Sig xName Rel (Var aName)
         sigY = Sig yName Rel (App (Var bName) (Arg Rel (Var xName)))
         aName = Unbound.string2Name "a"
@@ -342,11 +339,11 @@ yName = Unbound.string2Name "y"
 
 -- '\x -> x`
 idx :: Term
-idx = Lam (Unbound.bind {- SOLN EP -}(xName, Rel){- STUBWITH xName -} (Var xName))
+idx = Lam Rel (Unbound.bind xName (Var xName))
 
 -- '\y -> y`
 idy :: Term
-idy = Lam (Unbound.bind {- SOLN EP -}(yName, Rel){- STUBWITH yName -} (Var yName))
+idy = Lam Rel (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq idx idy
 -- True
@@ -370,14 +367,15 @@ instance Unbound.Subst Term Term where
 
 -- '(y : x) -> y'
 pi1 :: Term 
-pi1 = Pi (Var xName) (Unbound.bind {- SOLN EP -}(yName, Rel){- STUBWITH yName -} (Var yName))
+pi1 = Pi Rel (Var xName) (Unbound.bind yName (Var yName))
 
 -- '(y : Bool) -> y'
 pi2 :: Term 
-pi2 = Pi TyBool (Unbound.bind {- SOLN EP -}(yName, Rel){- STUBWITH yName -} (Var yName))
+pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
 -- True
+-- 
 
 
 
@@ -403,7 +401,7 @@ instance Unbound.Alpha SourcePos where
   acompare' _ _ _ = EQ
 
 -- Substitutions ignore source positions
-instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id
+instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id; substBvs _ _ = id
 
 -- Internally generated source positions
 internalPos :: SourcePos

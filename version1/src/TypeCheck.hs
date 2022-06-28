@@ -5,32 +5,35 @@ module TypeCheck (tcModules, inferType, checkType) where
 
 import Control.Monad.Except
 import Data.Maybe (catMaybes)
+import Debug.Trace
 import Environment (D (..), TcMonad)
 import Environment qualified as Env
 import Equal qualified
 import PrettyPrint (Disp (disp))
 import Syntax
-import Text.PrettyPrint.HughesPJ (($$))
+import Text.PrettyPrint.HughesPJ (render, ($$))
 import Unbound.Generics.LocallyNameless qualified as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 
--- | Infer the type of a term. The returned type is not guaranteed to be checkable(?)
+-- | Infer/synthesize the type of a term
 inferType :: Term -> TcMonad Type
 inferType t = tcTerm t Nothing
 
--- | Check that the given term has the expected type.
--- The provided type should be already checked to be a good type
+-- | Check that the given term has the expected type
 checkType :: Term -> Type -> TcMonad ()
-checkType tm (Pos _ ty) = checkType tm ty
+checkType tm (Pos _ ty) = checkType tm ty -- ignore source positions/annotations
 checkType tm (Ann ty _) = checkType tm ty
 checkType tm ty = void $ tcTerm tm (Just ty)
 
--- | Make sure that the term is a type (i.e. has type 'Type')
+-- | Make sure that the term is a "type" (i.e. that it has type 'Type')
 tcType :: Term -> TcMonad ()
 tcType tm = void $ checkType tm Type
 
--- | check a term, producing its type
--- The second argument is 'Nothing' in inference mode and an expected type in checking mode
+---------------------------------------------------------------------
+
+-- | Combined type checking/inference function
+-- The second argument is 'Just expectedType' in checking mode and 'Nothing' in inference mode
+-- In either case, this function returns the type of the term
 tcTerm :: Term -> Maybe Type -> TcMonad Type
 -- i-var
 tcTerm t@(Var x) Nothing = do
@@ -53,20 +56,18 @@ tcTerm (Lam bnd) (Just (Pi tyA bnd2)) = do
   Env.extendCtx (mkSig x tyA) (checkType body tyB)
   return (Pi tyA bnd2)
 tcTerm (Lam _) (Just nf) =
-  Env.err [DS "Lambda expression should have a function type, not ", DD nf]
+  Env.err [DS "Lambda expression should have a function type, not", DD nf]
 -- i-app
 tcTerm (App t1 t2) Nothing = do
   ty1 <- inferType t1
-  let ensurePi :: Type -> TcMonad (TName, Type, Type)
+  let ensurePi :: Type -> TcMonad (Type, Unbound.Bind TName Type)
       ensurePi (Ann a _) = ensurePi a
       ensurePi (Pos _ a) = ensurePi a
-      ensurePi (Pi tyA bnd) = do
-        (x, tyB) <- Unbound.unbind bnd
-        return (x, tyA, tyB)
+      ensurePi (Pi tyA bnd) = return (tyA, bnd)
       ensurePi ty = Env.err [DS "Expected a function type but found ", DD ty]
-  (x, tyA, tyB) <- ensurePi ty1
+  (tyA, bnd) <- ensurePi ty1
   checkType t2 tyA
-  return (Unbound.subst x t2 tyB)
+  return (Unbound.instantiate bnd [t2])
 
 -- i-ann
 tcTerm (Ann tm ty) Nothing = do
@@ -127,9 +128,9 @@ tcTerm t@(LetPair p bnd) (Just ty) = do
 tcTerm PrintMe (Just ty) = do
   gamma <- Env.getLocalCtx
   Env.warn
-    [ DS "Unmet obligation.\nContext: ",
+    [ DS "Unmet obligation.\nContext:",
       DD gamma,
-      DS "\nGoal: ",
+      DS "\nGoal:",
       DD ty
     ]
   return ty
@@ -139,7 +140,7 @@ tcTerm tm (Just ty) = do
   unless (Unbound.aeq ty' ty) $ Env.err [DS "Types don't match", DD ty, DS "and", DD ty']
   return ty'
 tcTerm tm Nothing =
-  Env.err [DS "Must have a type annotation to check ", DD tm]
+  Env.err [DS "Must have a type annotation to check", DD tm]
 
 --------------------------------------------------------
 -- Using the typechecker for decls and modules and stuff
@@ -208,7 +209,7 @@ tcEntry (Def n term) = do
           let handler (Env.Err ps msg) = throwError $ Env.Err ps (msg $$ msg')
               msg' =
                 disp
-                  [ DS "When checking the term ",
+                  [ DS "When checking the term",
                     DD term,
                     DS "against the signature",
                     DD sig
@@ -247,7 +248,7 @@ duplicateTypeBindingCheck sig = do
     sig' : _ ->
       let (Pos p _) = sigType sig
           msg =
-            [ DS "Duplicate type signature ",
+            [ DS "Duplicate type signature",
               DD sig,
               DS "Previous was",
               DD sig'

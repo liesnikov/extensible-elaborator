@@ -78,26 +78,6 @@ data Term
     LetPair Term (Unbound.Bind (TName, TName) Term)
   deriving (Show, Generic)
 
--- | An argument to a function
-
--- | Epsilon annotates the stage of a variable
-data Epsilon
-  = Rel
-  | Irr
-  deriving
-    ( Eq,
-      Show,
-      Read,
-      Bounded,
-      Enum,
-      Ord,
-      Generic,
-      Unbound.Alpha,
-      Unbound.Subst Term
-    )
-
-{- STUBWITH -}
-
 -----------------------------------------
 
 -- * Modules and declarations
@@ -149,13 +129,9 @@ unPos :: Term -> Maybe SourcePos
 unPos (Pos p _) = Just p
 unPos _ = Nothing
 
--- | Tries to find a Pos anywhere inside a term
-unPosDeep :: Term -> Maybe SourcePos
-unPosDeep = unPos -- something (mkQ Nothing unPos) -- TODO: Generic version of this
-
 -- | Tries to find a Pos inside a term, otherwise just gives up.
 unPosFlaky :: Term -> SourcePos
-unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPosDeep t)
+unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPos t)
 
 -----------------
 
@@ -243,6 +219,7 @@ pi2 = Pi TyBool (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
 -- True
+--
 
 -----------------
 
@@ -266,7 +243,7 @@ instance Unbound.Alpha SourcePos where
   acompare' _ _ _ = EQ
 
 -- Substitutions ignore source positions
-instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id
+instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id; substBvs _ _ = id
 
 -- Internally generated source positions
 internalPos :: SourcePos
