@@ -1,7 +1,6 @@
 {- pi-forall -}
 -- | The main routines for type-checking
 module TypeCheck (tcModules, inferType, checkType) where
-
 import Control.Monad.Except
 import Data.List (nub)
 
@@ -63,8 +62,8 @@ tcTerm (Lam ep1  bnd) (Just (Pi ep2 tyA bnd2)) = do
   -- unbind the variables in the lambda expression and pi type
   (x, body,_,tyB) <- Unbound.unbind2Plus bnd bnd2
 -- epsilons should match up
-  unless (ep1 == ep2) $ Env.err [DS "In function definition, expected", DD ep2, DS "parameter", DD x, 
-                                 DS "but found", DD ep1, DS "instead."] 
+  unless (ep1 == ep2) $ Env.err [DS "In function definition, expected", DD ep2, DS "parameter", DD x,
+                                 DS "but found", DD ep1, DS "instead."]
   -- check the type of the body of the lambda expression
   Env.extendCtx (TypeSig (Sig x ep1 tyA)) (checkType body tyB)
   return (Pi ep1 tyA bnd2)
@@ -72,18 +71,18 @@ tcTerm (Lam _ _) (Just nf) =
   Env.err [DS "Lambda expression should have a function type, not", DD nf]
 -- i-app
 tcTerm (App t1 t2) Nothing = do
-  ty1 <- inferType t1 
-  let ensurePi = Equal.ensurePi 
-  
+  ty1 <- inferType t1
+  let ensurePi = Equal.ensurePi
+
   (ep1, tyA, bnd) <- ensurePi ty1
-  unless (ep1 == argEp t2) $ Env.err 
-    [DS "In application, expected", DD ep1, DS "argument but found", 
+  unless (ep1 == argEp t2) $ Env.err
+    [DS "In application, expected", DD ep1, DS "argument but found",
                                     DD t2, DS "instead." ]
   -- if the argument is Irrelevant, resurrect the context
-  (if ep1 == Irr then Env.extendCtx (Demote Rel) else id) $ 
+  (if ep1 == Irr then Env.extendCtx (Demote Rel) else id) $
     checkType (unArg t2) tyA
   return (Unbound.instantiate bnd [unArg t2])
-  
+
 
 -- i-ann
 tcTerm (Ann tm ty) Nothing = do

@@ -1,5 +1,4 @@
 {- pi-forall language -}
-
 -- | Tools for working with multiple source files
 module Modules(getModules, ModuleInfo(..)) where
 
@@ -19,15 +18,15 @@ import Data.List(nub,(\\))
 -- transitive dependency. It returns the list of parsed modules, with all
 -- modules appearing after its dependencies.
 getModules
-  :: (Functor m, MonadError ParseError m, MonadIO m) => 
+  :: (Functor m, MonadError ParseError m, MonadIO m) =>
      [FilePath] -> String -> m [Module]
 getModules prefixes top = do
   toParse <- gatherModules prefixes [ModuleImport top]
   flip evalStateT emptyConstructorNames $ mapM reparse toParse
-     
+
 
 data ModuleInfo = ModuleInfo {
-                    modInfoName     :: MName, 
+                    modInfoName     :: MName,
                     modInfoFilename :: String,
                     modInfoImports  :: [ModuleImport]
                   }
@@ -49,7 +48,7 @@ gatherModules prefixes ms = gatherModules' ms [] where
 -- | Generate a sorted list of modules, with the postcondition that a module
 -- will appear _after_ any of its dependencies.
 topSort :: [ModuleInfo] -> [ModuleInfo]
-topSort ms = reverse sorted 
+topSort ms = reverse sorted
   where (gr,lu) = Gr.graphFromEdges' [(m, modInfoName m, [i | ModuleImport i <- modInfoImports m])
                                       | m <- ms]
         lu' v = let (m,_,_) = lu v in m
@@ -73,7 +72,7 @@ getModuleFileName prefixes modul = do
      else return $ head files
 
 -- | Fully parse a module (not just the imports).
-reparse :: (MonadError ParseError m, MonadIO m, MonadState ConstructorNames m) => 
+reparse :: (MonadError ParseError m, MonadIO m, MonadState ConstructorNames m) =>
             ModuleInfo -> m Module
 reparse (ModuleInfo _ fileName _) = do
   cnames <- get

@@ -1,5 +1,4 @@
 {- pi-forall language -}
-
 -- | The abstract syntax of the simple dependently typed language
 -- See comment at the top of 'Parser' for the concrete syntax of this language
 module Syntax where
@@ -76,28 +75,28 @@ data Term
     LitBool Bool
   | -- | `if a then b1 else b2` expression for eliminating booleans
     If Term Term Term
-  | -- | Sigma-type (homework), written `{ x : A | B }`  
+  | -- | Sigma-type (homework), written `{ x : A | B }`
     Sigma Term (Unbound.Bind TName Term)
   | -- | introduction form for Sigma-types `( a , b )`
     Prod Term Term
   | -- | elimination form for Sigma-types `let (x,y) = a in b`
-    LetPair Term (Unbound.Bind (TName, TName) Term) 
+    LetPair Term (Unbound.Bind (TName, TName) Term)
   | -- | Equality type  `a = b`
     TyEq Term Term
   | -- | Proof of equality `Refl`
-    Refl 
+    Refl
   | -- | equality type elimination  `subst a by pf`
-    Subst Term Term 
+    Subst Term Term
   | -- | witness to an equality contradiction
     Contra Term
-    
+
   | -- | type constructors (fully applied)
     TCon TCName [Arg]
   | -- | term constructors (fully applied)
-    DCon DCName [Arg] 
+    DCon DCName [Arg]
   | -- | case analysis  `case a of matches`
     Case Term [Match]
-  
+
   deriving (Show, Generic)
 
 -- | An argument to a function
@@ -145,7 +144,7 @@ data Module = Module
   { moduleName :: MName,
     moduleImports :: [ModuleImport],
     moduleEntries :: [Decl] ,
-    moduleConstructors :: ConstructorNames 
+    moduleConstructors :: ConstructorNames
   }
   deriving (Show, Generic, Typeable)
 
@@ -170,9 +169,9 @@ data Decl
     Def TName Term
   | -- | A potentially (recursive) definition of
     -- a particular name, must be declared
-    RecDef TName Term 
+    RecDef TName Term
     -- | Adjust the context for relevance checking
-  | Demote Epsilon  
+  | Demote Epsilon
   | -- | Declaration for a datatype including all of
     -- its data constructors
     Data TCName Telescope [ConstructorDef]
@@ -180,7 +179,6 @@ data Decl
     -- not include any information about its data
     -- constructors
     DataSig TCName Telescope
-  
   deriving (Show, Generic, Typeable)
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
 -- | The names of type/data constructors used in the module
@@ -197,9 +195,9 @@ data ConstructorDef = ConstructorDef SourcePos DCName Telescope
 
 -- * Telescopes
 
--- | A telescope is like a first class context. It is a list of 
+-- | A telescope is like a first class context. It is a list of
 -- assumptions, binding each variable in terms that appear
--- later in the list. 
+-- later in the list.
 -- For example
 --     Delta = [ x:Type , y:x, y = w ]
 newtype Telescope = Telescope [Decl]
@@ -211,7 +209,7 @@ newtype Telescope = Telescope [Decl]
 
 -- | empty set of constructor names
 emptyConstructorNames :: ConstructorNames
-emptyConstructorNames = ConstructorNames initialTCNames initialDCNames 
+emptyConstructorNames = ConstructorNames initialTCNames initialDCNames
 
 -- | Default name for '_' occurring in patterns
 wildcardName :: TName
@@ -265,7 +263,7 @@ initialDCNames :: Set DCName
 initialDCNames = Set.fromList [prodName, trueName, falseName, litUnitName]
 
 preludeDataDecls :: [Decl]
-preludeDataDecls = 
+preludeDataDecls =
   [ Data sigmaName  sigmaTele      [prodConstructorDef]
   , Data tyUnitName (Telescope []) [unitConstructorDef]
   , Data boolName   (Telescope []) [falseConstructorDef, trueConstructorDef]
@@ -275,7 +273,7 @@ preludeDataDecls =
         falseConstructorDef = ConstructorDef internalPos falseName (Telescope [])
 
         -- unit
-        unitConstructorDef = ConstructorDef internalPos litUnitName (Telescope []) 
+        unitConstructorDef = ConstructorDef internalPos litUnitName (Telescope [])
 
         -- Sigma-type
         sigmaTele = Telescope [TypeSig sigA, TypeSig sigB]
@@ -292,7 +290,7 @@ preludeDataDecls =
 -- We use the unbound-generics library to mark the binding occurrences of
 -- variables in the syntax. That allows us to automatically derive
 -- functions for alpha-equivalence, free variables and substitution
--- using generic programming. 
+-- using generic programming.
 
 ------------------
 
@@ -307,10 +305,10 @@ preludeDataDecls =
 --    -- Destruct a binding, generating fresh names for the bound variables
 --    unbind :: (Alpha p, Alpha t, Fresh m) => Bind p t -> m (p, t)
 
--- For Terms, we'd like Alpha equivalence to ignore 
+-- For Terms, we'd like Alpha equivalence to ignore
 -- source positions and type annotations.
--- We can add these special cases to the definition of `aeq'` 
--- and then defer all other cases to the generic version of 
+-- We can add these special cases to the definition of `aeq'`
+-- and then defer all other cases to the generic version of
 -- the function (Unbound.gaeq).
 
 instance Unbound.Alpha Term where
@@ -326,7 +324,7 @@ instance Unbound.Alpha Term where
 -- >>> Unbound.aeq (Pos internalPos (Ann TyBool Type)) TyBool
 -- True
 
--- At the same time, the generic operation equates terms that differ only 
+-- At the same time, the generic operation equates terms that differ only
 -- in the names of bound variables.
 
 -- 'x'
@@ -366,16 +364,16 @@ instance Unbound.Subst Term Term where
 
 
 -- '(y : x) -> y'
-pi1 :: Term 
+pi1 :: Term
 pi1 = Pi Rel (Var xName) (Unbound.bind yName (Var yName))
 
 -- '(y : Bool) -> y'
-pi2 :: Term 
+pi2 :: Term
 pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
 -- True
--- 
+--
 
 
 
@@ -385,7 +383,7 @@ pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
 
 -- SourcePositions do not have an instance of the Generic class available
 -- so we cannot automatically define their Alpha and Subst instances. Instead
--- we do so by hand here. 
+-- we do so by hand here.
 instance Unbound.Alpha SourcePos where
   aeq' _ _ _ = True
   fvAny' _ _ = pure

@@ -1,5 +1,4 @@
 {- pi-forall language -}
-
 -- | Utilities for managing a typechecking context.
 module Environment
   ( TcMonad,
@@ -30,7 +29,7 @@ module Environment
     D (..),
     Err (..),
     withStage,
-    checkStage 
+    checkStage
   )
 where
 
@@ -38,7 +37,7 @@ import Control.Monad.Except
     ( unless, MonadError(..), MonadIO(..), ExceptT, runExceptT )
 import Control.Monad.Reader
     ( MonadReader(local), asks, ReaderT(runReaderT) )
-import Data.List 
+import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
 import Syntax
@@ -76,15 +75,15 @@ data Env = Env
     -- has been checked.
     hints :: [Sig],
     -- | what part of the file we are in (for errors/warnings)
-    sourceLocation :: [SourceLocation] 
+    sourceLocation :: [SourceLocation]
   }
 
 --deriving Show
 
 -- | The initial environment.
 emptyEnv :: Env
-emptyEnv = Env {ctx = preludeDataDecls 
-               , globals = length preludeDataDecls 
+emptyEnv = Env {ctx = preludeDataDecls
+               , globals = length preludeDataDecls
                , hints = []
                , sourceLocation = []
               }
@@ -109,7 +108,7 @@ lookupTyMaybe v = do
     go [] = Nothing
     go (TypeSig sig : ctx)
       | v == sigName sig = Just sig
-      | otherwise = go ctx 
+      | otherwise = go ctx
     go (Demote ep : ctx) = demoteSig ep <$> go ctx
 
     go (_ : ctx) = go ctx
@@ -255,7 +254,7 @@ extendCtxTele (Def x t2 : tele) m =
   extendCtx (Def x t2) $ extendCtxTele tele m
 extendCtxTele (TypeSig sig : tele) m =
   extendCtx (TypeSig sig) $ extendCtxTele tele m
-extendCtxTele ( _ : tele) m = 
+extendCtxTele ( _ : tele) m =
   err [DS "Invalid telescope ", DD tele]
 
 
