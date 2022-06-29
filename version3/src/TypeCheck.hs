@@ -1,5 +1,4 @@
 {- pi-forall -}
-
 -- | The main routines for type-checking
 module TypeCheck (tcModules, inferType, checkType) where
 
@@ -47,7 +46,7 @@ tcTerm :: Term -> Maybe Type -> TcMonad Type
 -- i-var
 tcTerm t@(Var x) Nothing = do
   sig <- Env.lookupTy x   -- make sure the variable is accessible
-  Env.checkStage (sigEp sig) 
+  Env.checkStage (sigEp sig)
   return (sigType sig)
 -- i-type
 tcTerm Type Nothing = return Type
@@ -62,8 +61,8 @@ tcTerm (Lam ep1  bnd) (Just (Pi ep2 tyA bnd2)) = do
   -- unbind the variables in the lambda expression and pi type
   (x, body,_,tyB) <- Unbound.unbind2Plus bnd bnd2
 -- epsilons should match up
-  unless (ep1 == ep2) $ Env.err [DS "In function definition, expected", DD ep2, DS "parameter", DD x, 
-                                 DS "but found", DD ep1, DS "instead."] 
+  unless (ep1 == ep2) $ Env.err [DS "In function definition, expected", DD ep2, DS "parameter", DD x,
+                                 DS "but found", DD ep1, DS "instead."]
   -- check the type of the body of the lambda expression
   Env.extendCtx (TypeSig (Sig x ep1 tyA)) (checkType body tyB)
   return (Pi ep1 tyA bnd2)
@@ -71,32 +70,32 @@ tcTerm (Lam _ _) (Just nf) =
   Env.err [DS "Lambda expression should have a function type, not", DD nf]
 -- i-app
 tcTerm (App t1 t2) Nothing = do
-  ty1 <- inferType t1 
-  let ensurePi = Equal.ensurePi 
-  
+  ty1 <- inferType t1
+  let ensurePi = Equal.ensurePi
+
   (ep1, tyA, bnd) <- ensurePi ty1
-  unless (ep1 == argEp t2) $ Env.err 
-    [DS "In application, expected", DD ep1, DS "argument but found", 
+  unless (ep1 == argEp t2) $ Env.err
+    [DS "In application, expected", DD ep1, DS "argument but found",
                                     DD t2, DS "instead." ]
   -- if the argument is Irrelevant, resurrect the context
-  (if ep1 == Irr then Env.extendCtx (Demote Rel) else id) $ 
+  (if ep1 == Irr then Env.extendCtx (Demote Rel) else id) $
     checkType (unArg t2) tyA
   return (Unbound.instantiate bnd [unArg t2])
-  
+
 
 -- i-ann
 tcTerm (Ann tm ty) Nothing = do
   tcType ty
   checkType tm ty
   return ty
-  
+
 -- practicalities
 -- remember the current position in the type checking monad
 tcTerm (Pos p tm) mTy =
   Env.extendSourceLocation p tm $ tcTerm tm mTy
 -- ignore term, just return type annotation
 tcTerm TrustMe (Just ty) = return ty
-  
+
 -- i-unit
 tcTerm TyUnit Nothing = return Type
 tcTerm LitUnit Nothing = return TyUnit
@@ -122,7 +121,7 @@ tcTerm t@(If t1 t2 t3) mty = do
 
 tcTerm (Let rhs bnd) mty = do
   (x, body) <- Unbound.unbind bnd
-  aty <- inferType rhs 
+  aty <- inferType rhs
   ty <- Env.extendCtxs [mkSig x aty, Def x rhs] $
       tcTerm body mty
   when (x `elem` Unbound.toListOf Unbound.fv ty) $
@@ -138,7 +137,7 @@ tcTerm (TyEq a b) Nothing = do
 tcTerm Refl (Just ty@(TyEq a b)) = do
   Equal.equate a b
   return ty
-tcTerm Refl (Just ty) = 
+tcTerm Refl (Just ty) =
   Env.err [DS "Refl annotated with", DD ty]
 tcTerm t@(Subst a b) (Just ty) = do
   -- infer the type of the proof 'b'
@@ -157,7 +156,7 @@ tcTerm t@(Contra p) (Just ty) = do
   a' <- Equal.whnf a
   b' <- Equal.whnf b
   case (a', b') of
-    
+
 
     (LitBool b1, LitBool b2)
       | b1 /= b2 ->
@@ -222,7 +221,7 @@ tcTerm tm (Just ty) = do
 
   return ty'
 
-tcTerm tm Nothing = 
+tcTerm tm Nothing =
   Env.err [DS "Must have a type annotation to check", DD tm]
 
 ---------------------------------------------------------------------
@@ -309,7 +308,7 @@ tcEntry (Def n term) = do
           let handler (Env.Err ps msg) = throwError $ Env.Err ps (msg $$ msg')
               msg' =
                 disp
-                  [ 
+                  [
                     DS "When checking the term",
                     DD term,
                     DS "against the signature",

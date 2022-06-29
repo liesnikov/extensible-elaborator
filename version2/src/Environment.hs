@@ -70,7 +70,7 @@ data Env = Env
     -- has been checked.
     hints :: [Sig],
     -- | what part of the file we are in (for errors/warnings)
-    sourceLocation :: [SourceLocation] 
+    sourceLocation :: [SourceLocation]
   }
 
 --deriving Show

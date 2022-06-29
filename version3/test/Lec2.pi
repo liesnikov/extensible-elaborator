@@ -21,7 +21,6 @@ z1 = ()
 z2 : T False
 z2 = True
 
-
 -- To get bar and barnot to work 
 -- the typing rule for 'if' expressions must be 
 -- context-dependent. In otherwords, it should add new 

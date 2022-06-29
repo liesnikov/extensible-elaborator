@@ -45,4 +45,6 @@ eq_false = \b1 b2 pe qe. if b1
 false_eq_bool : (n : Bool) -> (m : Bool) ->
      neg (n = m) ->
      eq_bool n m = False
-false_eq_bool = \n m nnm. 
+false_eq_bool = \n m nnm. if n
+                          then (if m then (nnm Refl (eq_bool n m = False)) else (Refl))
+                          else (if m then (Refl) else (nnm Refl (eq_bool n m = False)))
