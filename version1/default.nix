@@ -9,25 +9,19 @@ let
   };
   config = compiler: {
     packageOverrides = pkgs: rec {
-      haskellPackages = pkgs.haskellPackages.override {
-        overrides = haskellPackagesNew: haskellPackagesOld: rec {
-          unbound-generics = haskellPackagesNew.callPackage ./nix/unbound-generics.nix {};
+      haskell = pkgs.haskell // {
+        packages = pkgs.haskell.packages // {
+          "${compiler}" = pkgs.haskell.packages."${compiler}".override {
+            overrides = haskellPackagesNew: haskellPackagesOld: rec {
+              unbound-generics =
+                haskellPackagesNew.callPackage ./nix/unbound-generics.nix {};
+            };
+          };
         };
       };
-#      haskell = pkgs.haskell // {
-#        packages = pkgs.haskell.packages // {
-#          "${compiler}" = pkgs.haskell.packages."${compiler}".override {
-#            overrides = haskellPackagesNew: haskellPackagesOld: rec {
-#              unbound-generics =
-#                haskellPackagesNew.callPackage ./nix/unbound-generics.nix {};
-#            }
-#          };
-#        };
-#      };
     };
   };
 in
-{ compiler ? "ghc8107Binary",
+{ compiler ? "ghc922",
   nixpkgs ? import defpkgs {config = (config compiler);} }:
-nixpkgs.pkgs.haskellPackages.callPackage ./pi-forall.nix { }
-# nixpkgs.pkgs.haskell.packages."${compiler}".callPackage ./pi-forall.nix { }
+nixpkgs.pkgs.haskell.packages."${compiler}".callPackage ./pi-forall.nix { }
