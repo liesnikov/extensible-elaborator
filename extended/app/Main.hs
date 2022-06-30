@@ -57,8 +57,11 @@ goFilename pathToMainFile = do
   putStrLn $ "processing " ++ name ++ "..."
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
+  putStrLn "elaborating..."
+  e <- runTcMonad emptyEnv (tcModules val)
+  elabs <- e `exitWith` putTypeError
   putStrLn "type checking..."
-  d <- runTcMonad emptyEnv (tcModules val)
+  d <- runTcMonad emptyEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError
   putStrLn $ render $ disp (last defs)
 
