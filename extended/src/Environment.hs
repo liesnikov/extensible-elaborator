@@ -1,7 +1,7 @@
 {- pi-forall language -}
 -- | Utilities for managing a typechecking context.
 module Environment
-  ( TcMonad,
+( TcMonad,
     runTcMonad,
     Env,
     emptyEnv,
@@ -40,7 +40,8 @@ import Control.Monad.Reader
 import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
-import Syntax
+-- TODO change to Internal
+import SurfaceSyntax
 import Text.PrettyPrint.HughesPJ ( ($$), nest, sep, text, vcat )
 import qualified Unbound.Generics.LocallyNameless as Unbound
 

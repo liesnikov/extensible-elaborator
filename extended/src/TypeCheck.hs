@@ -1,4 +1,3 @@
-{- pi-forall -}
 -- | The main routines for type-checking
 module TypeCheck (tcModules, inferType, checkType) where
 import Control.Monad.Except
@@ -11,7 +10,7 @@ import Environment (D (..), TcMonad)
 import Environment qualified as Env
 import Equal qualified
 import PrettyPrint (Disp (disp))
-import Syntax
+import SurfaceSyntax
 import Debug.Trace
 
 import Text.PrettyPrint.HughesPJ (($$), render)
@@ -485,6 +484,7 @@ tcModule defs m' = do
         (moduleEntries m')
   return $ m' {moduleEntries = checkedEntries}
   where
+    tcE :: Decl -> TcMonad [Decl] -> TcMonad [Decl]
     d `tcE` m = do
       -- Extend the Env per the current Decl before checking
       -- subsequent Decls.

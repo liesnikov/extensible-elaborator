@@ -1,15 +1,14 @@
 module Main where
-
 import Test.QuickCheck
 import Test.HUnit
 import Environment
 import PrettyPrint
 import TypeCheck
-import Syntax
+import SurfaceSyntax
 import Control.Monad.Except
 import Modules
 import Text.PrettyPrint.HughesPJ (render)
-import Text.ParserCombinators.Parsec.Error 
+import Text.ParserCombinators.Parsec.Error
 import Test.QuickCheck
 import Arbitrary
 
@@ -21,8 +20,8 @@ exitWith :: Either a b -> (a -> IO b) -> IO b
 exitWith (Left a) f = f a
 exitWith (Right b) f = return b
 
--- | Type check the given file    
-testFile :: String -> Test  
+-- | Type check the given file
+testFile :: String -> Test
 testFile name = name ~: TestCase $ do
   v <- runExceptT (getModules ["pi"] name)
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))

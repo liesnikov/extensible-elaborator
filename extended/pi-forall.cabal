@@ -12,7 +12,6 @@ tested-with: GHC == 8.10.7
 category: Compilers/Interpreters
 homepage: https://github.com/sweirich/pi-forall
 synopsis: Demo implementation of typechecker for dependently-typed language
-
 source-repository head
   type: git
   location: https://github.com/sweirich/pi-forall
@@ -22,15 +21,15 @@ common shared-properties
     Haskell2010
   ghc-options:
     -Wall -fno-warn-unused-matches -fno-warn-orphans -fno-warn-unused-top-binds -fno-warn-unused-imports
-  default-extensions: 
+  default-extensions:
     EmptyDataDecls
     DefaultSignatures
     DeriveAnyClass
     DeriveDataTypeable
     DeriveGeneric
     DerivingStrategies
-    FlexibleContexts 
-    FlexibleInstances 
+    FlexibleContexts
+    FlexibleInstances
     GADTs
     GeneralizedNewtypeDeriving
     ImportQualifiedPost
@@ -43,9 +42,9 @@ common shared-properties
     ScopedTypeVariables
     TupleSections
     TypeSynonymInstances
-    UndecidableInstances 
+    UndecidableInstances
     ViewPatterns
-  build-depends:  
+  build-depends:
     base >= 4 && < 5,
     parsec >= 3.1.8 && < 3.2,
     mtl >= 2.2.1,
@@ -59,23 +58,24 @@ common shared-properties
     HUnit,
     QuickCheck
   if !impl(ghc >= 8.0)
-    build-depends: semigroups == 0.18.*      
- 
+    build-depends: semigroups == 0.18.*
+
 
 library
   import: shared-properties
   hs-source-dirs: src
-  exposed-modules: 
+  exposed-modules:
     Environment
     Equal
     LayoutToken
     Modules
     Parser
     PrettyPrint
-    Syntax
+    InternalSyntax
+    SurfaceSyntax
     TypeCheck
     Arbitrary
-  
+
 executable pi-forall
   import: shared-properties
   build-depends: pi-forall
