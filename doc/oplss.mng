@@ -17,6 +17,7 @@
 }
 \usepackage{supertabular}
 \usepackage{listings}
+\usepackage{textcomp}
 \usepackage{xspace}
 \usepackage{ottalt}
 \usepackage[T1]{fontenc}
@@ -96,7 +97,8 @@ subdirectories. These implementations build on each other (each is an
 extension of the previous version) and are summarized in
 Figure~\ref{fig:impls}.  As you read each chapter, refer to its corresponding
 implementation to see how the features described in that chapter can be
-implemented.
+implemented. The directory \texttt{main} is the source of all of these
+implementations and contains the markup needed to generate the four versions.
 
 
 \begin{itemize}
@@ -325,7 +327,9 @@ Note how, in the case analysis above, neither \cd{case} requires a branch for
 the \cd{Nil} constructor. The \pif type checker can verify that the \cd{Cons}
 case is exhaustive and that the \cd{Nil} case would be inaccessible.
 
-You may have noticed that some of the arguments to functions and constructors in the examples above are enclosed in square brackets. These arguments are \emph{irrelevant} in \pif. What this means is that the compiler can erase these arguments before running the program and can ignore these arguments when comparing types for equality.
+You may have noticed that some of the arguments to functions and constructors in the examples above are enclosed in square brackets. These arguments are \emph{irrelevant} in \pif. What this means is that the compiler can erase these arguments before running the program and can ignore these arguments when comparing types for equality. (When arguments are marked in this way, the type checker must ensure that this erasure is sound and the argument is never actually used in a meaningful way.)
+Similarly, the constraints that are part of datatype definitions, such as \cd{n = Succ m} above, are enclosed in 
+square brackets because there is no runtime witness stored with the data constructor.
 
 \subsection{Homework: Check out \pif}
 
@@ -337,7 +341,7 @@ ones that you might have seen in Agda, Haskell, or elsewhere.
 To run the type checker on these modules, make sure that you have first
 compiled the implementation using \texttt{stack build} at the terminal.  Then,
 to run \pif on a source file, such as \cd{Fin.pi}, you can issue the command
-\texttt{stack exec pi-forall -{}- Fin.pi} in the \cd{full/pi} subdirectory. If
+\texttt{stack exec -{}- pi-forall Fin.pi} in the \cd{full/pi} subdirectory. If
 the file type checks, you will see the contents of the file displayed in the
 terminal window. Otherwise, you will see an error message from the type checker.
 
@@ -502,7 +506,7 @@ is a valid type, see below.
 \paragraph{More typing rules:  Types}
 
 Observe in the typing derivation above that the rule for typing
-$lambda$-expressions has a second precondition: we need to make sure that
+$\lambda$-expressions has a second precondition: we need to make sure that
 when we add assumptions $x:A$ to the context, that $A$ really is a type.
 Without this precondition, the rules would allow us to derive this nonsensical
 type for the polymorphic identity function.
@@ -578,6 +582,25 @@ has this type.
 loop : (x:Type) -> x
 loop = \x . loop x
 \end{piforall}
+
+\paragraph{Typing invariant}
+
+Overall, a property that we want for our type system is that if a term type
+checks, then its \emph{type} will also type check. More formally, to state
+this property, we first need to say what it means to check all types in a
+context.
+
+\begin{definition}[Context type checks] 
+Define \fbox{$[[|-G]]$} with the following rules. \[ \drule{g-nil} \qquad \drule{g-cons} \]
+\end{definition}
+\noindent
+With this judgement, we can state the following property of our type system.
+\begin{lemma}[Regularity]
+If $[[G |- a : A ]]$ and $[[|- G]]$, then $[[ G |- A : Type]]$
+\end{lemma}
+\noindent
+Making sure that this property holds for the type system is the motivation for the 
+$[[G |- A : Type]]$ premise in \rref{t-lambda}.
 
 \section{From typing rules to a typing algorithm}
 \label{sec:bidirectional}
@@ -675,7 +698,8 @@ the type to infer.
 
 On the other hand, in \rref{c-lambda} we should check $\lambda$-expressions
 against a known type. If that type is provided, we can propagate it to the
-body of the lambda expression. We also want to check that $A$ is a $[[Type]]$.
+body of the lambda expression. (For subtle reasons, we can skip checking that
+$A$ is a $[[Type]]$.)
 
 The rule for applications, \rref{i-app-simple}, is in inference mode. Here, we
 first infer the type of the function, but once we have that type, we may use
@@ -690,7 +714,8 @@ Notice that this system is incomplete. There are inference rules for every
 form of expression except for lambda. On the other hand, only lambda
 expressions can be checked against types.  We can make the checking judgment
 more applicable with \rref{c-infer-simple} that allows us to use inference
-whenever a checking rule doesn't apply.
+whenever a checking rule doesn't apply. This rule only applies when the 
+term is not a lambda expression.
 
 Now, let us think about the reverse problem a bit. There are programs that the
 checking system won't admit but would have been acceptable by our first
@@ -715,7 +740,7 @@ replace them with something equivalent by doing a $\beta$-reduction of the
 application (in this case, just replace the term with $[[True]]$).
 
 In fact, the bidirectional type system has the property that it only checks
-terms in \emph{normal} form, i.e. those that do not contain any
+terms in \emph{normal} form, i.e., those that do not contain any
 $\beta$-reductions.
 
 \paragraph{Type annotations}
@@ -742,11 +767,12 @@ language.
 
 Furthermore, we want to convince ourselves that the bidirectional system
 checks the same terms as the original type system. This means that we want to
-prove a property like this one:
+prove a property like this one\footnote{This result requires the addition of a
+  typing rule for annotated terms $[[(a:A)]]$ to the original system.}:
 
 \begin{lemma}[Correctness of the bidirectional type system]
-If $[[G |- a => A]]$ then $[[G |- a : A]]$.
-If $[[G |- a <= A]]$ then $[[G |- a : A]]$.
+If $[[G |- a => A]]$ and $[[|- G]]$ then $[[G |- a : A]]$.
+If $[[G |- a <= A]]$ and $[[|- G]]$ and $[[G |- A : Type]]$ then $[[G |- a : A]]$.
 \end{lemma}
 
 On the other hand, the reverse property is not true. Even if there exists some
@@ -757,7 +783,7 @@ addition of typing annotations that can be inferred or checked instead.
 
 One issue with this bidirectional system is that it is not closed under
 substitution.  What this means is that given some term $[[b]]$ with a free
-variable, $[[ G, x :A |- b <= B]]$, and another term $[[a]]$ with the same
+variable, $[[ G, x : A |- b <= B]]$, and another term $[[a]]$ with the same
 type $[[ G |- a <= A]]$ of that variable, we \emph{do not} have a derivation
 $[[ G |- b[a/x] <= A]]$. The reason is that types of variables are always
 inferred, but the term $[[a]]$, may need the type $[[A]]$ to be supplied to
@@ -770,10 +796,10 @@ not have enough annotations to be checked themselves. We can express the propert
 that does hold about our system, using this lemma:
 
 \begin{lemma}[Regularity]
-If $[[G |- a => A]]$ then $[[G |- A : Type]]$.
+If $[[G |- a => A]]$ and $[[|- G]]$ then $[[G |- A : Type]]$.
 \end{lemma}
 
-This issue is not significant, but we could resolve it by adding an annotation
+This issue is not significant, and we could resolve it by adding an annotation
 before substitution. However, in our implementation of \pif, we do not do so
 to reduce clutter.
 
@@ -842,7 +868,7 @@ this library in the definition of the abstract syntax of \pif, and those types
 specify the binding structure of \pif expressions.
 
 First, the \unbound library defines a type for variable names, called
-\cd{TName} and we use this type to define \cd{TName}, the type of term
+\cd{Name} and we use this type to define \cd{TName}, the type of term
 names in our AST.
 %
 \begin{verbatim}
@@ -853,12 +879,12 @@ type TName = Unbound.Name Term
 The \cd{Unbound.Name} type is indexed by \cd{Term}, the AST type that it is a
 name for, whose definition we will see shortly. That way \unbound can make
 sure that we only substitute the right form of syntax for the right name,
-i.e. we can only replace a \cd{TName} with a \cd{Term}.  The library
+i.e., we can only replace a \cd{TName} with a \cd{Term}.  The library
 includes an overloaded function \cd{subst\ x\ a\ b}, which corresponds to
 the substitution we have been writing as $[[ b[a/x] ]]$ in our inference
-rules\footnote{See Guy Steele's talk about the notation for
+rules,\footnote{See Guy Steele's talk about the notation for
   substitution~\cite{steele:ppop17}. This is the most common mathematical
-  notation for this operation.}, i.e. substitute $[[a]]$ for $[[x]]$ in
+  notation for this operation.} i.e., substitute $[[a]]$ for $[[x]]$ in
 $[[b]]$.
 
 In general, we want to apply a substitution to many different sorts of
@@ -1027,7 +1053,7 @@ warn :: (Disp a) => a -> TcMonad ()
 \end{verbatim}
 
 We will also need this monad to be a freshness monad, to support working with
-binding structure (i.e. a source of fresh names), and throw in \cd{MonadIO} so
+binding structure (i.e., a source of fresh names), and throw in \cd{MonadIO} so
 that we can print warning messages.
 
 \subsection{Implementing the Type Checking Algorithm
@@ -1110,11 +1136,11 @@ they are not, it stops the computation and throws an error.
 \subsection{Exercise:  Add Booleans and
 \(\Sigma\)-types (Part II)}
 
-Second, in Haskell: The code in \texttt{version1/} includes abstract and
+The code in \texttt{version1/} includes abstract and
 concrete syntax for booleans and $\Sigma$-types. The \pif file
 \texttt{version1/test/Hw1.pi} contains examples of using these new forms. Your
 job is to get this file to compile by filling in the missing cases in
-\texttt{version1/src/TypeCheck.hs} base on the bidirectional rules that you
+\texttt{version1/src/TypeCheck.hs} based on the bidirectional rules that you
 worked out in the previous exercise.
 
 \section{Equality in Dependently-Typed Languages}
@@ -1251,7 +1277,7 @@ better.
 \end{figure}
 
 The rules in Figure~\ref{fig:defeq} define what it means for two terms to be
-equivalent, by stating the properties that we want to be true of this
+equivalent by stating the properties that we want to be true of this
 relation.  \Rref{e-beta} ensures that our relation \emph{contains
   beta-equivalence}. Terms that evaluate to each other should be equal.
 \Rref{e-refl,e-sym,e-trans} makes sure that this relation is an
@@ -1265,6 +1291,13 @@ on the left (and with the help of \rref{e-sym}, on the right as well).
 
 (Note: if we add booleans and $\Sigma-$types, we will also need corresponding
 $\beta$-equivalence rules and congruence rules for those constructs.)
+
+How do we know our definition is good? We want to make sure that whatever
+rules that we add to the system, we define a relation that is
+\emph{consistent}. We want to equate as many terms/types as possible, but 
+we don't want to be be able to derive an equality between $[[Type]]$ and some 
+function type (e.g. $[[(x:Type) -> Type]]$), or an equality between $[[True]]$ and $[[False]]$. To be absolutely confident about our definition, we want a proof 
+that such equalties are not derivable in our system.
 
 \subsection{Using definitional equality in the algorithm}
 
@@ -1315,7 +1348,7 @@ match against a literal function type.
 \end{itemize}
 
 \begin{figure}
-\drules[whnf]{$[[whnf a ~> v]]$}{Weak head normal form reduction}{lam-beta,let-beta,type,lam,pi,var,lam-cong}
+\drules[whnf]{$[[whnf a ~> v]]$}{Weak head normal form reduction}{lam-beta,annot,type,lam,pi,var,lam-cong}
 \caption{Relation computing the weak head normal form of a term}
 \label{fig:whnf}
 \end{figure}
@@ -1329,7 +1362,7 @@ The following judgment (shown in Figure~\ref{fig:whnf})
 describes when a term $[[a]]$ reduces to some result $[[v]]$ in \emph{weak head normal form (whnf)}.
 For closed terms, these rules correspond to a big-step evaluation relation and produce
 a value. For open terms, the rules produce a term that is either headed by a variable
-or by some head form (i.e. $\lambda$ or $\Pi$).
+or by some head form (i.e., $\lambda$ or $\Pi$).
 
 For example, the term
 \begin{piforall}
@@ -1446,7 +1479,7 @@ Therefore, the implementation of \cd{equate} has the following form.
 \end{verbatim}
 Above, we first check whether the terms are already alpha-equivalent. If they
 are, we do not need to do anything else, we can return immediately
-(i.e. without throwing an error, which is what the function does when it
+(i.e., without throwing an error, which is what the function does when it
 decides that the terms are not equal). The next step is to reduce both terms
 to their weak head normal forms.  If two terms have different head forms, then
 we know that they must be different terms, so we can throw an error. If they have
@@ -1473,7 +1506,6 @@ Why do we use weak head reduction vs.~full reduction?
   be terms that can cause \texttt{equate} to loop forever.
 \end{itemize}
 
-
 \section{Dependent pattern matching and propositional equality}
 \label{sec:pattern-matching}
 
@@ -1490,10 +1522,26 @@ Consider our elimination rule for if from your homework assignment:
 
 \[ \drule[width=4in]{t-if-simple} \]
 
-We can strengthen this rule by making the result type \texttt{A} depend on
-whether the condition is true or false when type checking each branch. In this
-way, our type system is flow-sensitive: we do different things while type
-checking based on how control flows in a \pif program.
+One solution to the homework assignment is to add the following two 
+rules to the algorithmic system, one in inference mode and one in 
+checking mode.
+
+\[ \drule[width=4in]{c-if-simple}\]
+\[\drule[width=4in]{i-if-simple} \]
+
+In both of these rules, we should check that the condition has type bool (when using the checking judgement here, the algorithm will infer the type of the condition and then compare the inferred type against bool using definitional equality.) However, there is no unique best way to handle the branches of the if expression. Some examples work better using the first rule and some examples require the second rule. 
+For example, we can only type check the example below using the first (checking) rule:
+\[ [[ |- \y. if y then (\x.x) else (\x. not x) <= Bool -> Bool -> Bool]] \]
+and we can only type check this next example using the second (inference) rule:
+\[ [[ x:Bool,y:Bool->Bool |- (if x then y else not) true => Bool ]] \]
+Fortunately, it is not difficult to implement our type checking function so that it implements both rules. Indeed, because \cd{tcTerm} combines both judgments into a single Haskell function in the implementation, it is possible to implement both 
+rules with the same code.
+
+However, note that we can strengthen the specification of the typechecking
+rule for \cd{if} by making the result type \texttt{A} depend on whether the
+condition is true or false when type checking each branch. In this way, our
+type system is flow-sensitive: we do different things while type checking
+based on how control flows in a \pif program.
 
 \[ \drule[width=4in]{t-if-full} \]
 
@@ -1516,11 +1564,13 @@ It turns out that this strong type checking rule is difficult to implement. In
 fact, it is not syntax-directed because $A$ and $x$ are not fixed by the
 syntax. Given $[[A[True/x] ]]$ and $[[A [False/x] ]]$ and $[[ A [a/x] ]]$ (or
 anything that they are definitionally equal to!)  how can we figure out
-whether they correspond to each other? Neither inference nor checking mode works, because we don't ever see the type $[[A]]$ with just the variable $[[x]]$.
+whether they correspond to each other? Neither inference nor checking mode
+works, because we don't ever see the type $[[A]]$ with just the variable
+$[[x]]$.
 
 So, we will not be so ambitious in \pif. We will only allow this refinement when
 the scrutinee is a variable, deferring to the weaker, non-refining typing rule
-for all other cases.
+for all other cases. Specificationally, we will implement this rule:
 
 \[ \drule[width=4in]{t-if} \]
 
@@ -1574,8 +1624,74 @@ snd : (A:Type) -> (B : A -> Type) -> (p : { x2 : A | B x2 }) -> B (fst A B p)
 snd = \A B p. let (x,y) = p in y
 \end{piforall}
 
+\noindent
 (Try this out using \texttt{version2} of the implementation and the \texttt{Lec2.pi}
 input file.)
+
+\subsubsection{Definitions and let expressions}
+
+Now let's consider let expressions, of the form $[[let x = a in b]]$. The simplest rule 
+that we can use for this term is the following:
+
+\[ \drule[width=4in]{t-let-simple} \]
+
+Note the last premise: we need to make sure that the variable $[[x]]$ does not
+appear in the type $[[B]]$ because otherwise it would escape its scope. In the
+specificational version of the type system, this version of the let rule is
+derivable from function application: $[[let x = a in b]]$ is equivalent to
+$[[ (\x. b) a ]]$. On the other hand, the bidirectional system won't typecheck
+this definition without an annotation, so we should add this expression form
+directly.
+
+However, we can also develop a stronger rule, which statically tracks that, because this 
+is a let-expression, we know that $[[x]]$ is equal to its definition. This view leads to the 
+following rule: 
+
+\[ \drule[width=4in]{t-let-def} \]
+
+In this rule, we've added a definition to our context, i.e. $[[x = a]]$. These
+definitions are used during weak head normalization. If we get to a variable
+in the head position, and there is a definition for it in the context, we
+should look it up and keep normalizing.
+
+Definitions in the context act like deferred substitutions. Indeed,
+\rref{t-let-def} doesn't really increase the expressiveness of the type system
+compared to \rref{t-let-simple}: if we had derivation that uses this rule, we
+can replace it with one that uses $[[b [a /x] ]]$ instead of $[[b]]$ in the
+body of the let expression. However, for programmers, if $[[a]]$ is a large
+expression and important for type checking, it is more convenient for to write
+$[[x]]$ instead.
+
+How do we approach let expressions in the bidirectional system? As with if and
+letpair expressions, it makes sense to have both checking and inference
+rules.  In checking mode, the rule is very similar to the specification. We
+extend the context appropriately and use the known type to check the body of
+the expression.
+
+\[ \drule[width=4in]{c-let} \]
+
+However, in inference mode, we have to be careful that the variable $[[x]]$
+does not escape its scope. One option would be just to reject the program if
+this would happen.  However, a more flexible approach is to substitute this
+variable away with its definition.\footnote{This rule for let can be used to 
+derive the more general form of refinement rules for booleans and other datatypes. In the 
+general case, we can annotate an elimination form with a \emph{motive}:
+\[ \drule[width=4in]{i-if-motive} \] 
+This annotation lets us use refinement, even when the condition is not a variable, and even in inference mode. However, we can also derive this rule via let:
+\[ [[ if a then b1 else b2 [x.A] ]] = [[ let x = a in (if x then b1 else b2 : A) ]] \]
+}
+
+\[ \drule[width=4in]{i-let} \]
+
+\paragraph{Definitions and refinement}
+
+With the addition of definitions, we can revise our refining rules for booleans and 
+$\Sigma$-types. Instead of substituting in the result type, we can replace those rules 
+with suspended definitions in the context. 
+
+\[ \drule[width=4in]{c-if-def} \]
+
+\[ \drule[width=4in]{c-letpair-def} \]
 
 \subsection{Propositional equality}
 
@@ -2461,7 +2577,7 @@ the length of a list around at run time?
 
   Bauer explores several different implementations of dependent type theory in
   a series of blog posts using the OCaml language. The first version uses a
-  named representation (i.e. strings) and generates fresh names during
+  named representation (i.e., strings) and generates fresh names during
   substitution and alpha-equality. This version uses full normalization to
   implement definitional equality. Then, in the second version, Bauer revises
   the implementation to use normalization by evaluation. In the third version,

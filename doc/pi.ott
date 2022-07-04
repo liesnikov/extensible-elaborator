@@ -52,8 +52,6 @@ tm, a , b , A , B :: '' ::= {{ com terms and types }}
   | PRINTME         ::   :: PrintMe   
     {{ com print the current context }}
 
-  | let x = a in b  ::   :: Let 
-    {{ com name an expression }}
 
   | Unit            ::   :: TyUnit  
     {{ com unit type }}
@@ -109,6 +107,7 @@ grammar
 context, G {{ tex \Gamma }} :: 'ctx_' ::= {{ com contexts }}
 
    |                 ::    :: Nil  
+   {{ tex \emptyset }}
 
    | G , x : A       ::    :: Cons   {{ tex [[G]], [[x]]\! :\![[A]] }}
 
@@ -156,6 +155,8 @@ formula :: 'formula_' ::=
   | formula1 .. formulai     ::   :: dots
   | x : A elem G             ::   :: inG
   | G |- A <=> B             ::   :: equate
+  | notlam a                 ::   :: notlam
+     {{ tex [[a]]\mbox{ is not a $\lambda$-expression } }}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,9 +181,6 @@ whnf (a'[b/x]) ~> v
 ---------------------- :: lam_beta
 whnf a b ~> v
 
-whnf (b[a/x]) ~> v
-------------------------------- :: let_beta
-whnf (let x = a in b) ~> v
 
 ------------------ :: type
 whnf Type ~> Type
@@ -203,7 +201,7 @@ whnf x ~> x
 
 
 whnf a ~> path
----------------------- :: lam_cong
+---------------------- :: app
 whnf a b ~> path b
 
 % remove type annotations when normalizing
@@ -224,9 +222,6 @@ by
 ----------------------------------  :: lambeta
 (\x.a) b ~> a [ b / x]
 
-
---------------------------------- :: letbeta
-let x = a in b ~> b [ a / x ] 
 
 
 a ~> a'
@@ -354,11 +349,6 @@ x : A elem G
 ----------- :: var 
 G |- x => A
 
-
-G |- a <= A 
------------------- :: annot
-G |- (a : A) => A
-
 G |- a => (x:A) -> B 
 G |- b <= A
 ---------------------------  :: app_simple
@@ -378,8 +368,9 @@ G |- (x:A) -> B => Type
 ------------------- :: type
 G |- Type => Type
 
+G |- A <= Type
 G |- a <= A
------------------- :: ann
+------------------ :: annot
 G |- (a : A) => A
 
    
@@ -389,17 +380,31 @@ G |- a <= B ::    :: checkType :: 'c_'
 by
 
 G, x:A |- a <= B       
-G |- A <= Type
 --------------------------- ::  lambda
 G |- \x.a <= (x:A) -> B
 
+notlam a
 G |- a => A
 ------------- :: infer_simple 
 G |- a <= A 
 
+notlam a
 G |- a => A    
 G |- A <=> B
 -------------------------- :: infer
 G |- a <= B
 
 
+defn
+|- G ::   :: checkCtx :: 'g_'
+{{ com check all types in the context }}
+by
+
+-------- :: nil
+|- 
+
+
+G |- A : Type
+|- G
+-------------- :: cons
+|- G , x : A 

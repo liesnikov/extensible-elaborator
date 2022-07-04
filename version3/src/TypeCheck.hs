@@ -33,6 +33,7 @@ checkType tm ty = do
   void $ tcTerm tm (Just nf)
 
 
+
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
 tcType :: Term -> TcMonad ()
 tcType tm = void $ Env.withStage Irr $ checkType tm Type
@@ -111,12 +112,19 @@ tcTerm (LitBool b) Nothing = do
 
 -- c-if
 tcTerm t@(If t1 t2 t3) mty = do
-  checkType t1 TyBool
-  dtrue <- def t1 (LitBool True)
-  dfalse <- def t1 (LitBool False)
-  ty <- Env.extendCtxs dtrue $ tcTerm t2 mty
-  Env.extendCtxs dfalse $ checkType t3 ty
-  return ty
+  case mty of 
+    Just ty -> do
+      checkType t1 TyBool
+      dtrue <- def t1 (LitBool True)
+      dfalse <- def t1 (LitBool False)
+      Env.extendCtxs dtrue $ checkType t2 ty
+      Env.extendCtxs dfalse $ checkType t3 ty
+      return ty
+    Nothing -> do
+      checkType t1 TyBool
+      ty <- inferType t2
+      checkType t3 ty
+      return ty
 
 
 tcTerm (Let rhs bnd) mty = do
@@ -124,9 +132,9 @@ tcTerm (Let rhs bnd) mty = do
   aty <- inferType rhs
   ty <- Env.extendCtxs [mkSig x aty, Def x rhs] $
       tcTerm body mty
-  when (x `elem` Unbound.toListOf Unbound.fv ty) $
-    Env.err [DS "Let bound variable", DD x, DS "escapes in type", DD ty]
-  return ty
+  case mty of 
+    Just _ -> return ty
+    Nothing -> return $ Unbound.subst x rhs ty
 
 
 
@@ -194,18 +202,17 @@ tcTerm t@(Prod a b) (Just ty) = do
 
 
 tcTerm t@(LetPair p bnd) (Just ty) = do
+  ((x, y), body) <- Unbound.unbind bnd
   pty <- inferType p
   pty' <- Equal.whnf pty
   case pty' of
     Sigma tyA bnd' -> do
-      (x, tyB) <- Unbound.unbind bnd'
-      ((x', y'), body) <- Unbound.unbind bnd
-      let tyB' = Unbound.subst x (Var x') tyB
-      decl <- def p (Prod (Var x') (Var y'))
-      Env.extendCtxs ([mkSig x' tyA, mkSig y' tyB'] ++ decl) $
+      let tyB = Unbound.instantiate bnd' [Var x]
+      decl <- def p (Prod (Var x) (Var y))
+      Env.extendCtxs ([mkSig x tyA, mkSig y tyB] ++ decl) $
           checkType body ty
       return ty
-    _ -> Env.err [DS "Scrutinee of pcase must have Sigma type"]
+    _ -> Env.err [DS "Scrutinee of LetPair must have Sigma type"]
 
 
 tcTerm PrintMe (Just ty) = do
