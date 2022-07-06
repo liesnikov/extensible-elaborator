@@ -14,7 +14,12 @@ let
           "${compiler}" = pkgs.haskell.packages."${compiler}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
               unbound-generics =
-                haskellPackagesNew.callPackage ./nix/unbound-generics.nix {};
+                let unbound-src =
+                  pkgs.fetchzip {
+                    url = "https://github.com/lambdageek/unbound-generics/archive/a2a558058012b09bb313b3eb03cddb734fcf4a98.zip";
+                    sha256 = "af4592a93d0d280591b3bcff3ebe244956cc3637bf20ed2315fb6b2e070caef4";
+  };
+                in haskellPackagesNew.callCabal2nix "unbound-generics" unbound-src {};
             };
           };
         };
@@ -24,4 +29,4 @@ let
 in
 { compiler ? "ghc922",
   nixpkgs ? import defpkgs {config = (config compiler);} }:
-nixpkgs.pkgs.haskell.packages."${compiler}".callPackage ./pi-forall.nix { }
+nixpkgs.pkgs.haskell.packages."${compiler}".callCabal2nix "pi-forall" ./. { }

@@ -1,7 +1,5 @@
 module Lec2 where
-
-
--- "large eliminations" 
+-- "large eliminations"
 
 bool' : Bool -> Type
 bool' = \b . (B : (b : Bool) -> Type) -> B True -> B False -> B b
@@ -22,23 +20,21 @@ z2 : T False
 z2 = True
 
 
--- To get bar and barnot to work 
--- the typing rule for 'if' expressions must be 
--- context-dependent. In otherwords, it should add new 
+-- To get bar and barnot to work
+-- the typing rule for 'if' expressions must be
+-- context-dependent. In otherwords, it should add new
 -- definitions to the context in the true/false branches
 -- when the scrutinee is a variable
--- (i.e. >= version3)
+-- (i.e. >= version2)
 
-{- 
-not : Bool -> Bool 
+not : Bool -> Bool
 not = \x. if x then False else True
 
 bar : (b : Bool) -> T b
 bar = \b. if b then () else True
 
-barnot : (b : Bool) -> T (not b) 
+barnot : (b : Bool) -> T (not b)
 barnot = \b. if b then False else ()
--}
 
 -- projections for sigma types
 
@@ -52,5 +48,4 @@ snd = \A B p. let (x1,y) = p in y
 
 sym : (A:Type) -> (x:A) -> (y:A) -> (x = y) -> y = x
 sym = \ A x y pf .
-  subst Refl by pf 
-
+  subst Refl by pf

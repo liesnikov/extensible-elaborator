@@ -343,4 +343,3 @@ checkStage ep1 = do
 withStage :: (MonadReader Env m) => Epsilon -> m a -> m a
 withStage Irr = extendCtx (Demote Rel)
 withStage ep = id
-
