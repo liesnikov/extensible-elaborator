@@ -1,5 +1,4 @@
 {- pi-forall language -}
-
 -- | A Pretty Printer.
 module PrettyPrint (Disp (..), D (..), SourcePos, PP.Doc, PP.render) where
 
@@ -226,13 +225,13 @@ levelLet     = 0
 levelCase :: Int
 levelCase    = 0
 levelLam :: Int
-levelLam     = 0 
+levelLam     = 0
 levelPi :: Int
 levelPi      = 0
 levelSigma :: Int
 levelSigma   = 0
 levelProd :: Int
-levelProd    = 0  
+levelProd    = 0
 levelArrow :: Int
 levelArrow   = 5
 
@@ -271,9 +270,9 @@ instance Display Term where
                 da <- withPrec 0 (display a)
                 return $ mandatoryBindParens ep  (dn <+> PP.colon <+> da)
               else do
-                case ep of 
+                case ep of
                   Rel -> withPrec (levelArrow+1) (display a)
-                  Irr -> PP.brackets <$> (withPrec 0 (display a)) 
+                  Irr -> PP.brackets <$> (withPrec 0 (display a))
       db <- withPrec levelPi (display b)
       return $ parens (levelArrow < p) $ lhs <+> PP.text "->" <+> db
   display (Ann a b) = do
@@ -330,15 +329,15 @@ instance Display Term where
       dy <- withPrec 0 $ display y
       dbody <- withPrec 0 $ display body
       return $
-        parens (levelLet < p) $ 
-        (PP.text "let" 
+        parens (levelLet < p) $
+        (PP.text "let"
           <+> (PP.text "("
           PP.<> dx
           PP.<> PP.text ","
           PP.<> dy
           PP.<> PP.text ")")
           <+> PP.text "="
-          <+> da 
+          <+> da
           <+> PP.text "in")
         $$ dbody
   display (Let a bnd) = do
@@ -378,26 +377,26 @@ instance Display Term where
     p <- ask prec
     dty <- display ty
     return $ parens (levelPi < p) $ PP.text "contra" <+> dty
-  
+
 
   display (isNumeral -> Just i) = display i
   display (TCon n args) = do
     p <- ask prec
     dn <- display n
     dargs <- withPrec (levelApp+1) $ mapM display args
-    return $ 
+    return $
       parens (levelApp < p && length args > 0) (dn <+> PP.hsep dargs)
   display (DCon n args) = do
     p <- ask prec
     dn <- display n
     dargs <- withPrec (levelApp+1) $ mapM display args
-    return $ 
+    return $
       parens (levelApp < p && length args > 0) (dn <+> PP.hsep dargs)
   display (Case scrut alts) = do
     p <- asks prec
     dscrut <- withPrec 0 $ display scrut
     dalts <- withPrec 0 $ mapM display alts
-    let top = PP.text "case" <+> dscrut <+> PP.text "of" 
+    let top = PP.text "case" <+> dscrut <+> PP.text "of"
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
@@ -405,8 +404,8 @@ instance Display Term where
 
 
 instance Display Arg where
-  display arg = 
-    case argEp arg of 
+  display arg =
+    case argEp arg of
       Irr -> PP.brackets <$> withPrec 0 (display (unArg arg))
       Rel -> display (unArg arg)
 
@@ -421,14 +420,14 @@ instance Display Match where
 instance Display Pattern where
   display (PatCon c [])   = display c
   display (PatCon c args) = do
-    dc <- display c 
+    dc <- display c
     dargs <- mapM wrap args
     return $ dc <+> PP.hsep dargs
-      where 
+      where
         wrap (a@(PatVar _),ep)    = bindParens ep <$> display a
-        wrap (a@(PatCon _ []),ep) = bindParens ep <$> display a 
+        wrap (a@(PatCon _ []),ep) = bindParens ep <$> display a
         wrap (a@(PatCon _ _),ep)  = mandatoryBindParens ep <$> display a
-      
+
   display (PatVar x) = display x
 
 instance Disp Telescope where
@@ -438,9 +437,9 @@ instance Display a => Display (a, Epsilon) where
   display (t, ep) = bindParens ep <$> display t
 
 instance Display ConstructorDef where
-  display (ConstructorDef pos dc tele) = do 
-    dn <- display dc 
-    let dt = disp tele 
+  display (ConstructorDef pos dc tele) = do
+    dn <- display dc
+    let dt = disp tele
     return $ dn PP.<+> PP.text "of" PP.<+> dt
 
 
@@ -463,7 +462,7 @@ gatherBinders body = do
   return ([], db)
 
 precBindParens :: Epsilon -> Bool -> Doc -> Doc
-precBindParens Rel b d = parens b d 
+precBindParens Rel b d = parens b d
 precBindParens Irr b d = PP.brackets d
 
 -- | Add [] for irrelevant arguments, leave other arguments alone
