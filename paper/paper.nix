@@ -12,13 +12,21 @@ in stdenv.mkDerivation ({
   name = "extensible-elaborator-paper";
   src = ./.;
 
-  phases = ["buildPhase"];
-  buildPhase = ''
-    pandoc --verbose --to=pdf --standalone \
-           --bibliography=$src/bib.bib --biblatex --csl=$src/default.csl \
-            -o $out $src/main.md
-'';
+  patches = [./fonts.patch];
 
+  buildPhase = ''
+    pandoc --standalone main.md \
+           --bibliography=bib.bib --biblatex --csl=default.csl \
+           --pdf-engine=xelatex -o out.tex
+    xelatex out
+    biber out
+    xelatex out
+  '';
+
+
+  installPhase = ''
+    mv out.pdf $out
+  '';
   nativeBuildInputs =
     [ pandoc texlive-combined biber] ++  extraBuildInputs;
 

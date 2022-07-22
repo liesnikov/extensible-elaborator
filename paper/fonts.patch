@@ -1,0 +1,15 @@
+diff --git a/main.md b/main.md
+index 346f9d5..0e20453 100644
+--- a/main.md
++++ b/main.md
+@@ -7,8 +7,8 @@ link-citations: true
+ 
+ output: pdf_document
+ 
+-mainfont: 'Source Serif 4'
+-sansfont: 'Source Sans 3'
++mainfont: 'Source Serif Pro'
++sansfont: 'Source Sans Pro'
+ monofont: 'Source Code Pro'
+ 
+ documentclass: scrartcl
