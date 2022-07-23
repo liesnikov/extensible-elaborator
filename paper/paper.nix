@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-{ stdenv, lib, pandoc, texlive, fontconfig, biber,
+{ stdenv, lib, pandoc, texlive, biber,
   makeFontsConf, source-serif-pro, source-sans-pro, source-code-pro}:
-let texlive-combined = texlive.combine { inherit (texlive) scheme-basic xetex lm fontspec euenc koma-script unicode-math xcolor todonotes etoolbox biblatex hyperref; };
+let texlive-combined = texlive.combine { inherit (texlive) scheme-basic xetex latexmk fontspec koma-script unicode-math xcolor todonotes etoolbox biblatex hyperref; };
     extraTexInputs = [ ];
     extraBuildInputs = [ ];
 in stdenv.mkDerivation ({
@@ -14,23 +14,18 @@ in stdenv.mkDerivation ({
     (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result" "fonts.patch"]))
     ./.;
 
+  nativeBuildInputs =
+    [ pandoc texlive-combined biber ] ++  extraBuildInputs;
+
   patches = [./fonts.patch];
 
   buildPhase = ''
-    pandoc --standalone main.md \
-           --bibliography=bib.bib --biblatex --csl=default.csl \
-           --pdf-engine=xelatex -o out.tex
-    xelatex out
-    biber out
-    xelatex out
+  make main.pdf
   '';
-
 
   installPhase = ''
-    mv out.pdf $out
+    mv main.pdf $out
   '';
-  nativeBuildInputs =
-    [ pandoc texlive-combined biber] ++  extraBuildInputs;
 
   FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-sans-pro source-code-pro source-serif-pro]; };
 

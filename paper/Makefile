@@ -1,4 +1,4 @@
-all: open
+all: pdf
 
 .PHONY: open reset
 
@@ -9,17 +9,16 @@ reset: clean pdf
 open: main.pdf
 	xdg-open main.pdf &
 
-main.pdf: main.md bib.bib Makefile
-	pandoc --standalone main.md \
-         --bibliography=bib.bib --biblatex --csl=default.csl \
-         --pdf-engine=xelatex -o main.pdf
+#main.pdf: main.md bib.bib Makefile
+#	pandoc --standalone main.md \
+#         --bibliography=bib.bib --biblatex\
+#         --pdf-engine=xelatex -o main.pdf
 
-# main.pdf: main.tex Makefile
-# 	latexmk -xelatex="xelatex -interaction=nonstopmode" -pdf -use-make main.tex
-#
+main.pdf: main.tex Makefile
+	latexmk -xelatex="xelatex -interaction=nonstopmode" -pdf -use-make main.tex
 
-main.tex: main.md Makefile
-	pandoc --standalone main.md --bibliography bib.bib --pdf-engine=xelatex -o main.tex
+main.tex: main.md bib.bib Makefile
+	pandoc --standalone main.md --bibliography bib.bib --biblatex --pdf-engine=xelatex -o main.tex
 
 allclean: clean
 	rm -f main.pdf main.tex
