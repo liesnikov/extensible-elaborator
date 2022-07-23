@@ -10,7 +10,9 @@ let texlive-combined = texlive.combine { inherit (texlive) scheme-basic xetex lm
 in stdenv.mkDerivation ({
 
   name = "extensible-elaborator-paper";
-  src = ./.;
+  src = builtins.filterSource
+    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result" "fonts.patch"]))
+    ./.;
 
   patches = [./fonts.patch];
 
