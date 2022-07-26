@@ -12,7 +12,7 @@ import qualified Text.PrettyPrint as PP
 import Unbound.Generics.LocallyNameless qualified as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
-import SurfaceSyntax
+import InternalSyntax
 
 -------------------------------------------------------------------------
 

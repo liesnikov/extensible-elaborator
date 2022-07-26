@@ -1,4 +1,4 @@
-module Elaborator () where
+module Elaborator where
 
 import           Control.Monad.Except
     ( unless, MonadError(..), MonadIO(..), ExceptT, runExceptT )
@@ -54,8 +54,20 @@ runElabMonad env m =
     fmap fst $
     runStateT (Unbound.runFreshMT m) env
 
-translation :: S.Term -> I.Term
-translation x = undefined
+transName :: S.TName -> I.TName
+transName x = undefined
 
-elaborateTerm :: S.Term -> TcMonad I.Term
-elaborateTerm = undefined
+transEpsilon :: S.Epsilon -> I.Epsilon
+transEpsilon S.Rel = I.Rel
+transEpsilon S.Irr = I.Irr
+
+trans :: S.Term -> ElabMonad I.Term
+trans (S.Type) = return $ I.Type
+trans (S.Var x) = return $ I.Var $ transName x
+trans (S.Lam s lam) = do
+  (x, body) <- Unbound.unbind lam
+  let transbody = Unbound.subst x (transName x) body
+  I.Lam (transEpsilon s) transbody
+
+elabTerm :: S.Term -> ElabMonad I.Term
+elabTerm = undefined

@@ -40,8 +40,8 @@ import Control.Monad.Reader
 import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
--- TODO change to Internal
-import SurfaceSyntax
+
+import InternalSyntax
 import Text.PrettyPrint.HughesPJ ( ($$), nest, sep, text, vcat )
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
