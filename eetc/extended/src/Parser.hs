@@ -12,7 +12,8 @@ module Parser
   where
 
 
-import SurfaceSyntax hiding (moduleImports)
+import SurfaceSyntax
+import ModuleStub hiding (moduleImports)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 

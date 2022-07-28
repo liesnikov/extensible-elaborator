@@ -42,6 +42,7 @@ import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
 
 import InternalSyntax
+import ModuleStub
 import Text.PrettyPrint.HughesPJ ( ($$), nest, sep, text, vcat )
 import qualified Unbound.Generics.LocallyNameless as Unbound
 

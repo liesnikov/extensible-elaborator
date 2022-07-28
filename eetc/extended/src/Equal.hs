@@ -4,8 +4,8 @@ module Equal (whnf, equate, ensurePi,
               ensureTyEq,
               ensureTCon, unify ) where
 
--- TODO change to InternalSyntax
-import SurfaceSyntax
+import InternalSyntax
+import ModuleStub
 import Environment ( D(DS, DD), TcMonad )
 import qualified Environment as Env
 import qualified Unbound.Generics.LocallyNameless as Unbound

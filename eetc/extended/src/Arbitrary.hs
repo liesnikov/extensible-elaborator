@@ -3,6 +3,10 @@
 --     * if we generate a random AST term and print it, then it should parse back to an alpha-equivalent term
 module Arbitrary where
 
+-- FIXME
+-- This broke because now round-trip isn't possible
+-- there's no printing for surface and no translation from internal to surface
+{--
 import qualified Data.Set as Set
 import Test.QuickCheck
     ( elements, frequency, sized, Arbitrary(arbitrary), Gen )
@@ -10,7 +14,8 @@ import qualified Test.QuickCheck as QC
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import Text.Parsec.Error ( ParseError )
 
-import SurfaceSyntax
+import SurfaceSyntax as S
+import InternalSyntax as I
 import PrettyPrint ( render, Disp(disp) )
 import Parser ( testParser, expr )
 
@@ -211,3 +216,4 @@ genBoundedList b g = do
 -- | Run quickcheck for more than 100 tests
 quickCheckN :: QC.Testable prop => Int -> prop -> IO ()
 quickCheckN n = QC.quickCheckWith $ QC.stdArgs { QC.maxSuccess = n , QC.maxSize = 100 }
+--}

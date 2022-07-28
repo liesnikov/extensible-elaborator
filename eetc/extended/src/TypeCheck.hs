@@ -10,8 +10,8 @@ import Environment (D (..), TcMonad)
 import Environment qualified as Env
 import Equal qualified
 import PrettyPrint (Disp (disp))
--- TODO change to InternalSyntax
-import SurfaceSyntax
+import InternalSyntax
+import ModuleStub
 import Debug.Trace
 
 import Text.PrettyPrint.HughesPJ (($$), render)
