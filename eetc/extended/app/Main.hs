@@ -6,6 +6,7 @@ module Main(goFilename,go,main) where
 
 import Modules (getModules)
 import PrettyPrint ( render, Disp(..) )
+import Elaborator ( elabModules, runElabMonad, elabTerm)
 import Environment ( emptyEnv, runTcMonad )
 import TypeCheck ( tcModules, inferType )
 import Parser ( parseExpr )
@@ -27,20 +28,31 @@ go str = do
   case parseExpr str of
     Left parseError -> putParseError parseError
     Right term -> do
-      putStrLn "parsed as"
-      putStrLn $ render $ disp term
-      res <- runTcMonad emptyEnv (inferType term)
-      case res of
-        Left typeError -> putTypeError typeError
-        Right ty -> do
-          putStrLn "typed with type"
-          putStrLn $ render $ disp ty
+      -- FIXME: declare a display instance for SurfaceSyntax
+--      putStrLn "parsed as"
+--      putStrLn $ render $ disp term
+      elabterm <- runElabMonad emptyEnv (elabTerm term)
+      case elabterm of
+        Left elaberror -> putElabError elaberror
+        Right elabterm -> do
+          res <- runTcMonad emptyEnv (inferType elabterm)
+          case res of
+            Left typeError -> putTypeError typeError
+            Right ty -> do
+              putStrLn "typed with type"
+              putStrLn $ render $ disp ty
 
 -- | Display a parse error to the user
 putParseError :: ParseError -> IO ()
 putParseError parseError = do
   putStrLn $ render $ disp $ errorPos parseError
   print parseError
+
+-- | Display an elaboration error to the user
+putElabError :: Disp d => d -> IO ()
+putElabError typeError = do
+  putStrLn "Elaboration Error:"
+  putStrLn $ render $ disp typeError
 
 -- | Display a type error to the user
 putTypeError :: Disp d => d -> IO ()
@@ -58,7 +70,7 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcMonad emptyEnv (tcModules val)
+  e <- runElabMonad emptyEnv (elabModules val)
   elabs <- e `exitWith` putTypeError
   putStrLn "type checking..."
   d <- runTcMonad emptyEnv (tcModules elabs)

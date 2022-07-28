@@ -73,6 +73,8 @@ library
     PrettyPrint
     InternalSyntax
     SurfaceSyntax
+    ModuleStub
+    Elaborator
     TypeCheck
     Arbitrary
 

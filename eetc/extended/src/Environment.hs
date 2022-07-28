@@ -3,7 +3,7 @@
 module Environment
 ( TcMonad,
     runTcMonad,
-    Env,
+    Env (..),
     emptyEnv,
     lookupTy,
     lookupTyMaybe,
@@ -29,7 +29,9 @@ module Environment
     D (..),
     Err (..),
     withStage,
-    checkStage
+    checkStage,
+    SourceLocation(..),
+    demoteSig
   )
 where
 
