@@ -14,6 +14,7 @@ import           Control.Monad.State ( StateT(runStateT)
 import           Data.Maybe ( listToMaybe, catMaybes)
 import           PrettyPrint (SourcePos, D(..), Disp(..))
 import           PrettyPrintInternal ()
+import           PrettyPrintSurface ()
 import           Text.PrettyPrint.HughesPJ (($$), sep)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
@@ -178,9 +179,7 @@ elabEntry (S.Def n term) = do
       lkup <- lookupHint $ transName $ n
       case lkup of
         Nothing -> do
-          --FIXME this should be gone when we have Disp isntance for SourceSyntax
-          eterm <- elabTerm term
-          extendSourceLocation (S.unPosFlaky term) eterm $
+          extendSourceLocation (S.unPosFlaky term) term $
             err [ DS "Doing very dumb inference, can't infer anything"]
         Just sig ->
           let handler (Err ps msg) = throwError $ Err ps (msg $$ msg')
@@ -188,8 +187,7 @@ elabEntry (S.Def n term) = do
                 disp
                   [
                     DS "When checking the term ",
-                    -- FIXME this should be gone when we have Disp isntance for SourceSyntax
-                    -- DD term,
+                    DD term,
                     DS "against the signature",
                     DD sig
                   ]
@@ -201,9 +199,8 @@ elabEntry (S.Def n term) = do
                   then return $ AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
                   else return $ AddCtx [I.TypeSig sig, I.Def tn elabterm]
     die term' = do
-      --FIXME this should be gone when we have Disp isntance for SourceSyntax
-      eterm <- elabTerm term
-      extendSourceLocation (S.unPosFlaky term) eterm $
+
+      extendSourceLocation (S.unPosFlaky term) term $
         err
           [ DS "Multiple definitions of",
             DD $ transName n,
