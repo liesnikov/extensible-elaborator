@@ -6,7 +6,7 @@ module Arbitrary where
 -- FIXME
 -- This broke because now round-trip isn't possible
 -- there's no printing for surface and no translation from internal to surface
-{--
+
 
 import qualified Data.Set as Set
 import Test.QuickCheck
@@ -16,11 +16,10 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 import Text.Parsec.Error ( ParseError )
 
 
-import SurfaceSyntax as S
-import InternalSyntax as I
+import ModuleStub
+import SurfaceSyntax
 import PrettyPrint ( render, Disp(disp) )
-import PrettyPrintInternal
-import PrettyPrintSurface
+import PrettyPrintSurface ()
 import Parser ( testParser, expr )
 
 -- | Round trip property: a given term prints then parses to the same term.
@@ -219,4 +218,3 @@ genBoundedList b g = do
 -- | Run quickcheck for more than 100 tests
 quickCheckN :: QC.Testable prop => Int -> prop -> IO ()
 quickCheckN n = QC.quickCheckWith $ QC.stdArgs { QC.maxSuccess = n , QC.maxSize = 100 }
---}
