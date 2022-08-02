@@ -3,8 +3,6 @@
 module InternalSyntax where
 
 import Data.Maybe (fromMaybe)
-import Data.Set (Set)
-import Data.Set qualified as Set
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic,from)
 import Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)

@@ -10,8 +10,6 @@ import Text.ParserCombinators.Parsec.Error ( ParseError )
 
 import Control.Monad.Except
 import Control.Monad.State.Lazy
-import Data.Typeable (Typeable)
-import GHC.Generics (Generic,from)
 import System.FilePath
 import System.Directory
 import qualified Data.Graph as Gr

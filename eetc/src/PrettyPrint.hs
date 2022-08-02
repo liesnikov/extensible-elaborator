@@ -10,8 +10,6 @@ import Text.PrettyPrint (Doc)
 import qualified Text.PrettyPrint as PP
 import Unbound.Generics.LocallyNameless qualified as Unbound
 
-import ModuleStub
-
 -------------------------------------------------------------------------
 
 -- * Classes and Types for Pretty Printing

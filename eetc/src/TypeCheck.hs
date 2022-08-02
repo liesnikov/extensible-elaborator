@@ -5,7 +5,6 @@ import Data.List (nub)
 
 import Data.Maybe ( catMaybes )
 
-
 import Environment (D (..), TcMonad)
 import Environment qualified as Env
 import Equal qualified
@@ -13,9 +12,9 @@ import PrettyPrint (Disp (disp))
 import PrettyPrintInternal ()
 import InternalSyntax
 import ModuleStub
-import Debug.Trace
+-- import Debug.Trace
 
-import Text.PrettyPrint.HughesPJ (($$), render)
+import Text.PrettyPrint.HughesPJ (($$))
 
 import Unbound.Generics.LocallyNameless qualified as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound

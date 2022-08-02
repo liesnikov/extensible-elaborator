@@ -6,6 +6,7 @@ module Main(goFilename,go,main) where
 
 import Modules (getModules)
 import PrettyPrint ( render, Disp(..) )
+import PrettyPrintSurface ()
 import Elaborator ( elabModules, runElabMonad, elabTerm)
 import Environment ( emptyEnv, runTcMonad )
 import TypeCheck ( tcModules, inferType )
@@ -29,13 +30,13 @@ go str = do
     Left parseError -> putParseError parseError
     Right term -> do
       -- FIXME: declare a display instance for SurfaceSyntax
---      putStrLn "parsed as"
---      putStrLn $ render $ disp term
+      putStrLn "parsed as"
+      putStrLn $ render $ disp term
       elabterm <- runElabMonad emptyEnv (elabTerm term)
       case elabterm of
         Left elaberror -> putElabError elaberror
-        Right elabterm -> do
-          res <- runTcMonad emptyEnv (inferType elabterm)
+        Right elabt -> do
+          res <- runTcMonad emptyEnv (inferType elabt)
           case res of
             Left typeError -> putTypeError typeError
             Right ty -> do

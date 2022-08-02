@@ -257,7 +257,7 @@ reservedOp = Token.reservedOp tokenizer
 parens, brackets, braces :: LParser a -> LParser a
 parens = Token.parens tokenizer
 brackets = Token.brackets tokenizer
-braces = Token.braces tokenizer
+-- braces = Token.braces tokenizer
 
 natural :: LParser Int
 natural = fromInteger <$> Token.natural tokenizer

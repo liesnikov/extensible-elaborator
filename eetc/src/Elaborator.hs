@@ -1,7 +1,6 @@
 module Elaborator (ElabMonad, runElabMonad, elabModules, elabTerm) where
 
-import           Control.Monad.Except ( unless
-                                      , MonadError(..)
+import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
                                       , ExceptT
                                       , runExceptT
@@ -13,17 +12,16 @@ import           Control.Monad.State ( StateT(runStateT)
                                      , get
                                      , gets)
 import           Data.Maybe ( listToMaybe, catMaybes)
-import           PrettyPrint (SourcePos, render, D(..), Disp(..), Doc)
-import           PrettyPrintInternal
-import           Text.PrettyPrint.HughesPJ (($$), nest, sep, text, vcat)
+import           PrettyPrint (SourcePos, D(..), Disp(..))
+import           PrettyPrintInternal ()
+import           Text.PrettyPrint.HughesPJ (($$), sep)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
-import           Environment ( TcMonad
-                             , Env(..)
+import           Environment ( Env(..)
                              , Err(..)
                              , SourceLocation(..)
                              , demoteSig
@@ -241,6 +239,7 @@ elabEntry (S.Data t (S.Telescope delta) cs) = undefined
 elabEntry (S.DataSig _ _) = err [DS "internal construct"]
 elabEntry (S.RecDef _ _) = err [DS "internal construct"]
 
+-- FIXME
 elabType :: S.Type -> ElabMonad ()
 elabType _ = return ()
 

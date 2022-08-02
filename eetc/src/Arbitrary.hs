@@ -3,6 +3,11 @@
 --     * if we generate a random AST term and print it, then it should parse back to an alpha-equivalent term
 module Arbitrary where
 
+-- FIXME
+-- This broke because now round-trip isn't possible
+-- there's no printing for surface and no translation from internal to surface
+{--
+
 import qualified Data.Set as Set
 import Test.QuickCheck
     ( elements, frequency, sized, Arbitrary(arbitrary), Gen )
@@ -10,17 +15,13 @@ import qualified Test.QuickCheck as QC
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import Text.Parsec.Error ( ParseError )
 
+
 import SurfaceSyntax as S
 import InternalSyntax as I
 import PrettyPrint ( render, Disp(disp) )
 import PrettyPrintInternal
 import PrettyPrintSurface
 import Parser ( testParser, expr )
-
--- FIXME
--- This broke because now round-trip isn't possible
--- there's no printing for surface and no translation from internal to surface
-{--
 
 -- | Round trip property: a given term prints then parses to the same term.
 prop_roundtrip :: Term -> QC.Property

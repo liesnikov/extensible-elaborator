@@ -1,26 +1,26 @@
 cabal-Version: 2.2
-name: pi-forall
+name: eetc
 version: 0.2
 license: BSD-3-Clause
 license-file: LICENSE
-copyright: (c) 2013-2022 University of Pennsylvania
+copyright: (c) 2022-2022 TU Delft
 description: An implementation of a simple dependently typed language for OPLSS 2022
-author: Stephanie Weirich <sweirich@seas.upenn.edu>, based on code by Trellys Team <trellys@...>
-maintainer: Stephanie Weirich <sweirich@seas.upenn.edu>
+author: Bohdan Liesnikov <B.Liesnikov@tudelft.nl>, based on on code by Stephanie Weirich <sweirich@seas.upenn.edu> and Trellys Team <trellys@...>
+maintainer: Bohdan Liesnikov <B.Liesnikov@tudelft.nl>
 build-type: Simple
-tested-with: GHC == 8.10.7
+tested-with: GHC == 9.2.2
 category: Compilers/Interpreters
-homepage: https://github.com/sweirich/pi-forall
+homepage: https://github.com/liesnikov/extensible-elaborator
 synopsis: Demo implementation of typechecker for dependently-typed language
 source-repository head
   type: git
-  location: https://github.com/sweirich/pi-forall
+  location: https://github.com/liesnikov/extensible-elaborator
 
 common shared-properties
   default-language:
     Haskell2010
   ghc-options:
-    -Wall -fno-warn-unused-matches -fno-warn-orphans -fno-warn-unused-top-binds -fno-warn-unused-imports
+    -Wall -fno-warn-unused-matches -fno-warn-orphans
   default-extensions:
     EmptyDataDecls
     DefaultSignatures
@@ -80,15 +80,15 @@ library
     TypeCheck
     Arbitrary
 
-executable pi-forall
+executable eetc
   import: shared-properties
-  build-depends: pi-forall
+  build-depends: eetc
   hs-source-dirs: app
   main-is: Main.hs
 
-test-suite test-pi-forall
+test-suite test-eetc
   import: shared-properties
-  build-depends: pi-forall
+  build-depends: eetc
     , QuickCheck >= 2.13.2
   type: exitcode-stdio-1.0
   hs-source-dirs: test

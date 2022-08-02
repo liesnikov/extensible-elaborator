@@ -2,7 +2,7 @@ module PrettyPrintInternal where
 
 import Control.Monad.Reader (MonadReader (ask, local), asks)
 import Data.Set qualified as S
-import Text.PrettyPrint (Doc, ($$), (<+>))
+import Text.PrettyPrint (($$), (<+>))
 import qualified Text.PrettyPrint as PP
 import Unbound.Generics.LocallyNameless qualified as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
