@@ -42,6 +42,7 @@ import Control.Monad.Reader
 import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
+import PrettyPrintInternal ()
 
 import InternalSyntax
 import ModuleStub

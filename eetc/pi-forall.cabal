@@ -71,6 +71,8 @@ library
     Modules
     Parser
     PrettyPrint
+    PrettyPrintInternal
+    PrettyPrintSurface
     InternalSyntax
     SurfaceSyntax
     ModuleStub

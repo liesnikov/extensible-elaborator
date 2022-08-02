@@ -10,6 +10,7 @@ import Environment (D (..), TcMonad)
 import Environment qualified as Env
 import Equal qualified
 import PrettyPrint (Disp (disp))
+import PrettyPrintInternal ()
 import InternalSyntax
 import ModuleStub
 import Debug.Trace

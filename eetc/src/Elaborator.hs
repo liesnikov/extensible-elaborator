@@ -14,6 +14,7 @@ import           Control.Monad.State ( StateT(runStateT)
                                      , gets)
 import           Data.Maybe ( listToMaybe, catMaybes)
 import           PrettyPrint (SourcePos, render, D(..), Disp(..), Doc)
+import           PrettyPrintInternal
 import           Text.PrettyPrint.HughesPJ (($$), nest, sep, text, vcat)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
