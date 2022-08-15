@@ -79,42 +79,6 @@ instance Disp ConstructorDef where
   disp (ConstructorDef _ c tele) = PP.text c <+> PP.text "of" <+> disp tele
 
 
-
--------------------------------------------------------------------------
-
--- * Disp Instances for Prelude types
-
--------------------------------------------------------------------------
-
-instance Disp String where
-  disp = PP.text
-
-instance Disp Int where
-  disp = PP.text . show
-
-instance Disp Integer where
-  disp = PP.text . show
-
-instance Disp Double where
-  disp = PP.text . show
-
-instance Disp Float where
-  disp = PP.text . show
-
-instance Disp Char where
-  disp = PP.text . show
-
-instance Disp Bool where
-  disp = PP.text . show
-
-instance Disp a => Disp (Maybe a) where
-  disp (Just a) = PP.text "Just" <+> disp a
-  disp Nothing = PP.text "Nothing"
-
-instance (Disp a, Disp b) => Disp (Either a b) where
-  disp (Left a) = PP.text "Left" <+> disp a
-  disp (Right a) = PP.text "Right" <+> disp a
-
 -------------------------------------------------------------------------
 
 -- * Display instances for Prelude types used in AST

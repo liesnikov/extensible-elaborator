@@ -300,5 +300,3 @@ amb (If _ _ _) = True
 amb (LetPair _ _) = True
 amb (Case _ _) = True
 amb _ = False
-
-

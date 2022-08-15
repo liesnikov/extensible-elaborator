@@ -1,25 +1,28 @@
 module Elaborator (ElabMonad, runElabMonad, elabModules, elabTerm) where
 
+import           Control.Monad ( unless )
 import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
                                       , ExceptT
                                       , runExceptT
-                                      , foldM)
+                                      , foldM )
 import           Control.Monad.State ( StateT(runStateT)
                                      , MonadState
                                      , put
                                      , modify
                                      , get
-                                     , gets)
-import           Data.Maybe ( listToMaybe, catMaybes)
-import           PrettyPrint (SourcePos, D(..), Disp(..))
+                                     , gets )
+import           Data.List ( nub )
+import           Data.Maybe ( listToMaybe, catMaybes )
+import           PrettyPrint ( SourcePos, D(..), Disp(..) )
 import           PrettyPrintInternal ()
 import           PrettyPrintSurface ()
-import           Text.PrettyPrint.HughesPJ (($$), sep)
+import           Text.PrettyPrint.HughesPJ ( ($$), sep )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 
+import           ModuleStub
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import           Environment ( Env(..)
@@ -28,7 +31,6 @@ import           Environment ( Env(..)
                              , demoteSig
                              )
 
-import           ModuleStub
 
 type ElabMonad = Unbound.FreshMT (StateT Env (ExceptT Err IO))
 
@@ -124,6 +126,150 @@ transTerm (S.Case scrut lmatch) = I.Case <$> (transTerm scrut) <*> (traverse tra
 elabTerm :: S.Term -> ElabMonad I.Term
 elabTerm = transTerm
 
+
+inferType :: S.Term -> ElabMonad (I.Term, I.Type)
+
+-- type has type type for now
+inferType (S.Type) = return (I.Type, I.Type)
+
+-- variable lookup
+inferType (S.Var x) = do
+  let tx = transName x
+  sig <- lookupTy tx   -- make sure the variable is accessible
+  checkStage (I.sigEp sig)
+  return (I.Var tx, I.sigType sig)
+
+-- lambda
+inferType t@(S.Lam ep1 bnd) = err [DS "Lambdas must be checked not inferred",
+                                   DD t
+                                  ]
+
+-- application
+inferType (S.App t1 t2) = do
+  (tt1, ty1) <- inferType t1
+  -- FIXME
+  -- needs unification
+  let whnf = undefined
+      ensurePi ty = do
+       nf <- whnf ty
+       case nf of
+         (I.Pi ep tyA bnd) -> do
+           return (ep, tyA, bnd)
+         _ -> err [DS "Expected a function type, instead found", DD nf]
+  (ep1, tyA, bnd) <- ensurePi ty1
+  unless (ep1 == (transEpsilon $ S.argEp t2)) $ err
+    [DS "In application, expected", DD ep1, DS "argument but found",
+                                    DD t2, DS "instead." ]
+  -- if the argument is Irrelevant, resurrect the context
+  tt2 <- (if ep1 == I.Irr then extendCtx (I.Demote I.Rel) else id) $
+    checkType (S.unArg t2) tyA
+  return (I.App tt1 (I.Arg (transEpsilon $ S.argEp t2) tt2), Unbound.instantiate bnd [tt2])
+
+-- pi-type
+inferType (S.Pi ep tyA bnd) = do
+  ttyA <- elabTerm tyA
+  let tep = transEpsilon ep
+  (x, tyB) <- Unbound.unbind bnd
+  let tx = transName x
+  ttyB <- extendCtx (I.TypeSig (I.Sig tx tep ttyA)) (checkType tyB I.Type)
+  let tpib = Unbound.bind tx ttyB
+  return (I.Pi (transEpsilon ep) ttyA tpib, I.Type)
+
+-- annotated term
+inferType (S.Ann tm ty) = do
+  ety <- elabType ty
+  etm <- checkType tm ety
+  return (I.Ann etm ety, etm)
+
+-- practicalities
+-- remember the current position in the type checking monad
+inferType (S.Pos p tm) =
+  extendSourceLocation p tm $ inferType tm
+
+inferType t@(S.TrustMe) = err [DS "TrustMes must be checked not inferred",
+                               DD t
+                              ]
+
+inferType t@(S.PrintMe) = err [DS "PrintMes must be checked not inferred",
+                               DD t
+                              ]
+
+-- let-binding
+inferType (S.Let rhs bnd) = do
+  (x, body) <- Unbound.unbind bnd
+  let tx = transName x
+  (erhs, erty) <- inferType rhs
+  extendCtxs [I.mkSig tx erty, I.Def tx erhs] $
+      inferType body
+
+
+-- unit type
+inferType (S.TyUnit) = return (I.TyUnit, I.Type)
+inferType (S.LitUnit) = return (I.LitUnit, I.TyUnit)
+
+-- booleans
+inferType (S.TyBool) = return (I.TyBool, I.Type)
+-- true/false
+inferType (S.LitBool b) = return (I.LitBool b, I.TyBool)
+-- bool eliminator
+inferType (S.If t1 t2 t3) = do
+  et1 <- checkType t1 I.TyBool
+  (et2, ety) <- inferType t2
+  et3 <- checkType t3 ety
+  return (I.If et1 et2 et3, ety)
+
+-- sigma-types
+-- FIXME
+inferType t@(S.Sigma tyA bnd) = undefined
+
+inferType t@(S.Prod a b) = err [DS "Products must be checked not inferred",
+                                DD t
+                               ]
+inferType t@(S.LetPair p bnd) = err [DS "Product elims must be checked not inferred",
+                                     DD t
+                                    ]
+
+-- equality type
+-- FIXME
+inferType (S.TyEq a b) = undefined
+inferType t@(S.Refl) = err [DS "Refl constructor must be checked not inferred",
+                            DD t
+                           ]
+inferType t@(S.Subst a b) = err [DS "Subst must be checked not inferred",
+                                 DD t
+                                ]
+inferType t@(S.Contra p) = err [DS "Contradiction must be checked not inferred",
+                                DD t
+                               ]
+
+-- inductive datatypes
+-- Type constructor application
+-- FIXME
+inferType (S.TCon c params) = undefined
+-- Data constructor application
+-- we don't know the expected type, so see if there
+-- is only one datacon of that name that takes no
+-- parameters
+-- FIXME
+inferType (S.DCon c args) = undefined
+inferType t@(S.Case scrut alts) =
+  err [DS "Inductive case must be checked not inferred",
+       DD t
+      ]
+
+checkType :: S.Term -> I.Type -> ElabMonad I.Term
+checkType (S.Lam ep lam) (I.Pi ep2 tyA bnd2) = do
+  (x, body) <- Unbound.unbind lam
+  tbody <- transTerm body
+  let tlam = Unbound.bind (transName x) tbody
+  return $ I.Lam (transEpsilon ep) tlam
+checkType (S.Lam ep lam) (nf) =
+  err [DS "Lambda expression should have a function type, not", DD nf]
+
+-- | Make sure that the term is a "type" (i.e. that it has type 'Type')
+elabType :: S.Term -> ElabMonad I.Term
+elabType tm = withStage I.Irr $ checkType tm I.Type
+
 elabSig :: S.Sig -> ElabMonad I.Sig
 elabSig (S.Sig name ep typ) = do
   let ename = transName name
@@ -193,13 +339,12 @@ elabEntry (S.Def n term) = do
                   ]
            in do
                 elabterm <- elabTerm term `catchError` handler
-                extendCtx (I.TypeSig sig)
-                let tn = transName n
-                if tn `elem` Unbound.toListOf Unbound.fv term
-                  then return $ AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
-                  else return $ AddCtx [I.TypeSig sig, I.Def tn elabterm]
+                extendCtx (I.TypeSig sig) $
+                  let tn = transName n
+                  in if tn `elem` Unbound.toListOf Unbound.fv term
+                       then return $ AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
+                       else return $ AddCtx [I.TypeSig sig, I.Def tn elabterm]
     die term' = do
-
       extendSourceLocation (S.unPosFlaky term) term $
         err
           [ DS "Multiple definitions of",
@@ -213,33 +358,41 @@ elabEntry (S.TypeSig sig) = do
   return $ AddHint esig
 elabEntry (S.Demote ep) = return (AddCtx [I.Demote $ transEpsilon ep])
 -- rule Decl_data
--- FIXME
-elabEntry (S.Data t (S.Telescope delta) cs) = undefined
-{--  do
+elabEntry (S.Data t (S.Telescope delta) cs) =
+  do
     -- Check that the telescope for the datatype definition is well-formed
-    edelta <- tcTypeTele delta
+    edelta <- elabTypeTele delta
     ---- check that the telescope provided
     ---  for each data constructor is wellfomed, and elaborate them
-    let elabConstructorDef defn@(ConstructorDef pos d (Telescope tele)) =
-          Env.extendSourceLocation pos defn $
-            Env.extendCtx (DataSig t (Telescope delta)) $
-              Env.extendCtxTele delta $ do
-                etele <- tcTypeTele tele
-                return (ConstructorDef pos d (Telescope tele))
+    let elabConstructorDef defn@(S.ConstructorDef pos d (S.Telescope tele)) =
+          extendSourceLocation pos defn $
+            extendCtx (I.DataSig t (I.Telescope edelta)) $
+              extendCtxTele edelta $ do
+                etele <- elabTypeTele tele
+                return (I.ConstructorDef pos d (I.Telescope etele))
     ecs <- mapM elabConstructorDef cs
     -- Implicitly, we expect the constructors to actually be different...
-    let cnames = map (\(ConstructorDef _ c _) -> c) cs
+    let cnames = map (\(S.ConstructorDef _ c _) -> c) cs
     unless (length cnames == length (nub cnames)) $
-      Env.err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
+      err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
     -- finally, add the datatype to the env and perform action m
-    return $ AddCtx [Data t (Telescope delta) ecs] --}
+    return $ AddCtx [I.Data t (I.Telescope edelta) ecs]
 elabEntry (S.DataSig _ _) = err [DS "internal construct"]
 elabEntry (S.RecDef _ _) = err [DS "internal construct"]
 
--- FIXME
-elabType :: S.Type -> ElabMonad ()
-elabType _ = return ()
-
+-- | Check all of the types contained within a telescope
+elabTypeTele :: [S.Decl] -> ElabMonad [I.Decl]
+elabTypeTele [] = return []
+elabTypeTele (S.Def x tm : tl) = do
+  ((I.Var tx), ty1) <- withStage I.Irr $ inferType (S.Var x)
+  etm <- withStage I.Irr $ checkType tm ty1
+  let decls = [I.Def tx etm]
+  extendCtxs decls $ elabTypeTele tl
+elabTypeTele ((S.TypeSig sig) : tl) = do
+  esig <- elabSig sig
+  extendCtx (I.TypeSig esig) $ elabTypeTele tl
+elabTypeTele tele =
+  err [DS "Invalid telescope: ", DD tele]
 
 -- | Make sure that we don't have the same name twice in the
 -- environment. (We don't rename top-level module definitions.)
@@ -279,11 +432,13 @@ extendHints :: (MonadState Env m) => I.Sig -> m a -> m a
 extendHints h = local (\m@Env {hints = hs} -> m {hints = h : hs})
 
 -- | Extend the context with a new binding
-extendCtx :: (MonadState Env m) => I.Decl -> m ()
-extendCtx d = do
-  s <- get
-  modify (\m@Env{ctx = cs} -> m {ctx = d : cs})
-  return ()
+extendCtx :: (MonadState Env m) => I.Decl -> m a -> m a
+extendCtx d = local (\m@Env{ctx = cs} -> m {ctx = d : cs})
+
+-- | Extend the context with a list of bindings
+extendCtxs :: (MonadState Env m) => [I.Decl] -> m a -> m a
+extendCtxs ds =
+  local (\m@Env {ctx = cs} -> m {ctx = ds ++ cs})
 
 -- | Extend the context with a list of bindings, marking them as "global"
 extendCtxsGlobal :: (MonadState Env m) => [I.Decl] -> m a -> m a
@@ -296,10 +451,15 @@ extendCtxsGlobal ds =
           }
     )
 
--- | Extend the context with a list of bindings
-extendCtxs :: (MonadState Env m) => [I.Decl] -> m a -> m a
-extendCtxs ds =
-  local (\m@Env {ctx = cs} -> m {ctx = ds ++ cs})
+-- | Extend the context with a telescope
+extendCtxTele :: (MonadState Env m, MonadIO m, MonadError Err m) => [I.Decl] -> m a -> m a
+extendCtxTele [] m = m
+extendCtxTele (I.Def x t2 : tele) m =
+  extendCtx (I.Def x t2) $ extendCtxTele tele m
+extendCtxTele (I.TypeSig sig : tele) m =
+  extendCtx (I.TypeSig sig) $ extendCtxTele tele m
+extendCtxTele ( _ : tele) m =
+  err [DS "Invalid telescope ", DD tele]
 
 -- | Extend the context with a module
 -- Note we must reverse the order.
@@ -317,7 +477,6 @@ lookupHint v = do
   return $ listToMaybe [ sig | sig <- hints, v == I.sigName sig]
 
 -- | Find a name's type in the context.
---FIXME
 lookupTyMaybe ::
   (MonadState Env m) =>
   I.TName ->
@@ -333,6 +492,24 @@ lookupTyMaybe v = do
 
     go (_ : ctx) = go ctx
 
+
+-- | Find the type of a name specified in the context
+-- throwing an error if the name doesn't exist
+lookupTy ::
+  I.TName -> ElabMonad I.Sig
+lookupTy v =
+  do
+    x <- lookupTyMaybe v
+    gamma <- getLocalCtx
+    case x of
+      Just res -> return res
+      Nothing ->
+        err
+          [ DS ("The variable " ++ show v ++ " was not found."),
+            DS "in context",
+            DD gamma
+          ]
+
 -- | Find a name's def in the context.
 lookupDef ::
   (MonadState Env m) =>
@@ -341,6 +518,13 @@ lookupDef ::
 lookupDef v = do
   ctx <- gets ctx
   return $ listToMaybe [a | I.Def v' a <- ctx, v == v']
+
+-- | Get the prefix of the context that corresponds to local variables.
+getLocalCtx :: MonadState Env m => m [I.Decl]
+getLocalCtx = do
+  g <- gets ctx
+  glen <- gets globals
+  return $ take (length g - glen) g
 
 -- | access current source location
 getSourceLocation :: MonadState Env m => m [SourceLocation]
@@ -356,3 +540,19 @@ err :: (Disp a, MonadError Err m, MonadState Env m) => [a] -> m b
 err d = do
   loc <- getSourceLocation
   throwError $ Err loc (sep $ map disp d)
+
+checkStage ::
+  (MonadState Env m, MonadError Err m) =>
+  I.Epsilon ->
+  m ()
+checkStage ep1 = do
+  unless (ep1 <= I.Rel) $ do
+    err
+      [ DS "Cannot access",
+        DD ep1,
+        DS "variables in this context"
+      ]
+
+withStage :: (MonadState Env m) => I.Epsilon -> m a -> m a
+withStage I.Irr = extendCtx (I.Demote I.Rel)
+withStage ep = id

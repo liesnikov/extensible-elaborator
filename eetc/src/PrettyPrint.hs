@@ -4,9 +4,12 @@ module PrettyPrint (Disp (..), D (..), Display(..), DispInfo(..), SourcePos, PP.
 
 import Data.Set qualified as S
 
-import Text.ParserCombinators.Parsec.Error (ParseError)
-import Text.ParserCombinators.Parsec.Pos (SourcePos, sourceColumn, sourceLine, sourceName)
-import Text.PrettyPrint (Doc)
+import           Text.ParserCombinators.Parsec.Error ( ParseError )
+import           Text.ParserCombinators.Parsec.Pos ( SourcePos
+                                                   , sourceColumn
+                                                   , sourceLine
+                                                   , sourceName )
+import           Text.PrettyPrint ( Doc, (<+>) )
 import qualified Text.PrettyPrint as PP
 import Unbound.Generics.LocallyNameless qualified as Unbound
 
@@ -47,6 +50,42 @@ data D
     DS String
   | -- | Displayable value
     forall a. Disp a => DD a
+
+-------------------------------------------------------------------------
+
+-- * Disp Instances for Prelude types
+
+-------------------------------------------------------------------------
+
+instance Disp String where
+  disp = PP.text
+
+instance Disp Int where
+  disp = PP.text . show
+
+instance Disp Integer where
+  disp = PP.text . show
+
+instance Disp Double where
+  disp = PP.text . show
+
+instance Disp Float where
+  disp = PP.text . show
+
+instance Disp Char where
+  disp = PP.text . show
+
+instance Disp Bool where
+  disp = PP.text . show
+
+instance Disp a => Disp (Maybe a) where
+  disp (Just a) = PP.text "Just" <+> disp a
+  disp Nothing = PP.text "Nothing"
+
+instance (Disp a, Disp b) => Disp (Either a b) where
+  disp (Left a) = PP.text "Left" <+> disp a
+  disp (Right a) = PP.text "Right" <+> disp a
+
 
 -------------------------------------------------------------------------
 

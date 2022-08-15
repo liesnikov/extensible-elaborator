@@ -65,6 +65,7 @@ library
   import: shared-properties
   hs-source-dirs: src
   exposed-modules:
+    Elaborator
     Environment
     Equal
     LayoutToken
@@ -76,7 +77,6 @@ library
     InternalSyntax
     SurfaceSyntax
     ModuleStub
-    Elaborator
     TypeCheck
     Arbitrary
 
