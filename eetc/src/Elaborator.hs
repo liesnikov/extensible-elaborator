@@ -14,7 +14,7 @@ import           Control.Monad.State ( StateT(runStateT)
                                      , gets )
 import           Data.List ( nub )
 import           Data.Maybe ( listToMaybe, catMaybes )
-import           PrettyPrint ( SourcePos, D(..), Disp(..) )
+import           PrettyPrint ( SourcePos, D(..), Disp(..), render )
 import           PrettyPrintInternal ()
 import           PrettyPrintSurface ()
 import           Text.PrettyPrint.HughesPJ ( ($$), sep )
@@ -199,8 +199,7 @@ inferType (S.Let rhs bnd) = do
   (x, body) <- Unbound.unbind bnd
   let tx = transName x
   (erhs, erty) <- inferType rhs
-  extendCtxs [I.mkSig tx erty, I.Def tx erhs] $
-      inferType body
+  extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ inferType body
 
 
 -- unit type
@@ -258,6 +257,20 @@ inferType t@(S.Case scrut alts) =
       ]
 
 checkType :: S.Term -> I.Type -> ElabMonad I.Term
+
+-- | type of types  `Type`
+checkType t@(S.Type) typ =
+  err [DS "Type of Type must be inferred not checked",
+       DD t
+      ]
+
+-- | variables  `x`
+checkType t@(S.Var x) typ =
+  err [DS "Type of a variable must be inferred not checked",
+       DD t
+      ]
+
+-- | abstraction  `\x. a`
 checkType (S.Lam ep lam) (I.Pi ep2 tyA bnd2) = do
   (x, body) <- Unbound.unbind lam
   tbody <- transTerm body
@@ -265,6 +278,177 @@ checkType (S.Lam ep lam) (I.Pi ep2 tyA bnd2) = do
   return $ I.Lam (transEpsilon ep) tlam
 checkType (S.Lam ep lam) (nf) =
   err [DS "Lambda expression should have a function type, not", DD nf]
+-- | application `a b`
+checkType t@(S.App terma termb) typ =
+  err [DS "Type of an application must be inferred not checked",
+       DD t
+      ]
+-- | function type   `(x : A) -> B`
+checkType t@(S.Pi ep typa body) typ =
+  err [DS "Pi-type must be inferred not checked",
+       DD t
+      ]
+
+-- | annotated terms `( a : A )`
+checkType t@(S.Ann term typa) typ =
+  err [DS "Annotated terms must be inferred not checked",
+       DD t
+      ]
+
+-- | marked source position, for error messages
+checkType (S.Pos sourcepos term) typ =
+  extendSourceLocation sourcepos term $ checkType term typ
+-- | an axiom 'TRUSTME', inhabits all types
+checkType (S.TrustMe) typ = return $ I.TrustMe
+-- | a directive to the type checker to print out the current context
+checkType (S.PrintMe) typ = do
+  gamma <- getLocalCtx
+  warn [DS "Unmet obligation.\nContext:", DD gamma,
+            DS "\nGoal:", DD typ]
+  return $ I.PrintMe
+
+-- | let expression, introduces a new (non-recursive) definition in the ctx
+-- | `let x = a in b`
+checkType (S.Let rhs bnd) typ = do
+  (x, body) <- Unbound.unbind bnd
+  let tx = transName x
+  (erhs, erty) <- inferType rhs
+  extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
+
+-- | the type with a single inhabitant, called `Unit`
+checkType t@(S.TyUnit) typ =
+  err [DS "Unit as a type must be inferred not checked",
+       DD t
+      ]
+
+-- | the inhabitant of `Unit`, written `()`
+checkType t@(S.LitUnit) typ =
+  err [DS "Unit as a term must be inferred not checked",
+       DD t
+      ]
+
+-- | the type with two inhabitants (homework) `Bool`
+checkType t@(S.TyBool) typ =
+  err [DS "Bool as a type must be inferred not checked",
+       DD t
+      ]
+-- | `True` and `False`
+checkType (S.LitBool b) t =
+  err [DS "Boolean values must be inferred not checked",
+       DD t
+      ]
+-- | `if a then b1 else b2` expression for eliminating booleans
+checkType (S.If t1 t2 t3) typ = do
+  et1 <- checkType t1 (I.TyBool)
+  dtrue <- def et1 (I.LitBool True)
+  dfalse <- def et1 (I.LitBool False)
+  et2 <- extendCtxs dtrue $ checkType t2 typ
+  et3 <- extendCtxs dfalse $ checkType t3 typ
+  return $ I.If et1 et2 et3
+
+-- | Sigma-type written `{ x : A | B }`
+checkType t@(S.Sigma terma bodb) typ =
+  err [DS "Sigma-types must be inferred not checked",
+       DD t
+      ]
+-- | introduction form for Sigma-types `( a , b )`
+checkType (S.Prod a b) typ = do
+  case typ of
+    (I.Sigma tyA bnd) -> do
+      (x, tyB) <- Unbound.unbind bnd
+      ea <- checkType a tyA
+      eb <- extendCtxs [I.mkSig x tyA, I.Def x ea] $ checkType b tyB
+      return $ I.Prod ea eb
+    _ ->
+      err
+        [ DS "Products must have Sigma Type",
+          DD typ,
+          DS "found instead"
+        ]
+-- | elimination form for Sigma-types `let (x,y) = a in b`
+checkType (S.LetPair p bnd) typ = do
+  ((x, y), body) <- Unbound.unbind bnd
+  let tx = transName x
+  let ty = transName y
+  (ep, pty) <- inferType p
+-- FIXME
+  let whnf = undefined
+  pty' <- whnf pty
+  case pty' of
+    I.Sigma tyA bnd' -> do
+      let tyB = Unbound.instantiate bnd' [I.Var tx]
+      decl <- def ep (I.Prod (I.Var tx) (I.Var ty))
+      ebody <- extendCtxs ([I.mkSig tx tyA, I.mkSig ty tyB] ++ decl) $
+               checkType body typ
+      let ebnd = Unbound.bind (tx,ty) ebody
+      return $ I.LetPair ep ebnd
+    _ -> err [DS "Scrutinee of LetPair must have Sigma type"]
+
+-- | Equality type  `a = b`
+checkType t@(S.TyEq ta tb) typ =
+  err [DS "Equality type must be inferred not checked",
+       DD t
+      ]
+-- | Proof of equality `Refl`
+-- FIXME
+checkType (S.Refl) typ@(I.TyEq a b) = do
+  let equate :: I.Term -> I.Term -> ElabMonad ()
+      equate = undefined
+  equate a b
+  return $ I.Refl
+checkType (S.Refl) typ =
+  err [DS "Refl annotated with ", DD typ]
+-- | equality type elimination  `subst a by b`
+-- FIXME
+checkType (S.Subst a b) typ = do
+  -- infer the type of the proof 'b'
+  (eb, tp) <- inferType b
+  -- make sure that it is an equality between m and n
+  let ensureTyEq = undefined
+  (m, n) <- ensureTyEq tp
+  -- if either side is a variable, add a definition to the context
+  edecl <- def m n
+  -- if proof is a variable, add a definition to the context
+  pdecl <- def eb I.Refl
+  ea <- extendCtxs (edecl ++ pdecl) $ checkType a typ
+  return $ I.Subst ea eb
+-- | witness to an equality contradiction
+-- FIXME
+checkType (S.Contra p) typ = do
+  (ep, ty') <- inferType p
+  let ensureTyEq :: I.Term -> ElabMonad (I.Term, I.Term)
+      ensureTyEq = undefined
+      whnf :: I.Term -> ElabMonad I.Term
+      whnf = undefined
+  (a, b) <- ensureTyEq ty'
+  a' <- whnf a
+  b' <- whnf b
+  case (a', b') of
+    (I.DCon da _, I.DCon db _)
+      | da /= db ->
+        return $ I.Contra ep
+    (I.LitBool b1, I.LitBool b2)
+      | b1 /= b2 ->
+        return $ I.Contra ep
+    (_, _) ->
+      err
+        [ DS "I can't tell that",
+          DD a,
+          DS "and",
+          DD b,
+          DS "are contradictory"
+        ]
+
+-- | type constructors (fully applied)
+-- FIXME
+checkType (S.TCon tcname larg) t = undefined
+-- | term constructors (fully applied)
+-- FIXME
+checkType (S.DCon dcname larg) t = undefined
+-- | case analysis  `case a of matches`
+-- FIXME
+checkType (S.Case term listmatch) t = undefined
+
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
 elabType :: S.Term -> ElabMonad I.Term
@@ -416,6 +600,22 @@ duplicateTypeBindingCheck sig = do
             ]
        in extendSourceLocation p sig $ err msg
 
+
+---------------------------------------------------------------------
+-- helper functions for type checking
+
+-- | Create a Def if either side normalizes to a single variable
+def :: I.Term -> I.Term -> ElabMonad [I.Decl]
+def t1 t2 = do
+  let whnf = undefined
+  nf1 <- whnf t1
+  nf2 <- whnf t2
+  case (nf1, nf2) of
+    (I.Var x, I.Var y) | x == y -> return []
+    (I.Var x, _) -> return [I.Def x nf2]
+    (_, I.Var x) -> return [I.Def x nf1]
+    _ -> return []
+
 -- FIXME duplicates functions in Environment
 -- https://stackoverflow.com/questions/7292766/monads-tf-monadreader-instance-for-monadstate
 
@@ -540,6 +740,12 @@ err :: (Disp a, MonadError Err m, MonadState Env m) => [a] -> m b
 err d = do
   loc <- getSourceLocation
   throwError $ Err loc (sep $ map disp d)
+
+-- | Print a warning
+warn :: (Disp a, MonadState Env m, MonadIO m) => a -> m ()
+warn e = do
+  loc <- getSourceLocation
+  liftIO $ putStrLn $ "warning: " ++ render (disp (Err loc (disp e)))
 
 checkStage ::
   (MonadState Env m, MonadError Err m) =>
