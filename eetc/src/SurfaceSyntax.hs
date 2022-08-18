@@ -146,18 +146,11 @@ data Decl
   | -- | The definition of a particular name, must
     -- already have a type declaration in scope
     Def TName Term
-  | -- | A potentially (recursive) definition of
-    -- a particular name, must be declared
-    RecDef TName Term
     -- | Adjust the context for relevance checking
   | Demote Epsilon
   | -- | Declaration for a datatype including all of
     -- its data constructors
     Data TCName Telescope [ConstructorDef]
-  | -- | An abstract view of a datatype. Does
-    -- not include any information about its data
-    -- constructors
-    DataSig TCName Telescope
   deriving (Show, Generic, Typeable)
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
 

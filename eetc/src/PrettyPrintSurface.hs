@@ -57,7 +57,6 @@ instance Disp Sig where
 
 instance Disp Decl where
   disp (Def n term)  = disp n <+> PP.text "=" <+> disp term
-  disp (RecDef n r)  = disp (Def n r)
   disp (TypeSig sig) = disp sig
   disp (Demote ep)   = mempty
 
@@ -70,9 +69,6 @@ instance Disp Decl where
       )
       2
       (PP.vcat $ map disp constructors)
-  disp (DataSig t delta) =
-    PP.text "data" <+> disp t <+> disp delta <+> PP.colon
-      <+> PP.text "Type"
 
 instance Disp ConstructorDef where
   disp (ConstructorDef _ c (Telescope [])) = PP.text c

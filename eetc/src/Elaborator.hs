@@ -561,8 +561,6 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
       err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
     -- finally, add the datatype to the env and perform action m
     return $ AddCtx [I.Data t (I.Telescope edelta) ecs]
-elabEntry (S.DataSig _ _) = err [DS "internal construct"]
-elabEntry (S.RecDef _ _) = err [DS "internal construct"]
 
 -- | Check all of the types contained within a telescope
 elabTypeTele :: [S.Decl] -> ElabMonad [I.Decl]
