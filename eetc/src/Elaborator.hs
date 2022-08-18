@@ -124,7 +124,7 @@ transTerm (S.DCon dcname largs) = I.DCon dcname <$> traverse transArg largs
 transTerm (S.Case scrut lmatch) = I.Case <$> (transTerm scrut) <*> (traverse transMatch lmatch)
 
 elabTerm :: S.Term -> ElabMonad I.Term
-elabTerm = transTerm
+elabTerm = (fmap fst) . inferType
 
 
 inferType :: S.Term -> ElabMonad (I.Term, I.Type)
@@ -522,7 +522,7 @@ elabEntry (S.Def n term) = do
                     DD sig
                   ]
            in do
-                elabterm <- elabTerm term `catchError` handler
+                (elabterm, _) <- inferType term `catchError` handler
                 extendCtx (I.TypeSig sig) $
                   let tn = transName n
                   in if tn `elem` Unbound.toListOf Unbound.fv term

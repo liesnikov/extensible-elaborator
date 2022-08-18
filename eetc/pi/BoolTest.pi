@@ -1,0 +1,7 @@
+module BoolTest where
+
+b1 : Bool
+b1 = True
+
+b2 : Bool
+b2 = False
