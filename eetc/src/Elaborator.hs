@@ -146,7 +146,7 @@ inferType t@(S.Lam ep1 bnd) = err [DS "Lambdas must be checked not inferred",
 
 -- application
 inferType (S.App t1 t2) = do
-  (tt1, ty1) <- inferType t1
+  (et1, ty1) <- inferType t1
   -- FIXME
   -- needs unification
   let whnf = undefined
@@ -163,7 +163,8 @@ inferType (S.App t1 t2) = do
   -- if the argument is Irrelevant, resurrect the context
   tt2 <- (if ep1 == I.Irr then extendCtx (I.Demote I.Rel) else id) $
     checkType (S.unArg t2) tyA
-  return (I.App tt1 (I.Arg (transEpsilon $ S.argEp t2) tt2), Unbound.instantiate bnd [tt2])
+  return (I.App et1 (I.Arg (transEpsilon $ S.argEp t2) tt2),
+          Unbound.instantiate bnd [tt2])
 
 -- pi-type
 inferType (S.Pi ep tyA bnd) = do
