@@ -1,13 +1,13 @@
 {- pi-forall language -}
 -- | Compare two terms for equality
-module Equal (whnf, equate, ensurePi,
-              ensureTyEq,
-              ensureTCon, unify ) where
+module TypeCheck.Equal (whnf, equate, ensurePi,
+                        ensureTyEq,
+                        ensureTCon, unify ) where
 
 import InternalSyntax
 import ModuleStub
-import Environment ( D(DS, DD), TcMonad )
-import qualified Environment as Env
+import TypeCheck.Environment ( D(DS, DD), TcMonad )
+import qualified TypeCheck.Environment as Env
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import Control.Monad.Except (unless, catchError, zipWithM, zipWithM_)

@@ -1,4 +1,4 @@
-module Elaborator (ElabMonad, runElabMonad, elabModules, elabTerm) where
+module TypeCheck.Elaborator (ElabMonad, runElabMonad, elabModules, elabTerm) where
 
 import           Control.Monad ( unless )
 import           Control.Monad.Except ( MonadError(..)
@@ -25,11 +25,11 @@ import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 import           ModuleStub
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
-import           Environment ( Env(..)
-                             , Err(..)
-                             , SourceLocation(..)
-                             , demoteSig
-                             )
+import           TypeCheck.Environment ( Env(..)
+                                       , Err(..)
+                                       , SourceLocation(..)
+                                       , demoteSig
+                                       )
 
 
 type ElabMonad = Unbound.FreshMT (StateT Env (ExceptT Err IO))

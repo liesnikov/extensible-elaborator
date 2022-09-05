@@ -1,13 +1,13 @@
 -- | The main routines for type-checking
-module TypeCheck (tcModules, inferType, checkType) where
+module TypeCheck.TypeCheck (tcModules, inferType, checkType) where
 import Control.Monad.Except
 import Data.List (nub)
 
 import Data.Maybe ( catMaybes )
 
-import Environment (D (..), TcMonad)
-import Environment qualified as Env
-import Equal qualified
+import TypeCheck.Environment (D (..), TcMonad)
+import TypeCheck.Environment qualified as Env
+import TypeCheck.Equal qualified as Equal
 import PrettyPrint (Disp (disp))
 import PrettyPrintInternal ()
 import InternalSyntax

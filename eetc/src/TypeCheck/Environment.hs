@@ -1,7 +1,6 @@
-{- pi-forall language -}
 -- | Utilities for managing a typechecking context.
-module Environment
-( TcMonad,
+module TypeCheck.Environment
+(   TcMonad,
     runTcMonad,
     Env (..),
     emptyEnv,
