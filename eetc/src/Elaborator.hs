@@ -230,8 +230,10 @@ inferType t@(S.LetPair p bnd) = err [DS "Product elims must be checked not infer
                                     ]
 
 -- equality type
--- FIXME
-inferType (S.TyEq a b) = undefined
+inferType (S.TyEq a b) = do
+  (ea, aTy) <- inferType a
+  eb <- checkType b aTy
+  return (I.TyEq ea eb, I.Type)
 inferType t@(S.Refl) = err [DS "Refl constructor must be checked not inferred",
                             DD t
                            ]
