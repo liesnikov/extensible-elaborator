@@ -52,6 +52,8 @@ common shared-properties
     unbound-generics >= 0.2,
     transformers,
     array >= 0.3.0.2 && < 0.6,
+    -- monad-control-1.0.1.0 is the first to contain liftThrough
+    monad-control >= 1.0.1.0 && < 1.1,
     containers,
     directory,
     filepath,
@@ -65,20 +67,23 @@ library
   import: shared-properties
   hs-source-dirs: src
   exposed-modules:
-    Elaborator
-    Environment
-    Equal
     LayoutToken
     Modules
+    ModuleStub
     Parser
     PrettyPrint
     PrettyPrintInternal
     PrettyPrintSurface
     InternalSyntax
     SurfaceSyntax
-    ModuleStub
-    TypeCheck
     Arbitrary
+    TypeCheck.Elaborator
+    TypeCheck.Environment
+    TypeCheck.Equal
+    TypeCheck.TypeCheck
+    TypeCheck.Monad
+    TypeCheck.State
+
 
 executable eetc
   import: shared-properties

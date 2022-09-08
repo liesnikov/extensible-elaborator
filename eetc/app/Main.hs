@@ -7,9 +7,10 @@ module Main(goFilename,go,main) where
 import Modules (getModules)
 import PrettyPrint ( render, Disp(..) )
 import PrettyPrintSurface ()
-import Elaborator ( elabModules, runElabMonad, elabTerm)
-import Environment ( emptyEnv, runTcMonad )
-import TypeCheck ( tcModules, inferType )
+import TypeCheck.Monad (runTcMonad)
+import TypeCheck.Elaborator ( elabModules, elabTerm )
+import TypeCheck.Environment ( emptyEnv)
+import TypeCheck.TypeCheck ( tcModules, inferType )
 import Parser ( parseExpr )
 import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
 import Control.Monad.Except ( runExceptT )
@@ -32,7 +33,7 @@ go str = do
       -- FIXME: declare a display instance for SurfaceSyntax
       putStrLn "parsed as"
       putStrLn $ render $ disp term
-      elabterm <- runElabMonad emptyEnv (elabTerm term)
+      elabterm <- runTcMonad emptyEnv (elabTerm term)
       case elabterm of
         Left elaberror -> putElabError elaberror
         Right elabt -> do
@@ -71,7 +72,7 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runElabMonad emptyEnv (elabModules val)
+  e <- runTcMonad emptyEnv (elabModules val)
   elabs <- e `exitWith` putTypeError
   putStrLn "type checking..."
   d <- runTcMonad emptyEnv (tcModules elabs)
