@@ -82,6 +82,7 @@ library
     TypeCheck.Equal
     TypeCheck.TypeCheck
     TypeCheck.Monad
+    TypeCheck.State
 
 
 executable eetc

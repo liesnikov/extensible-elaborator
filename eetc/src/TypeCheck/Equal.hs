@@ -4,19 +4,24 @@ module TypeCheck.Equal (whnf, equate, ensurePi,
                         ensureTyEq,
                         ensureTCon, unify ) where
 
+import Control.Monad.Except (MonadError(..), MonadPlus, unless, catchError, zipWithM, zipWithM_)
+
 import InternalSyntax
 import ModuleStub
 import TypeCheck.Environment ( D(DS, DD), TcMonad )
 import qualified TypeCheck.Environment as Env
+import TypeCheck.State (Err)
+import TypeCheck.Monad (MonadTcReader(..))
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import Control.Monad.Except (unless, catchError, zipWithM, zipWithM_)
 
 -- | compare two expressions for equality
 -- first check if they are alpha equivalent then
 -- if not, weak-head normalize and compare
 -- throw an error if they cannot be matched up
-equate :: Term -> Term -> TcMonad ()
+equate :: (MonadTcReader m, MonadError Err m, MonadPlus m, MonadFail m,
+           Unbound.Fresh m)
+       => Term -> Term -> m ()
 equate t1 t2 | Unbound.aeq t1 t2 = return ()
 equate t1 t2 = do
   n1 <- whnf t1
@@ -109,7 +114,9 @@ equate t1 t2 = do
 
 
 -- | Match up args
-equateArgs :: [Arg] -> [Arg] -> TcMonad ()
+equateArgs :: (MonadTcReader m, MonadError Err m,
+               MonadPlus m, MonadFail m, Unbound.Fresh m)
+           => [Arg] -> [Arg] -> m ()
 equateArgs (a1:t1s) (a2:t2s) = do
   equateArg a1 a2
   equateArgs t1s t2s
@@ -121,7 +128,9 @@ equateArgs a1 a2 = do
                    DS "in context:", DD gamma]
 
 -- | Ignore irrelevant arguments when comparing
-equateArg :: Arg -> Arg -> TcMonad ()
+equateArg :: (MonadTcReader m, MonadError Err m,
+              MonadPlus m, MonadFail m, Unbound.Fresh m)
+          => Arg -> Arg -> m ()
 equateArg (Arg Rel t1) (Arg Rel t2) = equate t1 t2
 equateArg (Arg Irr t1) (Arg Irr t2) = return ()
 equateArg a1 a2 =
@@ -136,8 +145,8 @@ equateArg a1 a2 =
 -- (or could be normalized to be such) and return the components of
 -- the type.
 -- Throws an error if this is not the case.
-ensurePi :: Type ->
-  TcMonad (Epsilon,  Type, (Unbound.Bind TName Type))
+ensurePi :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Type ->
+  m (Epsilon,  Type, (Unbound.Bind TName Type))
 ensurePi ty = do
   nf <- whnf ty
   case nf of
@@ -150,7 +159,7 @@ ensurePi ty = do
 -- (or could be normalized to be such) and return
 -- the LHS and RHS of that equality
 -- Throws an error if this is not the case.
-ensureTyEq :: Term -> TcMonad (Term,Term)
+ensureTyEq :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Term -> m (Term,Term)
 ensureTyEq ty = do
   nf <- whnf ty
   case nf of
@@ -161,7 +170,7 @@ ensureTyEq ty = do
 -- | Ensure that the given type 'ty' is some tycon applied to
 --  params (or could be normalized to be such)
 -- Throws an error if this is not the case
-ensureTCon :: Term -> TcMonad (TCName, [Arg])
+ensureTCon :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Term -> m (TCName, [Arg])
 ensureTCon aty = do
   nf <- whnf aty
   case nf of
@@ -172,7 +181,7 @@ ensureTCon aty = do
 
 -------------------------------------------------------
 -- | Convert a term to its weak-head normal form.
-whnf :: Term -> TcMonad Term
+whnf :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Term -> m Term
 whnf (Var x) = do
   maybeDef <- Env.lookupDef x
   case maybeDef of
@@ -236,7 +245,8 @@ whnf tm = return tm
 -- | Determine whether the pattern matches the argument
 -- If so return the appropriate substitution
 -- otherwise throws an error
-patternMatches :: Arg -> Pattern -> TcMonad [(TName, Term)]
+patternMatches :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m)
+               => Arg -> Pattern -> m [(TName, Term)]
 patternMatches (Arg _ t) (PatVar x) = return [(x, t)]
 patternMatches (Arg Rel t) pat = do
   nf <- whnf t
@@ -252,7 +262,8 @@ patternMatches (Arg Irr _) pat = do
 -- | 'Unify' the two terms, producing a list of Defs
 -- If there is an obvious mismatch, this function produces an error
 -- If either term is "ambiguous" just fail instead.
-unify :: [TName] -> Term -> Term -> TcMonad [Decl]
+unify :: (MonadTcReader m, MonadError Err m, MonadPlus m, Unbound.Fresh m)
+      => [TName] -> Term -> Term -> m [Decl]
 unify ns tx ty = do
   txnf <- whnf tx
   tynf <- whnf ty

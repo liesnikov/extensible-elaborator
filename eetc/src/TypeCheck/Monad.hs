@@ -1,28 +1,20 @@
 module TypeCheck.Monad where
 
-import           Control.Monad.Except ( MonadError(..)
-                                      , MonadIO(..)
-                                      , ExceptT
-                                      , runExceptT
-                                      , foldM )
+import           Control.Monad        (join)
+import           Control.Monad.Except ( ExceptT
+                                      , runExceptT )
 import           Control.Monad.State ( StateT(runStateT)
-                                     , MonadState
                                      , put
                                      , modify
-                                     , get
-                                     , gets )
+                                     , get )
 import           Control.Monad.Trans ( MonadTrans(..), lift )
 import           Control.Monad.Trans.Control ( MonadTransControl(..), liftThrough )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
-import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 
 
-import           TypeCheck.Environment ( Env(..)
-                                       , Err(..)
-                                       , SourceLocation(..)
-                                       , demoteSig
-                                       )
+import           TypeCheck.State ( Env(..)
+                                 , Err(..) )
 
 data TcState = TcS {
   env :: Env
@@ -42,6 +34,14 @@ class Monad m => MonadTcReader m where
     =>  (TcState -> TcState) -> m a -> m a
   localTc = liftThrough . localTc
 
+asksTc :: (MonadTcReader m) => (TcState -> a) -> m a
+asksTc f = f <$> askTc
+
+asksTcEnv :: (MonadTcReader m) => (Env -> a) -> m a
+asksTcEnv f = f <$> env <$> askTc
+
+localTcEnv :: (MonadTcReader m) => (Env -> Env) -> m a -> m a
+localTcEnv f = localTc (\s -> s {env = f $ env s})
 
 -- Monad with write access to TcState
 
@@ -74,6 +74,7 @@ instance (Monad m, MonadTcState m) => MonadTcReader m where
     putTc s
     return v
 
+{--
 type TcMonad = Unbound.FreshMT (StateT TcState (ExceptT Err IO))
 
 runTcMonad :: TcState -> TcMonad a -> IO (Either Err a)
@@ -82,7 +83,44 @@ runTcMonad state m =
     fmap fst $
     runStateT (Unbound.runFreshMT m) state
 
+--}
+
+-- | The type checking Monad includes a state (for the
+-- environment), freshness state (for supporting locally-nameless
+-- representations), error (for error reporting), and IO
+-- (for e.g.  warning messages).
+newtype TcMonad a = TcM { unTcM :: Unbound.FreshMT (StateT TcState (ExceptT Err IO)) a }
+
+instance Functor TcMonad where
+  fmap = \f (TcM m) -> TcM $ fmap f m
+
+instance Applicative TcMonad where
+  pure = TcM . pure
+  (TcM f) <*> (TcM a) = TcM $ f <*> a
+
+instance Monad TcMonad where
+  return = pure
+  (TcM a) >>= f = TcM $ join $ fmap (unTcM . f) a
+
+instance MonadTcReader TcMonad where
+  askTc = TcM $ get
+  localTc f (TcM a) = TcM $ do
+    s <- get
+    modify f
+    ra <- a
+    put s
+    return ra
+
 instance MonadTcState TcMonad where
-  getTc = get
-  putTc = put
-  modifyTc = modify
+  getTc = TcM $ get
+  putTc = TcM . put
+  modifyTc = TcM . modify
+
+
+-- | Entry point for the type checking monad, given an
+-- initial environment, returns either an error message
+-- or some result.
+runTcMonad :: Env -> TcMonad a -> IO (Either Err a)
+runTcMonad env m =
+  runExceptT $ fmap fst $
+    runStateT (Unbound.runFreshMT $ unTcM $ m) $ TcS env
