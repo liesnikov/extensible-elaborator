@@ -1,8 +1,6 @@
 -- | Utilities for managing a typechecking context.
 module TypeCheck.Environment
-(   TcMonad,
-    runTcMonad,
-    Env (..),
+(   Env (..),
     emptyEnv,
     lookupTy,
     lookupTyMaybe,
@@ -35,9 +33,7 @@ module TypeCheck.Environment
 where
 
 import Control.Monad.Except
-    ( unless, MonadError(..), MonadIO(..), ExceptT, runExceptT )
-import Control.Monad.Reader
-    ( MonadReader(local), asks, ReaderT(runReaderT) )
+    ( unless, MonadError(..), MonadIO(..))
 import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
@@ -47,8 +43,7 @@ import InternalSyntax
 import ModuleStub
 import TypeCheck.State
 import TypeCheck.Monad
-import Text.PrettyPrint.HughesPJ ( ($$), nest, sep, text, vcat )
-import qualified Unbound.Generics.LocallyNameless as Unbound
+import Text.PrettyPrint.HughesPJ ( ($$), sep)
 
 -- | Find a name's user supplied type signature.
 lookupHint :: (MonadTcReader m) => TName -> m (Maybe Sig)

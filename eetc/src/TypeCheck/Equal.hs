@@ -8,7 +8,7 @@ import Control.Monad.Except (MonadError(..), MonadPlus, unless, catchError, zipW
 
 import InternalSyntax
 import ModuleStub
-import TypeCheck.Environment ( D(DS, DD), TcMonad )
+import TypeCheck.Environment ( D(DS, DD))
 import qualified TypeCheck.Environment as Env
 import TypeCheck.State (Err)
 import TypeCheck.Monad (MonadTcReader(..))
@@ -106,11 +106,12 @@ equate t1 t2 = do
       zipWithM_ matchBr brs1 brs2
 
     (_,_) -> tyErr n1 n2
- where tyErr n1 n2 = do
+ where  tyErr :: (MonadTcReader m, MonadError Err m) => Term -> Term -> m ()
+        tyErr n1 n2 = do
           gamma <- Env.getLocalCtx
           Env.err [DS "Expected", DD n2,
-               DS "but found", DD n1,
-               DS "in context:", DD gamma]
+                   DS "but found", DD n1,
+                   DS "in context:", DD gamma]
 
 
 -- | Match up args

@@ -1,8 +1,14 @@
-module TypeCheck.Monad where
+module TypeCheck.Monad (MonadTcReader(..), asksTc, asksTcEnv, localTcEnv,
+                        MonadTcState(..), getsTc,
+                        TcMonad, runTcMonad) where
 
-import           Control.Monad        (join)
-import           Control.Monad.Except ( ExceptT
+import           Control.Monad (join, MonadPlus(..))
+import           Control.Applicative (Alternative(..))
+import           Control.Monad.Except ( MonadError(..)
+                                      , ExceptT
                                       , runExceptT )
+import           Control.Monad.Except ( MonadFail(..) )
+import           Control.Monad.IO.Class ( MonadIO(..) )
 import           Control.Monad.State ( StateT(runStateT)
                                      , put
                                      , modify
@@ -102,14 +108,28 @@ instance Monad TcMonad where
   return = pure
   (TcM a) >>= f = TcM $ join $ fmap (unTcM . f) a
 
-instance MonadTcReader TcMonad where
-  askTc = TcM $ get
-  localTc f (TcM a) = TcM $ do
-    s <- get
-    modify f
-    ra <- a
-    put s
-    return ra
+instance MonadError Err TcMonad where
+  throwError = TcM . throwError
+  catchError (TcM e) c = TcM $ catchError e (\x -> case c x of TcM v -> v)
+
+instance MonadFail TcMonad where
+  fail = TcM . fail
+
+instance Alternative TcMonad where
+  empty = TcM $ empty
+  (TcM a) <|> (TcM b) = TcM $ a <|> b
+  some (TcM a) = TcM $ some a
+  many (TcM a) = TcM $ many a
+
+instance MonadPlus TcMonad where
+  mzero = TcM $ mzero
+  mplus (TcM a) (TcM b) = TcM $ mplus a b
+
+instance MonadIO TcMonad where
+  liftIO = TcM . liftIO
+
+instance Unbound.Fresh TcMonad where
+  fresh = TcM . Unbound.fresh
 
 instance MonadTcState TcMonad where
   getTc = TcM $ get

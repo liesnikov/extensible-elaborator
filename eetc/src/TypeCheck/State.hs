@@ -1,4 +1,6 @@
-module TypeCheck.State where
+module TypeCheck.State (SourceLocation(..),
+                        Env(..), emptyEnv,
+                        Err(..)) where
 
 import InternalSyntax
 import PrettyPrint ( SourcePos, Disp(..), Doc )

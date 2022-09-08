@@ -5,7 +5,8 @@ import Data.List (nub)
 
 import Data.Maybe ( catMaybes )
 
-import TypeCheck.Environment (D (..), TcMonad)
+import TypeCheck.Monad (TcMonad, MonadTcReader(..))
+import TypeCheck.Environment (D (..))
 import TypeCheck.Environment qualified as Env
 import TypeCheck.Equal qualified as Equal
 import PrettyPrint (Disp (disp))
@@ -701,5 +702,3 @@ checkSubPats dc (TypeSig _ : tele) patss
       _ -> Env.err [DS "All subpatterns must be variables in this version."]
 checkSubPats dc t ps =
   Env.err [DS "Internal error in checkSubPats", DD dc, DS (show ps)]
-
-
