@@ -1,4 +1,4 @@
-module TypeCheck.Elaborator (ElabMonad, runElabMonad, elabModules, elabTerm) where
+module TypeCheck.Elaborator (elabModules, elabTerm) where
 
 import           Control.Monad ( unless )
 import           Control.Monad.Except ( MonadError(..)
@@ -6,18 +6,13 @@ import           Control.Monad.Except ( MonadError(..)
                                       , ExceptT
                                       , runExceptT
                                       , foldM )
-import           Control.Monad.State ( StateT(runStateT)
-                                     , MonadState
-                                     , put
-                                     , modify
-                                     , get
-                                     , gets )
+import           Control.Monad.State ( StateT(runStateT))
 import           Data.List ( nub )
-import           Data.Maybe ( listToMaybe, catMaybes )
-import           PrettyPrint ( SourcePos, D(..), Disp(..), render )
+import           Data.Maybe ( catMaybes )
+import           PrettyPrint ( D(..), Disp(..))
 import           PrettyPrintInternal ()
 import           PrettyPrintSurface ()
-import           Text.PrettyPrint.HughesPJ ( ($$), sep )
+import           Text.PrettyPrint.HughesPJ ( ($$) )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
@@ -27,18 +22,24 @@ import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import           TypeCheck.Environment ( Env(..)
                                        , Err(..)
-                                       , SourceLocation(..)
-                                       , demoteSig
-                                       )
+                                       , getLocalCtx
+                                       , checkStage
+                                       , withStage
+                                       , extendHints
+                                       , extendCtx
+                                       , extendCtxMods
+                                       , extendCtxTele
+                                       , extendCtxs
+                                       , extendCtxsGlobal
+                                       , extendSourceLocation
+                                       , warn
+                                       , err
+                                       , lookupHint
+                                       , lookupTy
+                                       , lookupTyMaybe
+                                       , lookupDef )
+import           TypeCheck.Monad       (MonadElab)
 
-
-type ElabMonad = Unbound.FreshMT (StateT Env (ExceptT Err IO))
-
-runElabMonad :: Env -> ElabMonad a -> IO (Either Err a)
-runElabMonad env m =
-  runExceptT $
-    fmap fst $
-    runStateT (Unbound.runFreshMT m) env
 
 transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
@@ -50,11 +51,11 @@ transName n =
       i = Unbound.name2Integer n
   in Unbound.makeName s i
 
-elabTerm :: S.Term -> ElabMonad I.Term
+elabTerm :: (MonadElab m) => S.Term -> m I.Term
 elabTerm = (fmap fst) . inferType
 
 
-inferType :: S.Term -> ElabMonad (I.Term, I.Type)
+inferType :: (MonadElab m) => S.Term -> m (I.Term, I.Type)
 
 -- type has type type for now
 inferType (S.Type) = return (I.Type, I.Type)
@@ -186,7 +187,7 @@ inferType t@(S.Case scrut alts) =
        DD t
       ]
 
-checkType :: S.Term -> I.Type -> ElabMonad I.Term
+checkType :: (MonadElab m) => S.Term -> I.Type -> m I.Term
 
 -- | type of types  `Type`
 checkType t@(S.Type) typ =
@@ -324,7 +325,7 @@ checkType t@(S.TyEq ta tb) typ =
 -- | Proof of equality `Refl`
 -- FIXME
 checkType (S.Refl) typ@(I.TyEq a b) = do
-  let equate :: I.Term -> I.Term -> ElabMonad ()
+  let equate :: (MonadElab m) => I.Term -> I.Term -> m ()
       equate = undefined
   equate a b
   return $ I.Refl
@@ -348,9 +349,9 @@ checkType (S.Subst a b) typ = do
 -- FIXME
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
-  let ensureTyEq :: I.Term -> ElabMonad (I.Term, I.Term)
+  let ensureTyEq :: (MonadElab m) => I.Term -> m (I.Term, I.Term)
       ensureTyEq = undefined
-      whnf :: I.Term -> ElabMonad I.Term
+      whnf :: (MonadElab m) => I.Term -> m I.Term
       whnf = undefined
   (a, b) <- ensureTyEq ty'
   a' <- whnf a
@@ -383,17 +384,17 @@ checkType (S.Case term listmatch) t = undefined
 
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
-elabType :: S.Term -> ElabMonad I.Term
+elabType :: (MonadElab m) => S.Term -> m I.Term
 elabType tm = withStage I.Irr $ checkType tm I.Type
 
-elabSig :: S.Sig -> ElabMonad I.Sig
+elabSig :: (MonadElab m) => S.Sig -> m I.Sig
 elabSig (S.Sig name ep typ) = do
   let ename = transName name
       eep   = transEpsilon ep
   etyp <- elabTerm typ
   return $ I.Sig ename eep etyp
 
-elabModules :: [S.Module] -> ElabMonad [I.Module]
+elabModules :: (MonadElab m) => [S.Module] -> m [I.Module]
 elabModules = foldM elabM []
   where
     -- Check module m against modules in defs, then add m to the list.
@@ -409,7 +410,7 @@ data HintOrCtx
   = AddHint I.Sig
   | AddCtx [I.Decl]
 
-elabModule :: [I.Module] -> S.Module -> ElabMonad I.Module
+elabModule :: (MonadElab m) => [I.Module] -> S.Module -> m I.Module
 elabModule defs m' = do
   checkedEntries <-
     extendCtxMods importedModules $
@@ -419,7 +420,7 @@ elabModule defs m' = do
         (moduleEntries m')
   return $ m' {moduleEntries = checkedEntries}
   where
-    elabE :: S.Decl -> ElabMonad [I.Decl] -> ElabMonad [I.Decl]
+    elabE :: (MonadElab m) => S.Decl -> m [I.Decl] -> m [I.Decl]
     d `elabE` m = do
       -- Extend the Env per the current Decl before checking
       -- subsequent Decls.
@@ -432,7 +433,7 @@ elabModule defs m' = do
     importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports m') defs
 
 -- | Elaborate each sort of declaration in a module
-elabEntry :: S.Decl -> ElabMonad HintOrCtx
+elabEntry :: (MonadElab m) => S.Decl -> m HintOrCtx
 elabEntry (S.Def n term) = do
   oldDef <- lookupDef $ transName $ n
   maybe elab die oldDef
@@ -495,7 +496,7 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
     return $ AddCtx [I.Data t (I.Telescope edelta) ecs]
 
 -- | Check all of the types contained within a telescope
-elabTypeTele :: [S.Decl] -> ElabMonad [I.Decl]
+elabTypeTele :: (MonadElab m) => [S.Decl] -> m [I.Decl]
 elabTypeTele [] = return []
 elabTypeTele (S.Def x tm : tl) = do
   ((I.Var tx), ty1) <- withStage I.Irr $ inferType (S.Var x)
@@ -510,7 +511,7 @@ elabTypeTele tele =
 
 -- | Make sure that we don't have the same name twice in the
 -- environment. (We don't rename top-level module definitions.)
-duplicateTypeBindingCheck :: I.Sig -> ElabMonad ()
+duplicateTypeBindingCheck :: (MonadElab m) => I.Sig -> m ()
 duplicateTypeBindingCheck sig = do
   -- Look for existing type bindings ...
   let n = I.sigName sig
@@ -535,7 +536,7 @@ duplicateTypeBindingCheck sig = do
 -- helper functions for type checking
 
 -- | Create a Def if either side normalizes to a single variable
-def :: I.Term -> I.Term -> ElabMonad [I.Decl]
+def :: (MonadElab m) => I.Term -> I.Term -> m [I.Decl]
 def t1 t2 = do
   let whnf = undefined
   nf1 <- whnf t1
@@ -545,150 +546,3 @@ def t1 t2 = do
     (I.Var x, _) -> return [I.Def x nf2]
     (_, I.Var x) -> return [I.Def x nf1]
     _ -> return []
-
--- FIXME duplicates functions in Environment
--- https://stackoverflow.com/questions/7292766/monads-tf-monadreader-instance-for-monadstate
-
-local :: (MonadState s m) => (s -> s) -> m a -> m a
-local f m = do
-  s <- get
-  modify f
-  x <- m
-  put s
-  return x
-
--- | Add a type hint
-extendHints :: (MonadState Env m) => I.Sig -> m a -> m a
-extendHints h = local (\m@Env {hints = hs} -> m {hints = h : hs})
-
--- | Extend the context with a new binding
-extendCtx :: (MonadState Env m) => I.Decl -> m a -> m a
-extendCtx d = local (\m@Env{ctx = cs} -> m {ctx = d : cs})
-
--- | Extend the context with a list of bindings
-extendCtxs :: (MonadState Env m) => [I.Decl] -> m a -> m a
-extendCtxs ds =
-  local (\m@Env {ctx = cs} -> m {ctx = ds ++ cs})
-
--- | Extend the context with a list of bindings, marking them as "global"
-extendCtxsGlobal :: (MonadState Env m) => [I.Decl] -> m a -> m a
-extendCtxsGlobal ds =
-  local
-    ( \m@Env {ctx = cs} ->
-        m
-          { ctx = ds ++ cs,
-            globals = length (ds ++ cs)
-          }
-    )
-
--- | Extend the context with a telescope
-extendCtxTele :: (MonadState Env m, MonadIO m, MonadError Err m) => [I.Decl] -> m a -> m a
-extendCtxTele [] m = m
-extendCtxTele (I.Def x t2 : tele) m =
-  extendCtx (I.Def x t2) $ extendCtxTele tele m
-extendCtxTele (I.TypeSig sig : tele) m =
-  extendCtx (I.TypeSig sig) $ extendCtxTele tele m
-extendCtxTele ( _ : tele) m =
-  err [DS "Invalid telescope ", DD tele]
-
--- | Extend the context with a module
--- Note we must reverse the order.
-extendCtxMod :: (MonadState Env m) => I.Module -> m a -> m a
-extendCtxMod m = extendCtxs (reverse $ moduleEntries m)
-
--- | Extend the context with a list of modules
-extendCtxMods :: (MonadState Env m) => [I.Module] -> m a -> m a
-extendCtxMods mods k = foldr extendCtxMod k mods
-
--- | Find a name's user supplied type signature.
-lookupHint :: (MonadState Env m) => I.TName -> m (Maybe I.Sig)
-lookupHint v = do
-  hints <- gets hints
-  return $ listToMaybe [ sig | sig <- hints, v == I.sigName sig]
-
--- | Find a name's type in the context.
-lookupTyMaybe ::
-  (MonadState Env m) =>
-  I.TName ->
-  m (Maybe I.Sig)
-lookupTyMaybe v = do
-  ctx <- gets ctx
-  return $ go ctx where
-    go [] = Nothing
-    go (I.TypeSig sig : ctx)
-      | v == I.sigName sig = Just sig
-      | otherwise = go ctx
-    go (I.Demote ep : ctx) = demoteSig ep <$> go ctx
-
-    go (_ : ctx) = go ctx
-
-
--- | Find the type of a name specified in the context
--- throwing an error if the name doesn't exist
-lookupTy ::
-  I.TName -> ElabMonad I.Sig
-lookupTy v =
-  do
-    x <- lookupTyMaybe v
-    gamma <- getLocalCtx
-    case x of
-      Just res -> return res
-      Nothing ->
-        err
-          [ DS ("The variable " ++ show v ++ " was not found."),
-            DS "in context",
-            DD gamma
-          ]
-
--- | Find a name's def in the context.
-lookupDef ::
-  (MonadState Env m) =>
-  I.TName ->
-  m (Maybe I.Term)
-lookupDef v = do
-  ctx <- gets ctx
-  return $ listToMaybe [a | I.Def v' a <- ctx, v == v']
-
--- | Get the prefix of the context that corresponds to local variables.
-getLocalCtx :: MonadState Env m => m [I.Decl]
-getLocalCtx = do
-  g <- gets ctx
-  glen <- gets globals
-  return $ take (length g - glen) g
-
--- | access current source location
-getSourceLocation :: MonadState Env m => m [SourceLocation]
-getSourceLocation = gets sourceLocation
-
--- | Push a new source position on the location stack.
-extendSourceLocation :: (MonadState Env m, Disp t) => SourcePos -> t -> m a -> m a
-extendSourceLocation p t =
-  local (\e@Env {sourceLocation = locs} -> e {sourceLocation = SourceLocation p t : locs})
-
--- | Throw an error
-err :: (Disp a, MonadError Err m, MonadState Env m) => [a] -> m b
-err d = do
-  loc <- getSourceLocation
-  throwError $ Err loc (sep $ map disp d)
-
--- | Print a warning
-warn :: (Disp a, MonadState Env m, MonadIO m) => a -> m ()
-warn e = do
-  loc <- getSourceLocation
-  liftIO $ putStrLn $ "warning: " ++ render (disp (Err loc (disp e)))
-
-checkStage ::
-  (MonadState Env m, MonadError Err m) =>
-  I.Epsilon ->
-  m ()
-checkStage ep1 = do
-  unless (ep1 <= I.Rel) $ do
-    err
-      [ DS "Cannot access",
-        DD ep1,
-        DS "variables in this context"
-      ]
-
-withStage :: (MonadState Env m) => I.Epsilon -> m a -> m a
-withStage I.Irr = extendCtx (I.Demote I.Rel)
-withStage ep = id

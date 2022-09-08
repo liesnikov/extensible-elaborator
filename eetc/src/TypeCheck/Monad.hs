@@ -1,7 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 module TypeCheck.Monad (MonadTcReader(..), asksTc, asksTcEnv, localTcEnv,
                         MonadTcState(..), getsTc,
-                        MonadTcCore,
+                        MonadTcCore, MonadElab,
                         TcMonad, runTcMonad) where
 
 import           Control.Monad (join, MonadPlus(..))
@@ -141,6 +141,10 @@ instance MonadTcState TcMonad where
 type MonadTcCore m = (MonadTcReader m, MonadError Err m, MonadFail m,
                       Unbound.Fresh m, MonadPlus m,
                       MonadIO m)
+
+type MonadElab m = (MonadTcState m, MonadError Err m, MonadFail m,
+                    Unbound.Fresh m, MonadPlus m,
+                    MonadIO m)
 
 -- | Entry point for the type checking monad, given an
 -- initial environment, returns either an error message
