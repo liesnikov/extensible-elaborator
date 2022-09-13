@@ -9,7 +9,6 @@ import           Control.Applicative (Alternative(..))
 import           Control.Monad.Except ( MonadError(..)
                                       , ExceptT
                                       , runExceptT )
-import           Control.Monad.Except ( MonadFail(..) )
 import           Control.Monad.IO.Class ( MonadIO(..) )
 import           Control.Monad.State ( StateT(runStateT)
                                      , put

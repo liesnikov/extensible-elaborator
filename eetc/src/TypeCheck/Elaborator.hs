@@ -3,10 +3,7 @@ module TypeCheck.Elaborator (elabModules, elabTerm) where
 import           Control.Monad ( unless )
 import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
-                                      , ExceptT
-                                      , runExceptT
                                       , foldM )
-import           Control.Monad.State ( StateT(runStateT))
 import           Data.List ( nub )
 import           Data.Maybe ( catMaybes )
 import           PrettyPrint ( D(..), Disp(..))
@@ -20,24 +17,7 @@ import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 import           ModuleStub
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
-import           TypeCheck.Environment ( Env(..)
-                                       , Err(..)
-                                       , getLocalCtx
-                                       , checkStage
-                                       , withStage
-                                       , extendHints
-                                       , extendCtx
-                                       , extendCtxMods
-                                       , extendCtxTele
-                                       , extendCtxs
-                                       , extendCtxsGlobal
-                                       , extendSourceLocation
-                                       , warn
-                                       , err
-                                       , lookupHint
-                                       , lookupTy
-                                       , lookupTyMaybe
-                                       , lookupDef )
+import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad       (MonadElab)
 
 
@@ -63,12 +43,12 @@ inferType (S.Type) = return (I.Type, I.Type)
 -- variable lookup
 inferType (S.Var x) = do
   let tx = transName x
-  sig <- lookupTy tx   -- make sure the variable is accessible
-  checkStage (I.sigEp sig)
+  sig <- Env.lookupTy tx   -- make sure the variable is accessible
+  Env.checkStage (I.sigEp sig)
   return (I.Var tx, I.sigType sig)
 
 -- lambda
-inferType t@(S.Lam ep1 bnd) = err [DS "Lambdas must be checked not inferred",
+inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred",
                                    DD t
                                   ]
 
@@ -83,13 +63,13 @@ inferType (S.App t1 t2) = do
        case nf of
          (I.Pi ep tyA bnd) -> do
            return (ep, tyA, bnd)
-         _ -> err [DS "Expected a function type, instead found", DD nf]
+         _ -> Env.err [DS "Expected a function type, instead found", DD nf]
   (ep1, tyA, bnd) <- ensurePi ty1
-  unless (ep1 == (transEpsilon $ S.argEp t2)) $ err
+  unless (ep1 == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected", DD ep1, DS "argument but found",
                                     DD t2, DS "instead." ]
   -- if the argument is Irrelevant, resurrect the context
-  tt2 <- (if ep1 == I.Irr then extendCtx (I.Demote I.Rel) else id) $
+  tt2 <- (if ep1 == I.Irr then Env.extendCtx (I.Demote I.Rel) else id) $
     checkType (S.unArg t2) tyA
   return (I.App et1 (I.Arg (transEpsilon $ S.argEp t2) tt2),
           Unbound.instantiate bnd [tt2])
@@ -100,7 +80,7 @@ inferType (S.Pi ep tyA bnd) = do
   let tep = transEpsilon ep
   (x, tyB) <- Unbound.unbind bnd
   let tx = transName x
-  ttyB <- extendCtx (I.TypeSig (I.Sig tx tep ttyA)) (checkType tyB I.Type)
+  ttyB <- Env.extendCtx (I.TypeSig (I.Sig tx tep ttyA)) (checkType tyB I.Type)
   let tpib = Unbound.bind tx ttyB
   return (I.Pi (transEpsilon ep) ttyA tpib, I.Type)
 
@@ -113,22 +93,22 @@ inferType (S.Ann tm ty) = do
 -- practicalities
 -- remember the current position in the type checking monad
 inferType (S.Pos p tm) =
-  extendSourceLocation p tm $ inferType tm
+  Env.extendSourceLocation p tm $ inferType tm
 
-inferType t@(S.TrustMe) = err [DS "TrustMes must be checked not inferred",
-                               DD t
-                              ]
+inferType t@(S.TrustMe) = Env.err [DS "TrustMes must be checked not inferred",
+                                   DD t
+                                  ]
 
-inferType t@(S.PrintMe) = err [DS "PrintMes must be checked not inferred",
-                               DD t
-                              ]
+inferType t@(S.PrintMe) = Env.err [DS "PrintMes must be checked not inferred",
+                                   DD t
+                                  ]
 
 -- let-binding
 inferType (S.Let rhs bnd) = do
   (x, body) <- Unbound.unbind bnd
   let tx = transName x
   (erhs, erty) <- inferType rhs
-  extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ inferType body
+  Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ inferType body
 
 
 -- unit type
@@ -150,27 +130,27 @@ inferType (S.If t1 t2 t3) = do
 -- FIXME
 inferType t@(S.Sigma tyA bnd) = undefined
 
-inferType t@(S.Prod a b) = err [DS "Products must be checked not inferred",
-                                DD t
-                               ]
-inferType t@(S.LetPair p bnd) = err [DS "Product elims must be checked not inferred",
-                                     DD t
-                                    ]
+inferType t@(S.Prod a b) = Env.err [DS "Products must be checked not inferred",
+                                    DD t
+                                   ]
+inferType t@(S.LetPair p bnd) = Env.err [DS "Product elims must be checked not inferred",
+                                         DD t
+                                        ]
 
 -- equality type
 inferType (S.TyEq a b) = do
   (ea, aTy) <- inferType a
   eb <- checkType b aTy
   return (I.TyEq ea eb, I.Type)
-inferType t@(S.Refl) = err [DS "Refl constructor must be checked not inferred",
-                            DD t
-                           ]
-inferType t@(S.Subst a b) = err [DS "Subst must be checked not inferred",
-                                 DD t
-                                ]
-inferType t@(S.Contra p) = err [DS "Contradiction must be checked not inferred",
+inferType t@(S.Refl) = Env.err [DS "Refl constructor must be checked not inferred",
                                 DD t
                                ]
+inferType t@(S.Subst a b) = Env.err [DS "Subst must be checked not inferred",
+                                     DD t
+                                    ]
+inferType t@(S.Contra p) = Env.err [DS "Contradiction must be checked not inferred",
+                                    DD t
+                                   ]
 
 -- inductive datatypes
 -- Type constructor application
@@ -183,60 +163,60 @@ inferType (S.TCon c params) = undefined
 -- FIXME
 inferType (S.DCon c args) = undefined
 inferType t@(S.Case scrut alts) =
-  err [DS "Inductive case must be checked not inferred",
-       DD t
-      ]
+  Env.err [DS "Inductive case must be checked not inferred",
+           DD t
+          ]
 
 checkType :: (MonadElab m) => S.Term -> I.Type -> m I.Term
 
 -- | type of types  `Type`
 checkType t@(S.Type) typ =
-  err [DS "Type of Type must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Type of Type must be inferred not checked",
+           DD t
+          ]
 
 -- | variables  `x`
 checkType t@(S.Var x) typ =
-  err [DS "Type of a variable must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Type of a variable must be inferred not checked",
+           DD t
+          ]
 
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
   (x, body, _, tyB) <- Unbound.unbind2Plus lam bnd2
   let tx = transName x
   let tep1 = transEpsilon ep1
-  tbody <- extendCtx (I.TypeSig (I.Sig tx tep1 tyA)) (checkType body tyB)
+  tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 tyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
   return $ I.Lam tep1 tlam
 checkType (S.Lam ep lam) (nf) =
-  err [DS "Lambda expression should have a function type, not", DD nf]
+  Env.err [DS "Lambda expression should have a function type, not", DD nf]
 -- | application `a b`
 checkType t@(S.App terma termb) typ =
-  err [DS "Type of an application must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Type of an application must be inferred not checked",
+           DD t
+          ]
 -- | function type   `(x : A) -> B`
 checkType t@(S.Pi ep typa body) typ =
-  err [DS "Pi-type must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Pi-type must be inferred not checked",
+           DD t
+          ]
 
 -- | annotated terms `( a : A )`
 checkType t@(S.Ann term typa) typ =
-  err [DS "Annotated terms must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Annotated terms must be inferred not checked",
+           DD t
+          ]
 
 -- | marked source position, for error messages
 checkType (S.Pos sourcepos term) typ =
-  extendSourceLocation sourcepos term $ checkType term typ
+  Env.extendSourceLocation sourcepos term $ checkType term typ
 -- | an axiom 'TRUSTME', inhabits all types
 checkType (S.TrustMe) typ = return $ I.TrustMe
 -- | a directive to the type checker to print out the current context
 checkType (S.PrintMe) typ = do
-  gamma <- getLocalCtx
-  warn [DS "Unmet obligation.\nContext:", DD gamma,
+  gamma <- Env.getLocalCtx
+  Env.warn [DS "Unmet obligation.\nContext:", DD gamma,
             DS "\nGoal:", DD typ]
   return $ I.PrintMe
 
@@ -246,54 +226,54 @@ checkType (S.Let rhs bnd) typ = do
   (x, body) <- Unbound.unbind bnd
   let tx = transName x
   (erhs, erty) <- inferType rhs
-  extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
+  Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
 
 -- | the type with a single inhabitant, called `Unit`
 checkType t@(S.TyUnit) typ =
-  err [DS "Unit as a type must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Unit as a type must be inferred not checked",
+           DD t
+          ]
 
 -- | the inhabitant of `Unit`, written `()`
 checkType t@(S.LitUnit) typ =
-  err [DS "Unit as a term must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Unit as a term must be inferred not checked",
+           DD t
+          ]
 
 -- | the type with two inhabitants (homework) `Bool`
 checkType t@(S.TyBool) typ =
-  err [DS "Bool as a type must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Bool as a type must be inferred not checked",
+           DD t
+          ]
 -- | `True` and `False`
 checkType (S.LitBool b) t =
-  err [DS "Boolean values must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Boolean values must be inferred not checked",
+           DD t
+          ]
 -- | `if a then b1 else b2` expression for eliminating booleans
 checkType (S.If t1 t2 t3) typ = do
   et1 <- checkType t1 (I.TyBool)
   dtrue <- def et1 (I.LitBool True)
   dfalse <- def et1 (I.LitBool False)
-  et2 <- extendCtxs dtrue $ checkType t2 typ
-  et3 <- extendCtxs dfalse $ checkType t3 typ
+  et2 <- Env.extendCtxs dtrue $ checkType t2 typ
+  et3 <- Env.extendCtxs dfalse $ checkType t3 typ
   return $ I.If et1 et2 et3
 
 -- | Sigma-type written `{ x : A | B }`
 checkType t@(S.Sigma terma bodb) typ =
-  err [DS "Sigma-types must be inferred not checked",
-       DD t
-      ]
+  Env.err [DS "Sigma-types must be inferred not checked",
+           DD t
+          ]
 -- | introduction form for Sigma-types `( a , b )`
 checkType (S.Prod a b) typ = do
   case typ of
     (I.Sigma tyA bnd) -> do
       (x, tyB) <- Unbound.unbind bnd
       ea <- checkType a tyA
-      eb <- extendCtxs [I.mkSig x tyA, I.Def x ea] $ checkType b tyB
+      eb <- Env.extendCtxs [I.mkSig x tyA, I.Def x ea] $ checkType b tyB
       return $ I.Prod ea eb
     _ ->
-      err
+      Env.err
         [ DS "Products must have Sigma Type",
           DD typ,
           DS "found instead"
@@ -311,15 +291,15 @@ checkType (S.LetPair p bnd) typ = do
     I.Sigma tyA bnd' -> do
       let tyB = Unbound.instantiate bnd' [I.Var tx]
       decl <- def ep (I.Prod (I.Var tx) (I.Var ty))
-      ebody <- extendCtxs ([I.mkSig tx tyA, I.mkSig ty tyB] ++ decl) $
+      ebody <- Env.extendCtxs ([I.mkSig tx tyA, I.mkSig ty tyB] ++ decl) $
                checkType body typ
       let ebnd = Unbound.bind (tx,ty) ebody
       return $ I.LetPair ep ebnd
-    _ -> err [DS "Scrutinee of LetPair must have Sigma type"]
+    _ -> Env.err [DS "Scrutinee of LetPair must have Sigma type"]
 
 -- | Equality type  `a = b`
 checkType t@(S.TyEq ta tb) typ =
-  err [DS "Equality type must be inferred not checked",
+  Env.err [DS "Equality type must be inferred not checked",
        DD t
       ]
 -- | Proof of equality `Refl`
@@ -330,7 +310,7 @@ checkType (S.Refl) typ@(I.TyEq a b) = do
   equate a b
   return $ I.Refl
 checkType (S.Refl) typ =
-  err [DS "Refl annotated with ", DD typ]
+  Env.err [DS "Refl annotated with ", DD typ]
 -- | equality type elimination  `subst a by b`
 -- FIXME
 checkType (S.Subst a b) typ = do
@@ -343,7 +323,7 @@ checkType (S.Subst a b) typ = do
   edecl <- def m n
   -- if proof is a variable, add a definition to the context
   pdecl <- def eb I.Refl
-  ea <- extendCtxs (edecl ++ pdecl) $ checkType a typ
+  ea <- Env.extendCtxs (edecl ++ pdecl) $ checkType a typ
   return $ I.Subst ea eb
 -- | witness to an equality contradiction
 -- FIXME
@@ -364,7 +344,7 @@ checkType (S.Contra p) typ = do
       | b1 /= b2 ->
         return $ I.Contra ep
     (_, _) ->
-      err
+      Env.err
         [ DS "I can't tell that",
           DD a,
           DS "and",
@@ -385,7 +365,7 @@ checkType (S.Case term listmatch) t = undefined
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
 elabType :: (MonadElab m) => S.Term -> m I.Term
-elabType tm = withStage I.Irr $ checkType tm I.Type
+elabType tm = Env.withStage I.Irr $ checkType tm I.Type
 
 elabSig :: (MonadElab m) => S.Sig -> m I.Sig
 elabSig (S.Sig name ep typ) = do
@@ -413,7 +393,7 @@ data HintOrCtx
 elabModule :: (MonadElab m) => [I.Module] -> S.Module -> m I.Module
 elabModule defs m' = do
   checkedEntries <-
-    extendCtxMods importedModules $
+    Env.extendCtxMods importedModules $
       foldr
         elabE
         (return [])
@@ -426,26 +406,26 @@ elabModule defs m' = do
       -- subsequent Decls.
       x <- elabEntry d
       case x of
-        AddHint hint -> extendHints hint m
+        AddHint hint -> Env.extendHints hint m
         -- Add decls to the Decls to be returned
-        AddCtx decls -> (decls ++) <$> extendCtxsGlobal decls m
+        AddCtx decls -> (decls ++) <$> Env.extendCtxsGlobal decls m
     -- Get all of the defs from imported modules (this is the env to check current module in)
     importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports m') defs
 
 -- | Elaborate each sort of declaration in a module
 elabEntry :: (MonadElab m) => S.Decl -> m HintOrCtx
 elabEntry (S.Def n term) = do
-  oldDef <- lookupDef $ transName $ n
+  oldDef <- Env.lookupDef $ transName $ n
   maybe elab die oldDef
   where
     elab = do
-      lkup <- lookupHint $ transName $ n
+      lkup <- Env.lookupHint $ transName $ n
       case lkup of
         Nothing -> do
-          extendSourceLocation (S.unPosFlaky term) term $
-            err [ DS "Doing very dumb inference, can't infer anything"]
+          Env.extendSourceLocation (S.unPosFlaky term) term $
+            Env.err [ DS "Doing very dumb inference, can't infer anything"]
         Just sig ->
-          let handler (Err ps msg) = throwError $ Err ps (msg $$ msg')
+          let handler (Env.Err ps msg) = throwError $ Env.Err ps (msg $$ msg')
               msg' =
                 disp
                   [
@@ -456,14 +436,14 @@ elabEntry (S.Def n term) = do
                   ]
            in do
                 (elabterm, _) <- inferType term `catchError` handler
-                extendCtx (I.TypeSig sig) $
+                Env.extendCtx (I.TypeSig sig) $
                   let tn = transName n
                   in if tn `elem` Unbound.toListOf Unbound.fv term
                        then return $ AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
                        else return $ AddCtx [I.TypeSig sig, I.Def tn elabterm]
     die term' = do
-      extendSourceLocation (S.unPosFlaky term) term $
-        err
+      Env.extendSourceLocation (S.unPosFlaky term) term $
+        Env.err
           [ DS "Multiple definitions of",
             DD $ transName n,
             DS "Previous definition was",
@@ -482,16 +462,16 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
     ---- check that the telescope provided
     ---  for each data constructor is wellfomed, and elaborate them
     let elabConstructorDef defn@(S.ConstructorDef pos d (S.Telescope tele)) =
-          extendSourceLocation pos defn $
-            extendCtx (I.DataSig t (I.Telescope edelta)) $
-              extendCtxTele edelta $ do
+          Env.extendSourceLocation pos defn $
+            Env.extendCtx (I.DataSig t (I.Telescope edelta)) $
+              Env.extendCtxTele edelta $ do
                 etele <- elabTypeTele tele
                 return (I.ConstructorDef pos d (I.Telescope etele))
     ecs <- mapM elabConstructorDef cs
     -- Implicitly, we expect the constructors to actually be different...
     let cnames = map (\(S.ConstructorDef _ c _) -> c) cs
     unless (length cnames == length (nub cnames)) $
-      err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
+      Env.err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
     -- finally, add the datatype to the env and perform action m
     return $ AddCtx [I.Data t (I.Telescope edelta) ecs]
 
@@ -499,15 +479,15 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
 elabTypeTele :: (MonadElab m) => [S.Decl] -> m [I.Decl]
 elabTypeTele [] = return []
 elabTypeTele (S.Def x tm : tl) = do
-  ((I.Var tx), ty1) <- withStage I.Irr $ inferType (S.Var x)
-  etm <- withStage I.Irr $ checkType tm ty1
+  ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
+  etm <- Env.withStage I.Irr $ checkType tm ty1
   let decls = [I.Def tx etm]
-  extendCtxs decls $ elabTypeTele tl
+  Env.extendCtxs decls $ elabTypeTele tl
 elabTypeTele ((S.TypeSig sig) : tl) = do
   esig <- elabSig sig
-  extendCtx (I.TypeSig esig) $ elabTypeTele tl
+  Env.extendCtx (I.TypeSig esig) $ elabTypeTele tl
 elabTypeTele tele =
-  err [DS "Invalid telescope: ", DD tele]
+  Env.err [DS "Invalid telescope: ", DD tele]
 
 -- | Make sure that we don't have the same name twice in the
 -- environment. (We don't rename top-level module definitions.)
@@ -515,8 +495,8 @@ duplicateTypeBindingCheck :: (MonadElab m) => I.Sig -> m ()
 duplicateTypeBindingCheck sig = do
   -- Look for existing type bindings ...
   let n = I.sigName sig
-  l <- lookupTyMaybe n
-  l' <- lookupHint n
+  l <- Env.lookupTyMaybe n
+  l' <- Env.lookupHint n
   -- ... we don't care which, if either are Just.
   case catMaybes [l, l'] of
     [] -> return ()
@@ -529,7 +509,7 @@ duplicateTypeBindingCheck sig = do
               DS "Previous was",
               DD sig'
             ]
-       in extendSourceLocation p sig $ err msg
+       in Env.extendSourceLocation p sig $ Env.err msg
 
 
 ---------------------------------------------------------------------
