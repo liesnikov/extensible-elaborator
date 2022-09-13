@@ -31,6 +31,12 @@ transName n =
       i = Unbound.name2Integer n
   in Unbound.makeName s i
 
+transPattern :: S.Pattern -> I.Pattern
+transPattern (S.PatCon dc l) =
+  I.PatCon dc $ map (\(p,e) -> (transPattern p, transEpsilon e)) l
+transPattern (S.PatVar n) =
+  I.PatVar $ transName n
+
 elabTerm :: (MonadElab m) => S.Term -> m I.Term
 elabTerm = (fmap fst) . inferType
 
@@ -127,8 +133,13 @@ inferType (S.If t1 t2 t3) = do
   return (I.If et1 et2 et3, ety)
 
 -- sigma-types
--- FIXME
-inferType t@(S.Sigma tyA bnd) = undefined
+inferType t@(S.Sigma tyA bnd) = do
+  (x, tyB) <- Unbound.unbind bnd
+  let tx = transName x
+  etyA <- elabType tyA
+  etyB <- Env.extendCtx (I.mkSig tx etyA) $ elabType tyB
+  let ebnd = Unbound.bind tx etyB
+  return (I.Sigma etyA ebnd, I.Type)
 
 inferType t@(S.Prod a b) = Env.err [DS "Products must be checked not inferred",
                                     DD t
@@ -154,14 +165,48 @@ inferType t@(S.Contra p) = Env.err [DS "Contradiction must be checked not inferr
 
 -- inductive datatypes
 -- Type constructor application
--- FIXME
-inferType (S.TCon c params) = undefined
+inferType (S.TCon c params) =do
+  (I.Telescope delta, _) <- Env.lookupTCon c
+  unless (length params == length delta) $
+    Env.err
+      [ DS "Datatype constructor",
+        DD c,
+        DS $
+          "should have " ++ show (length delta)
+            ++ "parameters, but was given",
+        DD (length params)
+      ]
+  eparams <- elabArgTele params delta
+  return (I.TCon c eparams, I.Type)
+
 -- Data constructor application
 -- we don't know the expected type, so see if there
 -- is only one datacon of that name that takes no
 -- parameters
--- FIXME
-inferType (S.DCon c args) = undefined
+inferType (S.DCon c args) = do
+  matches <- Env.lookupDConAll c
+  case matches of
+    [(tname, (I.Telescope [], I.ConstructorDef _ _ (I.Telescope deltai)))] -> do
+      let numArgs = length deltai
+      unless (length args == numArgs) $
+        Env.err
+          [ DS "Constructor",
+            DS c,
+            DS "should have",
+            DD numArgs,
+            DS "data arguments, but was given",
+            DD (length args),
+            DS "arguments."
+          ]
+      eargs <- elabArgTele args deltai
+      return $ (I.DCon c eargs, I.TCon tname [])
+
+    [_] ->
+      Env.err
+        [ DS "Cannot infer the parameters to data constructors.",
+          DS "Add an annotation."
+        ]
+    _ -> Env.err [DS "Ambiguous data constructor", DS c]
 inferType t@(S.Case scrut alts) =
   Env.err [DS "Inductive case must be checked not inferred",
            DD t
@@ -176,10 +221,10 @@ checkType t@(S.Type) typ =
           ]
 
 -- | variables  `x`
-checkType t@(S.Var x) typ =
-  Env.err [DS "Type of a variable must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.Var x) typ =
+--   Env.err [DS "Type of a variable must be inferred not checked",
+--            DD t
+--           ]
 
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
@@ -192,21 +237,21 @@ checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
 checkType (S.Lam ep lam) (nf) =
   Env.err [DS "Lambda expression should have a function type, not", DD nf]
 -- | application `a b`
-checkType t@(S.App terma termb) typ =
-  Env.err [DS "Type of an application must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.App terma termb) typ =
+--   Env.err [DS "Type of an application must be inferred not checked",
+--            DD t
+--           ]
 -- | function type   `(x : A) -> B`
-checkType t@(S.Pi ep typa body) typ =
-  Env.err [DS "Pi-type must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.Pi ep typa body) typ =
+--   Env.err [DS "Pi-type must be inferred not checked",
+--            DD t
+--           ]
 
 -- | annotated terms `( a : A )`
-checkType t@(S.Ann term typa) typ =
-  Env.err [DS "Annotated terms must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.Ann term typa) typ =
+--   Env.err [DS "Annotated terms must be inferred not checked",
+--            DD t
+--           ]
 
 -- | marked source position, for error messages
 checkType (S.Pos sourcepos term) typ =
@@ -229,27 +274,27 @@ checkType (S.Let rhs bnd) typ = do
   Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
 
 -- | the type with a single inhabitant, called `Unit`
-checkType t@(S.TyUnit) typ =
-  Env.err [DS "Unit as a type must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.TyUnit) typ =
+--   Env.err [DS "Unit as a type must be inferred not checked",
+--            DD t
+--           ]
 
 -- | the inhabitant of `Unit`, written `()`
-checkType t@(S.LitUnit) typ =
-  Env.err [DS "Unit as a term must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.LitUnit) typ =
+--   Env.err [DS "Unit as a term must be inferred not checked",
+--            DD t
+--           ]
 
 -- | the type with two inhabitants (homework) `Bool`
-checkType t@(S.TyBool) typ =
-  Env.err [DS "Bool as a type must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.TyBool) typ =
+--   Env.err [DS "Bool as a type must be inferred not checked",
+--            DD t
+--           ]
 -- | `True` and `False`
-checkType (S.LitBool b) t =
-  Env.err [DS "Boolean values must be inferred not checked",
-           DD t
-          ]
+-- checkType (S.LitBool b) t =
+--   Env.err [DS "Boolean values must be inferred not checked",
+--            DD t
+--           ]
 -- | `if a then b1 else b2` expression for eliminating booleans
 checkType (S.If t1 t2 t3) typ = do
   et1 <- checkType t1 (I.TyBool)
@@ -260,10 +305,10 @@ checkType (S.If t1 t2 t3) typ = do
   return $ I.If et1 et2 et3
 
 -- | Sigma-type written `{ x : A | B }`
-checkType t@(S.Sigma terma bodb) typ =
-  Env.err [DS "Sigma-types must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.Sigma terma bodb) typ =
+--   Env.err [DS "Sigma-types must be inferred not checked",
+--            DD t
+--           ]
 -- | introduction form for Sigma-types `( a , b )`
 checkType (S.Prod a b) typ = do
   case typ of
@@ -303,20 +348,20 @@ checkType t@(S.TyEq ta tb) typ =
        DD t
       ]
 -- | Proof of equality `Refl`
--- FIXME
 checkType (S.Refl) typ@(I.TyEq a b) = do
   let equate :: (MonadElab m) => I.Term -> I.Term -> m ()
+      -- FIXME
       equate = undefined
   equate a b
   return $ I.Refl
 checkType (S.Refl) typ =
   Env.err [DS "Refl annotated with ", DD typ]
 -- | equality type elimination  `subst a by b`
--- FIXME
 checkType (S.Subst a b) typ = do
   -- infer the type of the proof 'b'
   (eb, tp) <- inferType b
   -- make sure that it is an equality between m and n
+  -- FIXME
   let ensureTyEq = undefined
   (m, n) <- ensureTyEq tp
   -- if either side is a variable, add a definition to the context
@@ -326,12 +371,13 @@ checkType (S.Subst a b) typ = do
   ea <- Env.extendCtxs (edecl ++ pdecl) $ checkType a typ
   return $ I.Subst ea eb
 -- | witness to an equality contradiction
--- FIXME
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
   let ensureTyEq :: (MonadElab m) => I.Term -> m (I.Term, I.Term)
+      -- FIXME
       ensureTyEq = undefined
       whnf :: (MonadElab m) => I.Term -> m I.Term
+      -- FIXME
       whnf = undefined
   (a, b) <- ensureTyEq ty'
   a' <- whnf a
@@ -353,15 +399,77 @@ checkType (S.Contra p) typ = do
         ]
 
 -- | type constructors (fully applied)
--- FIXME
-checkType (S.TCon tcname larg) t = undefined
+-- checkType t@(S.TCon tcname larg) ty =
+--   Env.err [DS "Type consructors must be inferred not checked",
+--            DD t
+--           ]
 -- | term constructors (fully applied)
--- FIXME
-checkType (S.DCon dcname larg) t = undefined
+checkType t@(S.DCon c args) ty = do
+  case ty of
+    (I.TCon tname params) -> do
+      (I.Telescope delta, I.Telescope deltai) <- Env.lookupDCon c tname
+      let isTypeSig :: I.Decl -> Bool
+          isTypeSig (I.TypeSig _) = True
+          isTypeSig _ = False
+      let numArgs = length (filter isTypeSig deltai)
+      unless (length args == numArgs) $
+        Env.err
+          [ DS "Constructor",
+            DS c,
+            DS "should have",
+            DD numArgs,
+            DS "data arguments, but was given",
+            DD (length args),
+            DS "arguments."
+          ]
+      newTele <- substTele delta params deltai
+      eargs <- elabArgTele args newTele
+      return $ I.DCon c eargs
+    _ ->
+      Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
 -- | case analysis  `case a of matches`
--- FIXME
-checkType (S.Case term listmatch) t = undefined
 
+checkType (S.Case scrut alts) ty = do
+  (escrut, sty) <- inferType scrut
+  let whnf :: (MonadElab m) => I.Term -> m I.Term
+      -- FIXME
+      whnf = undefined
+  escrut' <- whnf escrut
+  let ensureTCon :: (MonadElab m) => I.Term -> m (TCName, [I.Arg])
+      -- FIXME
+      ensureTCon = undefined
+  (c, args) <- ensureTCon sty
+  let checkAlt :: (MonadElab m) => S.Match -> m I.Match
+      checkAlt (S.Match bnd) = do
+        (pat, body) <- Unbound.unbind bnd
+        let epat = transPattern pat
+        -- add variables from pattern to context
+        -- could fail if branch is in-accessible
+        decls <- declarePat epat I.Rel (I.TCon c args)
+        -- add defs to the contents from scrut = pat
+        -- could fail if branch is in-accessible
+        --FIXME
+        let unify :: MonadElab m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
+            unify = undefined
+        decls' <- unify [] escrut' (pat2Term epat)
+        ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
+        let ebnd = Unbound.bind epat ebody
+        return $ I.Match ebnd
+
+  ealts <- traverse checkAlt alts
+  --FIXME
+  -- let pats = map (\(S.Match bnd) -> fst (unsafeUnbind bnd)) alts
+  --exhaustivityCheck escrut' sty pats
+  return $ I.Case escrut ealts
+
+-- c-infer
+checkType tm ty = do
+  (etm, ty') <- inferType tm
+  let equate :: (MonadElab m) => I.Term -> I.Term -> m ()
+      -- FIXME
+      equate = \_ _ -> return ()
+  equate ty' ty
+  return $ etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
 elabType :: (MonadElab m) => S.Term -> m I.Term
@@ -373,6 +481,135 @@ elabSig (S.Sig name ep typ) = do
       eep   = transEpsilon ep
   etyp <- elabTerm typ
   return $ I.Sig ename eep etyp
+
+-- | Check all of the types contained within a telescope
+elabTypeTele :: (MonadElab m) => [S.Decl] -> m [I.Decl]
+elabTypeTele [] = return []
+elabTypeTele (S.Def x tm : tl) = do
+  ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
+  etm <- Env.withStage I.Irr $ checkType tm ty1
+  let decls = [I.Def tx etm]
+  Env.extendCtxs decls $ elabTypeTele tl
+elabTypeTele ((S.TypeSig sig) : tl) = do
+  esig <- elabSig sig
+  Env.extendCtx (I.TypeSig esig) $ elabTypeTele tl
+elabTypeTele tele =
+  Env.err [DS "Invalid telescope: ", DD tele]
+
+---------------------------------------------------------------------
+-- helper functions for datatypes
+
+-- | type check a list of data constructor arguments against a telescope
+elabArgTele :: (MonadElab m) => [S.Arg] -> [I.Decl] -> m [I.Arg]
+elabArgTele [] [] = return []
+elabArgTele args (I.Def x ty : tele) = do
+  tele' <- doSubst [(x,ty)] tele
+  elabArgTele args tele'
+elabArgTele (S.Arg ep1 tm : terms) (I.TypeSig (I.Sig x ep2 ty) : tele)
+  | (transEpsilon ep1) == ep2 = do
+      etm <- Env.withStage ep2 $ checkType tm ty
+      tele' <- doSubst [(x, etm)] tele
+      tl <- elabArgTele terms tele'
+      return $ I.Arg ep2 etm : tl
+  | otherwise =
+  Env.err
+    [ DD ep1,
+      DS "argument provided when",
+      DD ep2,
+      DS "argument was expected"
+    ]
+elabArgTele [] _ =
+  Env.err [DD "Too few arguments provided."]
+elabArgTele _ [] =
+  Env.err [DD "Too many arguments provided."]
+elabArgTele _  tele =
+  Env.err [DS "Invalid telescope", DD tele]
+
+
+-- | Substitute a list of terms for the variables bound in a telescope
+-- This is used to instantiate the parameters of a data constructor
+-- to find the types of its arguments.
+-- The first argument should only contain 'Rel' type declarations.
+substTele :: (MonadElab m) => [I.Decl] -> [I.Arg] -> [I.Decl] -> m [I.Decl]
+substTele tele args = doSubst (mkSubst tele (map I.unArg args))
+  where
+    mkSubst [] [] = []
+    mkSubst (I.TypeSig (I.Sig x I.Rel _) : tele') (tm : tms) =
+      (x, tm) : mkSubst tele' tms
+    mkSubst _ _ = error "Internal error: substTele given illegal arguments"
+
+
+-- Propagate the given substitution through the telescope, potentially
+-- reworking the constraints
+doSubst :: (MonadElab m) => [(I.TName, I.Term)] -> [I.Decl] -> m [I.Decl]
+doSubst ss [] = return []
+doSubst ss (I.Def x ty : tele') = do
+  let tx' = Unbound.substs ss (I.Var x)
+  let ty' = Unbound.substs ss ty
+  --FIXME
+  let unify :: MonadElab m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
+      unify = undefined
+  decls1 <- unify [] tx' ty'
+  decls2 <- Env.extendCtxs decls1 (doSubst ss tele')
+  return $ decls1 ++ decls2
+doSubst ss (I.TypeSig sig : tele') = do
+  --FIXME
+  let whnf :: (MonadElab m) => I.Term -> m I.Term
+      whnf = undefined
+  tynf <- whnf (Unbound.substs ss (I.sigType sig))
+  let sig' = sig{I.sigType = tynf}
+  tele'' <- doSubst ss tele'
+  return $ I.TypeSig sig' : tele''
+doSubst _ tele =
+  Env.err [DS "Invalid telescope", DD tele]
+
+-----------------------------------------------------------
+
+-- | Create a binding for each of the variables in the pattern
+declarePat :: (MonadElab m) => I.Pattern -> I.Epsilon -> I.Type -> m [I.Decl]
+declarePat (I.PatVar x)       ep ty  = return [I.TypeSig (I.Sig x ep ty)]
+declarePat (I.PatCon dc pats) I.Rel ty = do
+  let ensureTCon :: (MonadElab m) => I.Term -> m (TCName, [I.Arg])
+      -- FIXME
+      ensureTCon = undefined
+  (tc,params) <- ensureTCon ty
+  (I.Telescope delta, I.Telescope deltai) <- Env.lookupDCon dc tc
+  tele <- substTele delta params deltai
+  declarePats dc pats tele
+declarePat pat I.Irr _ty =
+  Env.err [DS "Cannot pattern match irrelevant arguments in pattern", DD pat]
+
+-- | Given a list of pattern arguments and a telescope, create a binding for
+-- each of the variables in the pattern,
+declarePats :: (MonadElab m) => DCName -> [(I.Pattern, I.Epsilon)] -> [I.Decl] -> m [I.Decl]
+declarePats dc pats (I.Def x ty : tele) = do
+  let ds1 = [I.Def x ty]
+  ds2 <- Env.extendCtxs ds1 $ declarePats dc pats tele
+  return (ds1 ++ ds2)
+declarePats dc ((pat, _) : pats) (I.TypeSig (I.Sig x ep ty) : tele) = do
+  ds1 <- declarePat pat ep ty
+  let tm = pat2Term pat
+  ds2 <- Env.extendCtxs ds1 $ declarePats dc pats (Unbound.subst x tm tele)
+  return (ds1 ++ ds2)
+declarePats dc []   [] = return []
+declarePats dc []    _ = Env.err [DS "Not enough patterns in match for data constructor", DD dc]
+declarePats dc pats [] = Env.err [DS "Too many patterns in match for data constructor", DD dc]
+declarePats dc _    _ = Env.err [DS "Invalid telescope", DD dc]
+
+-- | Convert a pattern to a term
+pat2Term :: I.Pattern ->  I.Term
+pat2Term (I.PatVar x) = I.Var x
+pat2Term (I.PatCon dc pats) = I.DCon dc (pats2Terms pats)
+  where
+    pats2Terms :: [(I.Pattern, I.Epsilon)] -> [I.Arg]
+    pats2Terms [] = []
+    pats2Terms ((p, ep) : ps) = I.Arg ep t : ts where
+      t = pat2Term p
+      ts = pats2Terms ps
+
+--------------------------------------------------------
+-- Using the typechecker for decls and modules and stuff
+--------------------------------------------------------
 
 elabModules :: (MonadElab m) => [S.Module] -> m [I.Module]
 elabModules = foldM elabM []
@@ -435,7 +672,7 @@ elabEntry (S.Def n term) = do
                     DD sig
                   ]
            in do
-                (elabterm, _) <- inferType term `catchError` handler
+                elabterm <- checkType term (I.sigType sig) `catchError` handler
                 Env.extendCtx (I.TypeSig sig) $
                   let tn = transName n
                   in if tn `elem` Unbound.toListOf Unbound.fv term
@@ -474,20 +711,6 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
       Env.err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
     -- finally, add the datatype to the env and perform action m
     return $ AddCtx [I.Data t (I.Telescope edelta) ecs]
-
--- | Check all of the types contained within a telescope
-elabTypeTele :: (MonadElab m) => [S.Decl] -> m [I.Decl]
-elabTypeTele [] = return []
-elabTypeTele (S.Def x tm : tl) = do
-  ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
-  etm <- Env.withStage I.Irr $ checkType tm ty1
-  let decls = [I.Def tx etm]
-  Env.extendCtxs decls $ elabTypeTele tl
-elabTypeTele ((S.TypeSig sig) : tl) = do
-  esig <- elabSig sig
-  Env.extendCtx (I.TypeSig esig) $ elabTypeTele tl
-elabTypeTele tele =
-  Env.err [DS "Invalid telescope: ", DD tele]
 
 -- | Make sure that we don't have the same name twice in the
 -- environment. (We don't rename top-level module definitions.)
