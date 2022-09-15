@@ -82,7 +82,7 @@ inferType (S.App t1 t2) = do
 
 -- pi-type
 inferType (S.Pi ep tyA bnd) = do
-  ttyA <- elabTerm tyA
+  ttyA <- elabType tyA
   let tep = transEpsilon ep
   (x, tyB) <- Unbound.unbind bnd
   let tx = transName x
@@ -215,10 +215,10 @@ inferType t@(S.Case scrut alts) =
 checkType :: (MonadElab m) => S.Term -> I.Type -> m I.Term
 
 -- | type of types  `Type`
-checkType t@(S.Type) typ =
-  Env.err [DS "Type of Type must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.Type) typ =
+--   Env.err [DS "Type of Type must be inferred not checked",
+--            DD t
+--           ]
 
 -- | variables  `x`
 -- checkType t@(S.Var x) typ =
@@ -479,7 +479,7 @@ elabSig :: (MonadElab m) => S.Sig -> m I.Sig
 elabSig (S.Sig name ep typ) = do
   let ename = transName name
       eep   = transEpsilon ep
-  etyp <- elabTerm typ
+  etyp <- elabType typ
   return $ I.Sig ename eep etyp
 
 -- | Check all of the types contained within a telescope
@@ -488,11 +488,14 @@ elabTypeTele [] = return []
 elabTypeTele (S.Def x tm : tl) = do
   ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
   etm <- Env.withStage I.Irr $ checkType tm ty1
-  let decls = [I.Def tx etm]
-  Env.extendCtxs decls $ elabTypeTele tl
+  let decl = (I.Def tx etm)
+  tl <- Env.extendCtx decl $ elabTypeTele tl
+  return $ decl : tl
 elabTypeTele ((S.TypeSig sig) : tl) = do
   esig <- elabSig sig
-  Env.extendCtx (I.TypeSig esig) $ elabTypeTele tl
+  let decl = (I.TypeSig esig)
+  tl <- Env.extendCtx decl $ elabTypeTele tl
+  return $ decl : tl
 elabTypeTele tele =
   Env.err [DS "Invalid telescope: ", DD tele]
 
@@ -533,6 +536,7 @@ elabArgTele _  tele =
 substTele :: (MonadElab m) => [I.Decl] -> [I.Arg] -> [I.Decl] -> m [I.Decl]
 substTele tele args = doSubst (mkSubst tele (map I.unArg args))
   where
+    mkSubst :: [I.Decl] -> [I.Term] -> [(I.TName, I.Term)]
     mkSubst [] [] = []
     mkSubst (I.TypeSig (I.Sig x I.Rel _) : tele') (tm : tms) =
       (x, tm) : mkSubst tele' tms
