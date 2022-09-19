@@ -4,13 +4,13 @@
 module SurfaceSyntax where
 
 import Data.Maybe (fromMaybe)
-import Data.Set (Set)
-import Data.Set qualified as Set
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic,from)
 import Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
 import Unbound.Generics.LocallyNameless qualified as Unbound
 import Data.Function (on)
+
+import ModuleStub as M
 
 -----------------------------------------
 
@@ -22,15 +22,6 @@ import Data.Function (on)
 -- automatically generate free variable, substitution,
 -- and alpha-equality function.
 type TName = Unbound.Name Term
-
--- | module names
-type MName = String
-
--- | type constructor names
-type TCName = String
-
--- | data constructor names
-type DCName = String
 
 -----------------------------------------
 
@@ -138,19 +129,7 @@ data Pattern
 
 -----------------------------------------
 
--- | A Module has a name, a list of imports, a list of declarations,
---   and a set of constructor names (which affect parsing).
-data Module = Module
-  { moduleName :: MName,
-    moduleImports :: [ModuleImport],
-    moduleEntries :: [Decl] ,
-    moduleConstructors :: ConstructorNames
-  }
-  deriving (Show, Generic, Typeable)
-
--- | References to other modules (brings declarations and definitions into scope)
-newtype ModuleImport = ModuleImport MName
-  deriving (Show, Eq, Generic, Typeable)
+type Module = M.MModule Decl
 
 -- | A type declaration (or type signature)
 data Sig = Sig {sigName :: TName , sigEp :: Epsilon  , sigType :: Type}
@@ -167,26 +146,13 @@ data Decl
   | -- | The definition of a particular name, must
     -- already have a type declaration in scope
     Def TName Term
-  | -- | A potentially (recursive) definition of
-    -- a particular name, must be declared
-    RecDef TName Term
     -- | Adjust the context for relevance checking
   | Demote Epsilon
   | -- | Declaration for a datatype including all of
     -- its data constructors
     Data TCName Telescope [ConstructorDef]
-  | -- | An abstract view of a datatype. Does
-    -- not include any information about its data
-    -- constructors
-    DataSig TCName Telescope
   deriving (Show, Generic, Typeable)
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
--- | The names of type/data constructors used in the module
-data ConstructorNames = ConstructorNames
-  { tconNames :: Set String,
-    dconNames :: Set String
-  }
-  deriving (Show, Eq, Ord, Generic, Typeable)
 
 -- | A Data constructor has a name and a telescope of arguments
 data ConstructorDef = ConstructorDef SourcePos DCName Telescope
@@ -206,10 +172,6 @@ newtype Telescope = Telescope [Decl]
 
 
 -- * Auxiliary functions on syntax
-
--- | empty set of constructor names
-emptyConstructorNames :: ConstructorNames
-emptyConstructorNames = ConstructorNames initialTCNames initialDCNames
 
 -- | Default name for '_' occurring in patterns
 wildcardName :: TName
@@ -240,27 +202,6 @@ isPatVar _ = False
 -------------------------------------------------------------------
 -- Prelude declarations for datatypes
 
-
--- | prelude names for built-in datatypes
-sigmaName :: TCName
-sigmaName = "Sigma"
-prodName :: DCName
-prodName = "Prod"
-boolName :: TCName
-boolName = "Bool"
-trueName :: DCName
-trueName = "True"
-falseName :: DCName
-falseName = "False"
-tyUnitName :: TCName
-tyUnitName = "Unit"
-litUnitName :: DCName
-litUnitName = "()"
-
-initialTCNames :: Set TCName
-initialTCNames = Set.fromList [sigmaName, boolName, tyUnitName]
-initialDCNames :: Set DCName
-initialDCNames = Set.fromList [prodName, trueName, falseName, litUnitName]
 
 preludeDataDecls :: [Decl]
 preludeDataDecls =

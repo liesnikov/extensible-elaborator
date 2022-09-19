@@ -1,0 +1,4 @@
+module TypeTest where
+
+t : Type
+t = Type

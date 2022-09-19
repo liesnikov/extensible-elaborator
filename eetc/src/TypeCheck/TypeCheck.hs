@@ -1,20 +1,21 @@
 -- | The main routines for type-checking
-module TypeCheck (tcModules, inferType, checkType) where
+module TypeCheck.TypeCheck (tcModules, inferType, checkType) where
 import Control.Monad.Except
 import Data.List (nub)
 
 import Data.Maybe ( catMaybes )
 
-
-import Environment (D (..), TcMonad)
-import Environment qualified as Env
-import Equal qualified
+import TypeCheck.Monad (MonadTcCore)
+import TypeCheck.Environment (D (..))
+import TypeCheck.Environment qualified as Env
+import TypeCheck.Equal qualified as Equal
 import PrettyPrint (Disp (disp))
--- TODO change to InternalSyntax
-import SurfaceSyntax
-import Debug.Trace
+import PrettyPrintInternal ()
+import InternalSyntax
+import ModuleStub
+-- import Debug.Trace
 
-import Text.PrettyPrint.HughesPJ (($$), render)
+import Text.PrettyPrint.HughesPJ (($$))
 
 import Unbound.Generics.LocallyNameless qualified as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
@@ -22,11 +23,11 @@ import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 
 
 -- | Infer/synthesize the type of a term
-inferType :: Term -> TcMonad Type
+inferType :: (MonadTcCore m) => Term -> m Type
 inferType t = tcTerm t Nothing
 
 -- | Check that the given term has the expected type
-checkType :: Term -> Type -> TcMonad ()
+checkType :: (MonadTcCore m) => Term -> Type -> m ()
 checkType tm (Pos _ ty) = checkType tm ty  -- ignore source positions/annotations
 checkType tm (Ann ty _) = checkType tm ty
 checkType tm ty = do
@@ -35,7 +36,7 @@ checkType tm ty = do
 
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
-tcType :: Term -> TcMonad ()
+tcType :: (MonadTcCore m) => Term -> m ()
 tcType tm = void $ Env.withStage Irr $ checkType tm Type
 
 ---------------------------------------------------------------------
@@ -43,7 +44,7 @@ tcType tm = void $ Env.withStage Irr $ checkType tm Type
 -- | Combined type checking/inference function
 -- The second argument is 'Just expectedType' in checking mode and 'Nothing' in inference mode
 -- In either case, this function returns the type of the term
-tcTerm :: Term -> Maybe Type -> TcMonad Type
+tcTerm :: (MonadTcCore m) => Term -> Maybe Type -> m Type
 -- i-var
 tcTerm t@(Var x) Nothing = do
   sig <- Env.lookupTy x   -- make sure the variable is accessible
@@ -72,9 +73,8 @@ tcTerm (Lam _ _) (Just nf) =
 -- i-app
 tcTerm (App t1 t2) Nothing = do
   ty1 <- inferType t1
-  let ensurePi = Equal.ensurePi
 
-  (ep1, tyA, bnd) <- ensurePi ty1
+  (ep1, tyA, bnd) <- Equal.ensurePi ty1
   unless (ep1 == argEp t2) $ Env.err
     [DS "In application, expected", DD ep1, DS "argument but found",
                                     DD t2, DS "instead." ]
@@ -327,7 +327,7 @@ tcTerm tm Nothing =
 -- helper functions for type checking
 
 -- | Create a Def if either side normalizes to a single variable
-def :: Term -> Term -> TcMonad [Decl]
+def :: (MonadTcCore m) => Term -> Term -> m [Decl]
 def t1 t2 = do
     nf1 <- Equal.whnf t1
     nf2 <- Equal.whnf t2
@@ -342,7 +342,7 @@ def t1 t2 = do
 -- helper functions for datatypes
 
 -- | type check a list of data constructor arguments against a telescope
-tcArgTele :: [Arg] -> [Decl] -> TcMonad ()
+tcArgTele :: (MonadTcCore m) => [Arg] -> [Decl] -> m ()
 tcArgTele [] [] = return ()
 tcArgTele args (Def x ty : tele) = do
   tele' <- doSubst [(x,ty)] tele
@@ -370,7 +370,7 @@ tcArgTele _  tele =
 -- This is used to instantiate the parameters of a data constructor
 -- to find the types of its arguments.
 -- The first argument should only contain 'Rel' type declarations.
-substTele :: [Decl] -> [Arg] -> [Decl] -> TcMonad [Decl]
+substTele :: (MonadTcCore m) => [Decl] -> [Arg] -> [Decl] -> m [Decl]
 substTele tele args = doSubst (mkSubst tele (map unArg args))
   where
     mkSubst [] [] = []
@@ -382,7 +382,7 @@ substTele tele args = doSubst (mkSubst tele (map unArg args))
 
 -- Propagate the given substitution through the telescope, potentially
 -- reworking the constraints
-doSubst :: [(TName, Term)] -> [Decl] -> TcMonad [Decl]
+doSubst :: (MonadTcCore m) => [(TName, Term)] -> [Decl] -> m [Decl]
 doSubst ss [] = return []
 doSubst ss (Def x ty : tele') = do
   let tx' = Unbound.substs ss (Var x)
@@ -401,7 +401,7 @@ doSubst _ tele =
 -----------------------------------------------------------
 
 -- | Create a binding for each of the variables in the pattern
-declarePat :: Pattern -> Epsilon -> Type -> TcMonad [Decl]
+declarePat :: (MonadTcCore m) => Pattern -> Epsilon -> Type -> m [Decl]
 declarePat (PatVar x)       ep ty  = return [TypeSig (Sig x ep ty)]
 declarePat (PatCon dc pats) Rel ty = do
   (tc,params) <- Equal.ensureTCon ty
@@ -413,7 +413,7 @@ declarePat pat Irr _ty =
 
 -- | Given a list of pattern arguments and a telescope, create a binding for
 -- each of the variables in the pattern,
-declarePats :: DCName -> [(Pattern, Epsilon)] -> [Decl] -> TcMonad [Decl]
+declarePats :: (MonadTcCore m) => DCName -> [(Pattern, Epsilon)] -> [Decl] -> m [Decl]
 declarePats dc pats (Def x ty : tele) = do
   let ds1 = [Def x ty]
   ds2 <- Env.extendCtxs ds1 $ declarePats dc pats tele
@@ -441,7 +441,7 @@ pat2Term (PatCon dc pats) = DCon dc (pats2Terms pats)
 
 
 -- | Check all of the types contained within a telescope
-tcTypeTele :: [Decl] -> TcMonad ()
+tcTypeTele :: (MonadTcCore m) => [Decl] -> m ()
 tcTypeTele [] = return ()
 tcTypeTele (Def x tm : tl) = do
   ty1 <- Env.withStage Irr $ inferType (Var x)
@@ -463,10 +463,11 @@ tcTypeTele tele =
 -- | Typecheck a collection of modules. Assumes that each module
 -- appears after its dependencies. Returns the same list of modules
 -- with each definition typechecked
-tcModules :: [Module] -> TcMonad [Module]
+tcModules :: (MonadTcCore m) => [Module] -> m [Module]
 tcModules = foldM tcM []
   where
     -- Check module m against modules in defs, then add m to the list.
+    tcM :: (MonadTcCore m) => [Module] -> Module -> m [Module]
     defs `tcM` m = do
       -- "M" is for "Module" not "monad"
       let name = moduleName m
@@ -476,12 +477,13 @@ tcModules = foldM tcM []
 
 -- | Typecheck an entire module.
 tcModule ::
+  (MonadTcCore m) =>
   -- | List of already checked modules (including their Decls).
   [Module] ->
   -- | Module to check.
   Module ->
   -- | The same module with all Decls checked and elaborated.
-  TcMonad Module
+  m Module
 tcModule defs m' = do
   checkedEntries <-
     Env.extendCtxMods importedModules $
@@ -491,7 +493,7 @@ tcModule defs m' = do
         (moduleEntries m')
   return $ m' {moduleEntries = checkedEntries}
   where
-    tcE :: Decl -> TcMonad [Decl] -> TcMonad [Decl]
+    tcE :: (MonadTcCore m) => Decl -> m [Decl] -> m [Decl]
     d `tcE` m = do
       -- Extend the Env per the current Decl before checking
       -- subsequent Decls.
@@ -509,7 +511,7 @@ data HintOrCtx
   | AddCtx [Decl]
 
 -- | Check each sort of declaration in a module
-tcEntry :: Decl -> TcMonad HintOrCtx
+tcEntry :: (MonadTcCore m) => Decl -> m HintOrCtx
 tcEntry (Def n term) = do
   oldDef <- Env.lookupDef n
   maybe tc die oldDef
@@ -577,7 +579,7 @@ tcEntry (RecDef _ _) = Env.err [DS "internal construct"]
 
 -- | Make sure that we don't have the same name twice in the
 -- environment. (We don't rename top-level module definitions.)
-duplicateTypeBindingCheck :: Sig -> TcMonad ()
+duplicateTypeBindingCheck :: (MonadTcCore m) => Sig -> m ()
 duplicateTypeBindingCheck sig = do
   -- Look for existing type bindings ...
   let n = sigName sig
@@ -610,7 +612,7 @@ duplicateTypeBindingCheck sig = do
 -- Otherwise, the scrutinee type must be a type constructor, so the
 -- code looks up the data constructors for that type and makes sure that
 -- there are patterns for each one.
-exhaustivityCheck :: Term -> Type -> [Pattern] -> TcMonad ()
+exhaustivityCheck :: (MonadTcCore m) => Term -> Type -> [Pattern] -> m ()
 exhaustivityCheck scrut ty (PatVar x : _) = return ()
 exhaustivityCheck scrut ty pats = do
   (tcon, tys) <- Equal.ensureTCon ty
@@ -636,7 +638,7 @@ exhaustivityCheck scrut ty pats = do
 
         -- make sure that the given list of constructors is impossible
         -- in the current environment
-        checkImpossible :: [ConstructorDef] -> TcMonad [DCName]
+        checkImpossible :: (MonadTcCore m) => [ConstructorDef] -> m [DCName]
         checkImpossible [] = return []
         checkImpossible (ConstructorDef _ dc (Telescope tele) : rest) = do
           this <-
@@ -656,9 +658,10 @@ exhaustivityCheck scrut ty pats = do
 -- constructor definitions, pull the definition out of the list and
 -- return it paired with the remainder of the list.
 removeDCon ::
+  (MonadTcCore m) =>
   DCName ->
   [ConstructorDef] ->
-  TcMonad (ConstructorDef, [ConstructorDef])
+  m (ConstructorDef, [ConstructorDef])
 removeDCon dc (cd@(ConstructorDef _ dc' _) : rest)
   | dc == dc' =
     return (cd, rest)
@@ -689,7 +692,8 @@ relatedPats dc (pc : pats) =
 
 -- for simplicity, this function requires that all subpatterns
 -- are pattern variables.
-checkSubPats :: DCName -> [Decl] -> [[(Pattern, Epsilon)]] -> TcMonad ()
+checkSubPats :: (MonadTcCore m) =>
+                DCName -> [Decl] -> [[(Pattern, Epsilon)]] -> m ()
 checkSubPats dc [] _ = return ()
 checkSubPats dc (Def _ _ : tele) patss = checkSubPats dc tele patss
 checkSubPats dc (TypeSig _ : tele) patss
@@ -701,5 +705,3 @@ checkSubPats dc (TypeSig _ : tele) patss
       _ -> Env.err [DS "All subpatterns must be variables in this version."]
 checkSubPats dc t ps =
   Env.err [DS "Internal error in checkSubPats", DD dc, DS (show ps)]
-
-

@@ -1,5 +1,5 @@
-{ pkgs ? import <nixpkgs> {} }:
-let cabal2nix = pkgs.cabal2nix;
-in pkgs.mkShell {
-  buildInputs = [ pkgs.cabal2nix ];
-}
+{compiler ? "ghc922"}:
+let
+  pi-forall = import ./default.nix {inherit compiler;};
+in
+  pi-forall.env
