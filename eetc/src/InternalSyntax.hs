@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 -- | The abstract syntax of the simple dependently typed language
 -- See comment at the top of 'Parser' for the concrete syntax of this language
 module InternalSyntax where
@@ -20,7 +21,7 @@ import ModuleStub as M
 -- | For variable names, we use the Unbound library to
 -- automatically generate free variable, substitution,
 -- and alpha-equality function.
-type TName = Unbound.Name Term
+type TNameP p = Unbound.Name (TermP p)
 
 -----------------------------------------
 
@@ -30,68 +31,90 @@ type TName = Unbound.Name Term
 
 -- | Combined syntax for types and terms
 -- (type synonym for documentation)
-type Type = Term
+type TypeP p = TermP p
+--type Type = TypeP MetasEnabled
+--type TypePure = TypeP MetasDisabled
+
+data MetasEnabled where
+data MetasDisabled where
+
+--type Term = TermP MetasEnabled
+--type TermPure = TermP MetasDisabled
 
 -- | basic language
-data Term
-  = -- | type of types  `Type`
-    Type
-  | -- | variables  `x`
-    Var TName
-  | -- | abstraction  `\x. a`
-    Lam Epsilon (Unbound.Bind TName Term)
-  | -- | application `a b`
-    App Term Arg
-  | -- | function type   `(x : A) -> B`
-    Pi Epsilon Type (Unbound.Bind TName Type)
-  | -- | annotated terms `( a : A )`
-    Ann Term Type
-  | -- | marked source position, for error messages
-    Pos SourcePos Term
-  | -- | an axiom 'TRUSTME', inhabits all types
-    TrustMe
-  | -- | a directive to the type checker to print out the current context
-    PrintMe
-  | -- | let expression, introduces a new (non-recursive) definition in the ctx
-    -- | `let x = a in b`
-    Let Term (Unbound.Bind TName Term)
-  | -- | the type with a single inhabitant, called `Unit`
-    TyUnit
-  | -- | the inhabitant of `Unit`, written `()`
-    LitUnit
-  | -- | the type with two inhabitants (homework) `Bool`
-    TyBool
-  | -- | `True` and `False`
-    LitBool Bool
-  | -- | `if a then b1 else b2` expression for eliminating booleans
-    If Term Term Term
-  | -- | Sigma-type (homework), written `{ x : A | B }`
-    Sigma Term (Unbound.Bind TName Term)
-  | -- | introduction form for Sigma-types `( a , b )`
-    Prod Term Term
-  | -- | elimination form for Sigma-types `let (x,y) = a in b`
-    LetPair Term (Unbound.Bind (TName, TName) Term)
-  | -- | Equality type  `a = b`
-    TyEq Term Term
-  | -- | Proof of equality `Refl`
-    Refl
-  | -- | equality type elimination  `subst a by pf`
-    Subst Term Term
-  | -- | witness to an equality contradiction
-    Contra Term
+data TermP p where
+  -- | type of types  `Type`
+  Type :: TermP p
+  -- | variables  `x`
+  Var :: TNameP p -> TermP p
+  -- | abstraction  `\x. a`
+  Lam :: Epsilon -> (Unbound.Bind (TNameP p) (TermP p)) -> TermP p
+  -- | application `a b`
+  App :: TermP p -> Arg -> TermP p
+  -- | function type   `(x : A) -> B`
+  Pi :: Epsilon -> TypeP p -> (Unbound.Bind (TNameP p) (TypeP p)) -> TermP p
+  -- | annotated terms `( a : A )`
+  Ann :: TermP p -> TypeP p -> TermP p
+  -- | marked source position, for error messages
+  Pos :: SourcePos -> (TermP p) -> TermP p
+  -- | an axiom 'TRUSTME', inhabits all types
+  TrustMe :: TermP p
+  -- | a directive to the type checker to print out the current context
+  PrintMe :: TermP p
+  -- | let expression, introduces a new (non-recursive) definition in the ctx
+  -- | `let x = a in b`
 
-  | -- | type constructors (fully applied)
-    TCon TCName [Arg]
-  | -- | term constructors (fully applied)
-    DCon DCName [Arg]
-  | -- | case analysis  `case a of matches`
-    Case Term [Match]
+  Let :: (TermP p) -> (Unbound.Bind (TNameP p) (TermP p)) -> TermP p
+  -- | the type with a single inhabitant, called `Unit`
 
-  deriving (Show, Generic)
+  TyUnit :: TermP p
+  -- | the inhabitant of `Unit`, written `()`
+  LitUnit :: TermP p
+  -- | the type with two inhabitants (homework) `Bool`
+
+  TyBool :: TermP p
+  -- | `True` and `False`
+  LitBool :: Bool -> TermP p
+  -- | `if a then b1 else b2` expression for eliminating booleans
+  If :: TermP p -> TermP p -> TermP p -> TermP p
+
+  -- | Sigma-type (homework), written `{ x : A | B }`
+  Sigma :: TermP p -> (Unbound.Bind (TNameP p) (TermP p)) -> TermP p
+  -- | introduction form for Sigma-types `( a , b )`
+  Prod :: TermP p -> TermP p -> TermP p
+  -- | elimination form for Sigma-types `let (x,y) = a in b`
+  LetPair :: TermP p -> (Unbound.Bind (TNameP p, TNameP p) (TermP p)) -> TermP p
+
+  -- | Equality type  `a = b`
+  TyEq :: TermP p -> TermP p -> TermP p
+  -- | Proof of equality `Refl`
+  Refl :: TermP p
+  -- | equality type elimination  `subst a by pf`
+  Subst :: TermP p -> TermP p -> TermP p
+  -- | witness to an equality contradiction
+  Contra :: TermP p -> TermP p
+
+  -- | type constructors (fully applied)
+  TCon :: TCName -> [ArgP p] -> TermP p
+  -- | term constructors (fully applied)
+  DCon :: DCName -> [ArgP p] -> TermP p
+  -- | case analysis  `case a of matches`
+  Case :: TermP p -> [MatchP p] -> TermP p
+
+  -- meta variable
+  MetaVar :: TelescopeP p -> TermP MetasEnabled
+
+deriving instance Show (TermP p)
+
+-- this errors out
+deriving instance Generic (TermP p)
 
 -- | An argument to a function
-data Arg = Arg {argEp :: Epsilon, unArg :: Term}
-  deriving (Show, Generic, Unbound.Alpha, Unbound.Subst Term)
+data ArgP p = Arg {argEp :: Epsilon, unArg :: TermP p}
+  deriving (Show, Generic, Unbound.Alpha, Unbound.Subst (TermP p))
+
+type Arg = ArgP MetasEnabled
+type ArgPure = ArgP MetasDisabled
 
 -- | Epsilon annotates the stage of a variable
 data Epsilon
@@ -106,20 +129,20 @@ data Epsilon
       Ord,
       Generic,
       Unbound.Alpha,
-      Unbound.Subst Term
+      Unbound.Subst (TermP p)
     )
 
 -- | A 'Match' represents a case alternative
-newtype Match = Match (Unbound.Bind Pattern Term)
+newtype MatchP p = Match (Unbound.Bind (PatternP p) (TermP p))
   deriving (Show, Generic, Typeable)
-  deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
+  deriving anyclass (Unbound.Alpha, Unbound.Subst (TermP p))
 
 -- | The patterns of case expressions bind all variables
 -- in their respective branches.
-data Pattern
-  = PatCon DCName [(Pattern, Epsilon)]
-  | PatVar TName
-  deriving (Show, Eq, Generic, Typeable, Unbound.Alpha, Unbound.Subst Term)
+data PatternP p
+  = PatCon DCName [(PatternP p, Epsilon)]
+  | PatVar (TNameP p)
+  deriving (Show, Eq, Generic, Typeable, Unbound.Alpha, Unbound.Subst (TermP p))
 
 
 -----------------------------------------
@@ -128,42 +151,42 @@ data Pattern
 
 -----------------------------------------
 
-type Module = M.MModule Decl
+type ModuleP p = M.MModule (DeclP p)
 
 -- | A type declaration (or type signature)
-data Sig = Sig {sigName :: TName , sigEp :: Epsilon  , sigType :: Type}
-  deriving (Show, Generic, Typeable, Unbound.Alpha, Unbound.Subst Term)
+data SigP p = Sig {sigName :: TNameP p, sigEp :: Epsilon  , sigType :: TypeP p}
+  deriving (Show, Generic, Typeable, Unbound.Alpha, Unbound.Subst (TermP p))
 
 -- | Declare the type of a term
-mkSig :: TName -> Type -> Decl
+mkSig :: TNameP p -> TypeP p -> DeclP p
 mkSig n ty = TypeSig (Sig n Rel  ty)
 
 -- | Declarations are the components of modules
-data Decl
+data DeclP p
   = -- | Declaration for the type of a term
-    TypeSig Sig
+    TypeSig (SigP p)
   | -- | The definition of a particular name, must
     -- already have a type declaration in scope
-    Def TName Term
+    Def (TNameP p) (TermP p)
   | -- | A potentially (recursive) definition of
     -- a particular name, must be declared
-    RecDef TName Term
+    RecDef (TNameP p) (TermP p)
     -- | Adjust the context for relevance checking
   | Demote Epsilon
   | -- | Declaration for a datatype including all of
     -- its data constructors
-    Data TCName Telescope [ConstructorDef]
+    Data TCName (TelescopeP p) [ConstructorDefP p]
   | -- | An abstract view of a datatype. Does
     -- not include any information about its data
     -- constructors
-    DataSig TCName Telescope
+    DataSig TCName (TelescopeP p)
   deriving (Show, Generic, Typeable)
-  deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
+  deriving anyclass (Unbound.Alpha, Unbound.Subst (TermP p))
 
 -- | A Data constructor has a name and a telescope of arguments
-data ConstructorDef = ConstructorDef SourcePos DCName Telescope
+data ConstructorDefP p = ConstructorDef SourcePos DCName (TelescopeP p)
   deriving (Show, Generic)
-  deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
+  deriving anyclass (Unbound.Alpha, Unbound.Subst (TermP p))
 
 -- * Telescopes
 
@@ -172,28 +195,28 @@ data ConstructorDef = ConstructorDef SourcePos DCName Telescope
 -- later in the list.
 -- For example
 --     Delta = [ x:Type , y:x, y = w ]
-newtype Telescope = Telescope [Decl]
+newtype TelescopeP p = Telescope [DeclP p]
   deriving (Show, Generic)
-  deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
+  deriving anyclass (Unbound.Alpha, Unbound.Subst (TermP p))
 
 
 -- * Auxiliary functions on syntax
 
 -- | Default name for '_' occurring in patterns
-wildcardName :: TName
+wildcardName :: TNameP p
 wildcardName = Unbound.string2Name "_"
 
 -- | Partial inverse of Pos
-unPos :: Term -> Maybe SourcePos
+unPos :: TermP p -> Maybe SourcePos
 unPos (Pos p _) = Just p
 unPos _ = Nothing
 
 -- | Tries to find a Pos inside a term, otherwise just gives up.
-unPosFlaky :: Term -> SourcePos
+unPosFlaky :: TermP p -> SourcePos
 unPosFlaky t = fromMaybe (newPos "unknown location" 0 0) (unPos t)
 
 -- | Is this the syntax of a literal (natural) number
-isNumeral :: Term -> Maybe Int
+isNumeral :: TermP p -> Maybe Int
 isNumeral (Pos _ t) = isNumeral t
 isNumeral (DCon c []) | c == "Zero" = Just 0
 isNumeral (DCon c [Arg _ t]) | c == "Succ" =
@@ -201,7 +224,7 @@ isNumeral (DCon c [Arg _ t]) | c == "Succ" =
 isNumeral _ = Nothing
 
 -- | Is this pattern a variable
-isPatVar :: Pattern -> Bool
+isPatVar :: PatternP p -> Bool
 isPatVar (PatVar _) = True
 isPatVar _ = False
 
@@ -209,7 +232,7 @@ isPatVar _ = False
 -- Prelude declarations for datatypes
 
 
-preludeDataDecls :: [Decl]
+preludeDataDecls :: [DeclP p]
 preludeDataDecls =
   [ Data sigmaName  sigmaTele      [prodConstructorDef]
   , Data tyUnitName (Telescope []) [unitConstructorDef]
@@ -258,7 +281,7 @@ preludeDataDecls =
 -- and then defer all other cases to the generic version of
 -- the function (Unbound.gaeq).
 
-instance Unbound.Alpha Term where
+instance Unbound.Alpha (TermP p) where
   aeq' ctx (Ann a _) b = Unbound.aeq' ctx a b
   aeq' ctx a (Ann b _) = Unbound.aeq' ctx a b
   aeq' ctx (Pos _ a) b = Unbound.aeq' ctx a b
@@ -275,19 +298,19 @@ instance Unbound.Alpha Term where
 -- in the names of bound variables.
 
 -- 'x'
-xName :: TName
+xName :: TNameP p
 xName = Unbound.string2Name "x"
 
 -- 'y'
-yName :: TName
+yName :: TNameP p
 yName = Unbound.string2Name "y"
 
 -- '\x -> x`
-idx :: Term
+idx :: TermP p
 idx = Lam Rel (Unbound.bind xName (Var xName))
 
 -- '\y -> y`
-idy :: Term
+idy :: TermP p
 idy = Lam Rel (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq idx idy
@@ -305,17 +328,17 @@ idy = Lam Rel (Unbound.bind yName (Var yName))
 -- class Subst b a where
 --    subst  :: Name b -> b -> a -> a       -- single substitution
 
-instance Unbound.Subst Term Term where
+instance Unbound.Subst (TermP p) (TermP p) where
   isvar (Var x) = Just (Unbound.SubstName x)
   isvar _ = Nothing
 
 
 -- '(y : x) -> y'
-pi1 :: Term
+pi1 :: TermP p
 pi1 = Pi Rel (Var xName) (Unbound.bind yName (Var yName))
 
 -- '(y : Bool) -> y'
-pi2 :: Term
+pi2 :: TermP p
 pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
 
 -- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
