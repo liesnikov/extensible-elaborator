@@ -17,8 +17,7 @@ in stdenv.mkDerivation ({
   nativeBuildInputs =
     [ pandoc texlive-combined biber ] ++  extraBuildInputs;
 
-  patches = [];
-  # patches = [./fonts.patch];
+  patches = [./fonts.patch];
 
   buildPhase = ''
     make main.pdf
