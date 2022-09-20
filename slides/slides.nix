@@ -35,7 +35,8 @@ in stdenv.mkDerivation ({
   '';
 
   installPhase = ''
-    mv main.pdf $out
+    mkdir $out
+    mv main.pdf $out/main.pdf
   '';
 
   FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-sans-pro source-code-pro source-serif-pro]; };
