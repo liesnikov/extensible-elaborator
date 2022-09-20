@@ -1,4 +1,22 @@
 
+@inproceedings{abelHigherOrderDynamicPattern2011,
+  title = {Higher-{{Order Dynamic Pattern Unification}} for {{Dependent Types}} and {{Records}}},
+  booktitle = {Typed {{Lambda Calculi}} and {{Applications}}},
+  author = {Abel, Andreas and Pientka, Brigitte},
+  editor = {Ong, Luke},
+  date = {2011},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  pages = {10--26},
+  publisher = {{Springer}},
+  location = {{Berlin, Heidelberg}},
+  doi = {10.1007/978-3-642-21691-6_5},
+  abstract = {While higher-order pattern unification for the λΠ-calculus is decidable and unique unifiers exists, we face several challenges in practice: 1) the pattern fragment itself is too restrictive for many applications; this is typically addressed by solving sub-problems which satisfy the pattern restriction eagerly but delay solving sub-problems which are non-patterns until we have accumulated more information. This leads to a dynamic pattern unification algorithm. 2) Many systems implement λΠΣ calculus and hence the known pattern unification algorithms for λΠ are too restrictive.},
+  isbn = {978-3-642-21691-6},
+  langid = {english},
+  keywords = {Deductive System,Free Variable,Logical Framework,Pattern Fragment,Typing Rule},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Abel_Pientka/2011/Abel_Pientka_2011_Higher-Order Dynamic Pattern Unification for Dependent Types and Records.pdf}
+}
+
 @article{abelUnifiedViewModalities2020,
   title = {A Unified View of Modalities in Type Systems},
   author = {Abel, Andreas and Bernardy, Jean-Philippe},
@@ -14,6 +32,15 @@
   issue = {ICFP},
   keywords = {linear types,modal logic,subtyping},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Abel_Bernardy/2020/Abel_Bernardy_2020_A unified view of modalities in type systems.pdf}
+}
+
+@online{alekseykligerUnboundgenerics2022,
+  title = {Unbound-Generics},
+  author = {{Aleksey Kliger}},
+  date = {2022-06-24},
+  url = {//hackage.haskell.org/package/unbound-generics},
+  urldate = {2022-09-20},
+  organization = {{Support for programming with names and binders using GHC Generics}}
 }
 
 @inproceedings{aspertiCraftingProofAssistant2007,
@@ -84,7 +111,7 @@
   editoratype = {collaborator},
   langid = {english},
   keywords = {000 Computer science; knowledge; general works,Computer Science},
-  file = {/home/bohdan/Zotero/storage/G8IQK5I9/Bauer et al. - 2018 - Design and Implementation of the Andromeda Proof A.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
 }
 
 @inproceedings{bauerEqualityCheckingGeneral2020,
@@ -187,6 +214,25 @@
   issue = {ICFP},
   keywords = {dependent type theory,metaprogramming,tactic language,theorem proving},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ebner et al/2017/Ebner et al_2017_A metaprogramming framework for formal verification2.pdf}
+}
+
+@misc{eisenbergDependentTypesHaskell2017,
+  title = {Dependent {{Types}} in {{Haskell}}: {{Theory}} and {{Practice}}},
+  shorttitle = {Dependent {{Types}} in {{Haskell}}},
+  author = {Eisenberg, Richard A.},
+  date = {2017-08-12},
+  number = {arXiv:1610.07978},
+  eprint = {1610.07978},
+  eprinttype = {arxiv},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.1610.07978},
+  url = {http://arxiv.org/abs/1610.07978},
+  urldate = {2022-08-10},
+  abstract = {Haskell, as implemented in the Glasgow Haskell Compiler (GHC), has been adding new type-level programming features for some time. Many of these features---chiefly: generalized algebraic datatypes (GADTs), type families, kind polymorphism, and promoted datatypes---have brought Haskell to the doorstep of dependent types. Many dependently typed programs can even currently be encoded, but often the constructions are painful. In this dissertation, I describe Dependent Haskell, which supports full dependent types via a backward-compatible extension to today's Haskell. An important contribution of this work is an implementation, in GHC, of a portion of Dependent Haskell, with the rest to follow. The features I have implemented are already released, in GHC 8.0. This dissertation contains several practical examples of Dependent Haskell code, a full description of the differences between Dependent Haskell and today's Haskell, a novel type-safe dependently typed lambda-calculus (called Pico) suitable for use as an intermediate language for compiling Dependent Haskell, and a type inference and elaboration algorithm, Bake, that translates Dependent Haskell to type-correct Pico.},
+  archiveprefix = {arXiv},
+  keywords = {Computer Science - Programming Languages},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Eisenberg/2017/Eisenberg_2017_Dependent Types in Haskell.pdf}
 }
 
 @online{ghcdevelopmentteamGlasgowHaskellCompiler,
@@ -323,6 +369,24 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Najd_Jones/2017/Najd_Jones_2017_Trees that grow.pdf}
 }
 
+@article{nanevskiContextualModalType2008,
+  title = {Contextual Modal Type Theory},
+  author = {Nanevski, Aleksandar and Pfenning, Frank and Pientka, Brigitte},
+  date = {2008-06},
+  journaltitle = {ACM Transactions on Computational Logic},
+  shortjournal = {ACM Trans. Comput. Logic},
+  volume = {9},
+  number = {3},
+  pages = {1--49},
+  issn = {1529-3785, 1557-945X},
+  doi = {10.1145/1352582.1352591},
+  url = {https://dl.acm.org/doi/10.1145/1352582.1352591},
+  urldate = {2022-09-15},
+  abstract = {The intuitionistic modal logic of necessity is based on the judgmental notion of categorical truth. In this article we investigate the consequences of relativizing these concepts to explicitly specified contexts. We obtain contextual modal logic and its type-theoretic analogue. Contextual modal type theory provides an elegant, uniform foundation for understanding metavariables and explicit substitutions. We sketch some applications in functional programming and logical frameworks.},
+  langid = {english},
+  file = {/home/bohdan/Zotero/storage/MB6ANYBJ/Nanevski et al. - 2008 - Contextual modal type theory.pdf}
+}
+
 @article{norellPracticalProgrammingLanguage,
   title = {Towards a Practical Programming Language Based on Dependent Type Theory},
   author = {Norell, Ulf},
@@ -330,6 +394,24 @@
   abstract = {Dependent type theories [ML72] have a long history of being used for theorem proving. One aspect of type theory which makes it very powerful as a proof language is that it mixes deduction with computation. This also makes type theory a good candidate for programming—the strength of the type system allows properties of programs to be stated and established, and the computational properties provide semantics for the programs.},
   langid = {english},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Norell/undefined/Norell_Towards a practical programming language based on dependent type theory.pdf}
+}
+
+@inproceedings{pangPluggingHaskell2004,
+  title = {Plugging {{Haskell}} In},
+  booktitle = {Proceedings of the 2004 {{ACM SIGPLAN}} Workshop on {{Haskell}}},
+  author = {Pang, André and Stewart, Don and Seefried, Sean and Chakravarty, Manuel M. T.},
+  date = {2004-09-22},
+  series = {Haskell '04},
+  pages = {10--21},
+  publisher = {{Association for Computing Machinery}},
+  location = {{New York, NY, USA}},
+  doi = {10.1145/1017472.1017478},
+  url = {http://doi.org/10.1145/1017472.1017478},
+  urldate = {2022-09-14},
+  abstract = {Extension languages enable users to expand the functionality of an application without touching its source code. Commonly, these languages are dynamically typed languages, such as Lisp, Python, or domain-specific languages, which support runtime plugins via dynamic loading of components. We show that Haskell can be comfortably used as a statically typed extension language for both Haskell and foreign-language applications supported by the Haskell FFI, and that it can perform type-safe dynamic loading of plugins using dynamic types. Moreover, we discuss how plugin support is especially useful to applications where Haskell is used as an embedded domain-specific language (EDSL). We explain how to realise type-safe plugins using dynamic types, runtime compilation, and dynamic linking, exploiting infrastructure provided by the Glasgow Haskell Compiler. We demonstrate the practicability of our approach with several applications that serve as running examples.},
+  isbn = {978-1-58113-850-4},
+  keywords = {dynamic loading,dynamic typing,extension languages,functional programming,plugins,staged type inference},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pang et al/2004/Pang et al_2004_Plugging Haskell in.pdf}
 }
 
 @inproceedings{pedrotLtac2TacticalWarfare2019,
@@ -343,6 +425,24 @@
   eventtitle = {The {{Fifth International Workshop}} on {{Coq}} for {{Programming Languages}} /},
   langid = {english},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pédrot/2019/Pédrot_2019_Ltac2.pdf}
+}
+
+@inproceedings{pientkaOptimizingHigherOrderPattern2003,
+  title = {Optimizing {{Higher-Order Pattern Unification}}},
+  booktitle = {Automated {{Deduction}} – {{CADE-19}}},
+  author = {Pientka, Brigitte and Pfenning, Frank},
+  editor = {Baader, Franz},
+  date = {2003},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  pages = {473--487},
+  publisher = {{Springer}},
+  location = {{Berlin, Heidelberg}},
+  doi = {10.1007/978-3-540-45085-6_40},
+  abstract = {We present an abstract view of existential variables in a dependently typed lambda-calculus based on modal type theory. This allows us to justify optimizations to pattern unification such as linearization, which eliminates many unnecessary occurs-checks. The presented modal framework explains a number of features of the current implementation of higher-order unification in Twelf and provides insight into several optimizations. Experimental results demonstrate significant performance improvement in many example applications of Twelf, including those in the area of proof-carrying code.},
+  isbn = {978-3-540-45085-6},
+  langid = {english},
+  keywords = {Logic Programming,Modal Logic,Modal Variable,Normal Object,Sequent Calculus},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pientka_Pfenning/2003/Pientka_Pfenning_2003_Optimizing Higher-Order Pattern Unification.pdf}
 }
 
 @unpublished{selsamTabledTypeclassResolution2020,
@@ -379,6 +479,20 @@
   issue = {ICFP},
   keywords = {constraint-based inference,impredicative polymorphism,Type systems},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Serrano et al/2020/Serrano et al_2020_A quick look at impredicativity.pdf}
+}
+
+@thesis{stewartDynamicExtensionTyped2010,
+  type = {Thesis},
+  title = {Dynamic Extension of Typed Functional Languages},
+  author = {Stewart, Don},
+  date = {2010},
+  institution = {{UNSW Sydney}},
+  doi = {10.26190/unsworks/23404},
+  url = {http://hdl.handle.net/1959.4/50220},
+  urldate = {2022-09-14},
+  abstract = {We present a solution to the problem of dynamic extension in statically typed functional languages with type erasure. The presented solution retains the benefits of static checking, including type safety, aggressive optimizations, and native code compilation of components, while allowing extensibility of programs at runtime. Our approach is based on a framework for dynamic extension in a statically typed setting, combining dynamic linking, runtime type checking, first class modules and code hot swapping. We show that this framework is sufficient to allow a broad class of dynamic extension capabilities in any statically typed functional language with type erasure semantics. Uniquely, we employ the full compile-time type system to perform runtime type checking of dynamic components, and emphasize the use of native code extension to ensure that the performance benefits of static typing are retained in a dynamic environment. We also develop the concept of fully dynamic software architectures, where the static core is minimal and all code is hot swappable. Benefits of the approach include hot swappable code and sophisticated application extension via embedded domain specific languages. We instantiate the concepts of the framework via a full implementation in the Haskell programming language: providing rich mechanisms for dynamic linking, loading, hot swapping, and runtime type checking in Haskell for the first time. We demonstrate the feasibility of this architecture through a number of novel applications: an extensible text editor; a plugin-based network chat bot; a simulator for polymer chemistry; and xmonad, an extensible window manager. In doing so, we demonstrate that static typing is no barrier to dynamic extension.},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Stewart/2010/Stewart_2010_Dynamic extension of typed functional languages.pdf}
 }
 
 @inproceedings{stuckeyTypeProcessingConstraint2006,

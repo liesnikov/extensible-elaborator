@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   viewBox="0 0 837 407"
+   width="1674"
+   height="814"
+   id="svg114"
+   sodipodi:docname="dependent-types-compiler.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
+  <metadata
+     id="metadata118">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="3840"
+     inkscape:window-height="2091"
+     id="namedview116"
+     showgrid="false"
+     inkscape:zoom="1.6400708"
+     inkscape:cx="691.53199"
+     inkscape:cy="152.19727"
+     inkscape:window-x="0"
+     inkscape:window-y="41"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg114" />
+  <!-- svg-source:excalidraw -->
+  <defs
+     id="defs4">
+    <style
+       id="style2">
+      @font-face {
+        font-family: &quot;Virgil&quot;;
+        src: url(&quot;https://excalidraw.com/Virgil.woff2&quot;);
+      }
+      @font-face {
+        font-family: &quot;Cascadia&quot;;
+        src: url(&quot;https://excalidraw.com/Cascadia.woff2&quot;);
+      }
+    </style>
+  </defs>
+  <g
+     transform="translate(42 10) rotate(0 88 60.5)"
+     id="g8"
+     stroke-linecap="round">
+    <path
+       d="M-1.27 -1.64 C69.49 -1.16, 139.69 -2.02, 177.74 1.03 M-0.86 0.87 C46.84 -2.14, 92.45 -1.36, 177 0.23 M175.78 -1.48 C176.35 27.95, 175.44 54.06, 174.78 122.74 M176.34 -0.58 C177.33 33.88, 176.82 67.78, 175.92 121.17 M175.57 121.68 C126.56 119.68, 79.67 118.92, -0.67 119.2 M176.03 120.98 C117.08 119.09, 60.91 118.87, -0.48 120.01 M1.84 122.1 C-0.43 88.16, -0.09 51.64, 0.2 -1.32 M0.94 120.76 C-0.06 75.6, 1.63 29.82, 0.38 -0.89"
+       id="path6"
+       stroke-width="1"
+       stroke="#000000"
+       fill="none" />
+  </g>
+  <g
+     transform="translate(84 51.5) rotate(0 41.5 12.5)"
+     id="g12">
+    <text
+       x="0"
+       y="20"
+       font-size="20px"
+       style="white-space: pre;"
+       direction="ltr"
+       id="text10"
+       text-anchor="start"
+       font-family="Cascadia, Segoe UI Emoji"
+       fill="#000000">Parsing</text>
+  </g>
+  <g
+     transform="translate(326 15.5) rotate(0 86.5 57.5)"
+     id="g16"
+     stroke-linecap="round">
+    <path
+       d="M-0.37 0.37 C42.38 -0.44, 84.23 1.55, 172.88 -0.7 M-0.3 -0.72 C45.74 -1.45, 92.46 -1.16, 173.88 0.87 M173.85 0.5 C173.65 25.75, 173.1 52.22, 173 115 M172.14 0 C171.71 44.45, 172.99 88.33, 173.47 115.32 M171.07 113.95 C118.7 117.72, 69.32 117.97, 1.66 113.25 M172.28 115.31 C124.08 116.11, 77.49 116.48, -0.28 115.43 M1.77 116.27 C0.89 87.82, 2.45 56.24, 1.59 1.26 M0.69 115.41 C0.39 91.21, -0.88 67.72, -0.82 -0.09"
+       id="path14"
+       stroke-width="1"
+       stroke="#000000"
+       fill="none" />
+  </g>
+  <g
+     id="g30"
+     stroke-linecap="round">
+    <g
+       transform="translate(216.59658213695275 72.72484459689224) rotate(0 53.07270415823615 0.4628059437396246)"
+       id="g20">
+      <path
+         d="M-1.07 -0.61 C16.83 -0.68, 89.01 -0.9, 107.21 -0.62 M0.58 1.68 C18.29 1.78, 88.22 0.98, 106.07 0.57"
+         id="path18"
+         stroke-width="1"
+         stroke="#000000"
+         fill="none" />
+    </g>
+    <g
+       transform="translate(216.59658213695275 72.72484459689224) rotate(0 53.07270415823615 0.4628059437396246)"
+       id="g24">
+      <path
+         d="M77.03 10.68 C85.08 9.42, 95.96 5.1, 106.17 1.98 M78.11 11.56 C87.69 6.9, 99.5 2.83, 105.36 -0.16"
+         id="path22"
+         stroke-width="1"
+         stroke="#000000"
+         fill="none" />
+    </g>
+    <g
+       transform="translate(216.59658213695275 72.72484459689224) rotate(0 53.07270415823615 0.4628059437396246)"
+       id="g28">
+      <path
+         d="M76.7 -9.84 C84.81 -5.16, 95.79 -3.56, 106.17 1.98 M77.78 -8.96 C87.33 -5.95, 99.25 -2.34, 105.36 -0.16"
+         id="path26"
+         stroke-width="1"
+         stroke="#000000"
+         fill="none" />
+    </g>
+  </g>
+  <g
+     transform="translate(359.02379,59.085405)"
+     id="g34">
+    <text
+       x="0"
+       y="20"
+       font-size="20px"
+       style="font-size:20px;font-family:Cascadia, 'Segoe UI Emoji';direction:ltr;text-anchor:start;white-space:pre;fill:#000000"
+       direction="ltr"
+       id="text32">Elaboration</text>
+  </g>
+  <g
+     transform="translate(614 14) rotate(0 105 57)"
+     id="g38"
+     stroke-linecap="round">
+    <path
+       d="M0.56 -1.25 C83.83 -0.5, 168.02 -0.93, 210.08 1.05 M0.14 0.31 C79.76 1.99, 157.32 1.65, 210.09 0.64 M209.81 -1.56 C208.72 37.49, 209.33 73.23, 209.76 113.77 M210.51 -0.02 C210.28 29.43, 209.43 57.53, 209.46 114.44 M208.94 112.78 C159.84 113.78, 112 112.92, 1.37 114.92 M209.86 113.67 C149.6 111.92, 90.9 113.47, 0.67 113.75 M0.17 113.21 C1.6 86.53, 2.55 60.19, 1.98 -1.73 M-0.23 114.8 C-1.49 81.89, -0.13 51.07, 0.01 -0.35"
+       id="path36"
+       stroke-width="1"
+       stroke="#000000"
+       fill="none" />
+  </g>
+  <g
+     transform="translate(618.39027,33.501079)"
+     id="g42">
+    <text
+       x="100"
+       y="43"
+       font-size="20px"
+       style="font-size:20px;font-family:Cascadia, 'Segoe UI Emoji';direction:ltr;text-anchor:middle;white-space:pre;fill:#000000"
+       direction="ltr"
+       id="text40">Core typechecking</text>
+  </g>
+  <g
+     id="g56"
+     stroke-linecap="round">
+    <g
+       transform="translate(505 74) rotate(0 50.10250130887141 0.7154737041378212)"
+       id="g46">
+      <path
+         d="M0.33 0.83 C16.83 1.17, 82.53 1.5, 98.98 1.62 M-0.95 0.23 C15.91 0.25, 84.09 -0.06, 101.15 -0.18"
+         id="path44"
+         stroke-width="1"
+         stroke="#000000"
+         fill="none" />
+    </g>
+    <g
+       transform="translate(505 74) rotate(0 50.10250130887141 0.7154737041378212)"
+       id="g50">
+      <path
+         d="M74.41 8.53 C82.55 5.42, 90.87 3.76, 100.35 -0.44 M73.77 10.35 C81.19 7, 89.13 4.23, 100.29 -0.03"
+         id="path48"
+         stroke-width="1"
+         stroke="#000000"
+         fill="none" />
+    </g>
+    <g
+       transform="translate(505 74) rotate(0 50.10250130887141 0.7154737041378212)"
+       id="g54">
+      <path
+         d="M74.3 -11.99 C82.4 -8.93, 90.75 -4.41, 100.35 -0.44 M73.66 -10.17 C81.22 -7.72, 89.19 -4.68, 100.29 -0.03"
+         id="path52"
+         stroke-width="1"
+         stroke="#000000"
+         fill="none" />
+    </g>
+  </g>
+  <g
+     stroke-linecap="round"
+     transform="translate(613 234) rotate(0 107 68.5)"
+     id="g60">
+    <path
+       d="M0.61 1.09 C75.48 1.24, 152.45 -1.01, 213.28 1.06 M-0.32 0.01 C74.77 0.16, 150.29 1.68, 213.22 0.66 M212.09 -1.39 C213.91 26.25, 213.93 57.13, 215.99 136.27 M213.73 -0.19 C215.18 34.92, 214.34 67.26, 213.52 137.44 M213.58 136.25 C155.54 136.2, 97.63 136.01, 1.45 135.86 M214.68 137.7 C166.87 137.94, 120.22 136.54, -0.17 136.32 M-0.48 137.79 C2.45 100.83, 0.38 63.79, -1.26 0.49 M0.88 137.57 C-0.17 89.78, -0.18 41.67, -0.59 0.35"
+       stroke="#000000"
+       stroke-width="1"
+       fill="none"
+       id="path58" />
+  </g>
+  <g
+     transform="translate(618 290) rotate(0 102 12)"
+     id="g64">
+    <text
+       x="102"
+       y="19"
+       font-family="Cascadia, Segoe UI Emoji"
+       font-size="20px"
+       fill="#000000"
+       text-anchor="middle"
+       style="white-space: pre;"
+       direction="ltr"
+       id="text62">Compilation</text>
+  </g>
+  <g
+     stroke-linecap="round"
+     id="g78">
+    <g
+       transform="translate(713 132) rotate(0 1.0918181918561913 46.95593908801672)"
+       id="g68">
+      <path
+         d="M0.6 -0.15 C0.99 15.48, 1.4 78.6, 1.58 94.06"
+         stroke="#000000"
+         stroke-width="1.5"
+         fill="none"
+         stroke-dasharray="8 9"
+         id="path66" />
+    </g>
+    <g
+       transform="translate(713 132) rotate(0 1.0918181918561913 46.95593908801672)"
+       id="g72">
+      <path
+         d="M-9.18 66.94 C-4.6 73.72, -4.56 80.69, 0.88 95.23"
+         stroke="#000000"
+         stroke-width="1.5"
+         fill="none"
+         id="path70" />
+    </g>
+    <g
+       transform="translate(713 132) rotate(0 1.0918181918561913 46.95593908801672)"
+       id="g76">
+      <path
+         d="M11.34 66.75 C11.06 73.68, 6.24 80.7, 0.88 95.23"
+         stroke="#000000"
+         stroke-width="1.5"
+         fill="none"
+         id="path74" />
+    </g>
+  </g>
+</svg>
