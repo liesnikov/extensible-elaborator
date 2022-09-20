@@ -24,7 +24,6 @@ in stdenv.mkDerivation ({
   '';
 
   installPhase = ''
-    ls -al
     mv main.pdf $out
   '';
 

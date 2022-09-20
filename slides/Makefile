@@ -7,14 +7,14 @@ tex: main.tex
 reset: allclean pdf
 
 main.pdf: main.tex Makefile
-	latexmk -xelatex="xelatex -interaction=nonstopmode" -pdf -use-make main.tex
+	latexmk -xelatex="xelatex -interaction=nonstopmode" -pdfxe -use-make main.tex
 
 main.tex: main.md macros.tex Makefile
 	pandoc --standalone main.md \
+         --pdf-engine=xelatex\
          --include-in-header=macros.tex \
          -t beamer \
          --bibliography bib.bib --biblatex \
-         --pdf-engine=xelatex\
          --slide-level=2 \
          -o main.tex
 
@@ -26,4 +26,3 @@ allclean: clean
 
 clean:
 	rm -f *.aux *.log *.nav *.out *.snm *.toc *.vrb *.pk *.bbl *.blg *.bcf *.dvi *.fdb_latexmk *.fls *.run.xml
-
