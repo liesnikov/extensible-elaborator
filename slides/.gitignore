@@ -1,6 +1,8 @@
 # Unless you want to add it manually
 
 main.pdf
+result
+result/
 
 ### LaTeX ###
 ## Core latex/pdflatex auxiliary files:

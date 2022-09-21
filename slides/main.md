@@ -107,11 +107,10 @@ f k _ t (succ zero)
 ```
 
 * replace `_` with `?¹`
+* look up `k` yields not fully elaborated term *yet*
 * you get a constraint `?¹ ~ F ?²`
 * looking up `t` yields type `G`
 * produce a constraint `F ?² ~ G`
-* look up `k` yields not fully elaborated term *yet*
-* can't solve it for now, so just stash it and hope we can solve it later
 
 ## How do constraints work
 
