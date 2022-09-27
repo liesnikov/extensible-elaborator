@@ -293,6 +293,7 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
+  display (Implicit) = return $ PP.text "_"
 
 
 

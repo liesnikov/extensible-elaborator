@@ -12,6 +12,7 @@ import           PrettyPrintSurface ()
 import           Text.PrettyPrint.HughesPJ ( ($$) )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
+import qualified Unbound.Generics.LocallyNameless.Unsafe as Unbound.Unsafe
 import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 
 import           ModuleStub
@@ -210,6 +211,12 @@ inferType (S.DCon c args) = do
 inferType t@(S.Case scrut alts) =
   Env.err [DS "Inductive case must be checked not inferred",
            DD t
+          ]
+
+inferType t@(S.Implicit) =
+  Env.err [DS "Encountered implicit argument",
+           DD t,
+           DS "not supported yet"
           ]
 
 checkType :: (MonadElab m) => S.Term -> I.Type -> m I.Term
@@ -457,9 +464,8 @@ checkType (S.Case scrut alts) ty = do
         return $ I.Match ebnd
 
   ealts <- traverse checkAlt alts
-  --FIXME
-  -- let pats = map (\(S.Match bnd) -> fst (unsafeUnbind bnd)) alts
-  --exhaustivityCheck escrut' sty pats
+  let epats = map (\(I.Match bnd) -> fst (Unbound.Unsafe.unsafeUnbind bnd)) ealts
+  exhaustivityCheck escrut' sty epats
   return $ I.Case escrut ealts
 
 -- c-infer
@@ -499,8 +505,26 @@ elabTypeTele ((S.TypeSig sig) : tl) = do
 elabTypeTele tele =
   Env.err [DS "Invalid telescope: ", DD tele]
 
+
 ---------------------------------------------------------------------
--- helper functions for datatypes
+-- helper functions for type checking
+---------------------------------------------------------------------
+
+-- | Create a Def if either side normalizes to a single variable
+def :: (MonadElab m) => I.Term -> I.Term -> m [I.Decl]
+def t1 t2 = do
+  let whnf = undefined
+  nf1 <- whnf t1
+  nf2 <- whnf t2
+  case (nf1, nf2) of
+    (I.Var x, I.Var y) | x == y -> return []
+    (I.Var x, _) -> return [I.Def x nf2]
+    (_, I.Var x) -> return [I.Def x nf1]
+    _ -> return []
+
+---------------------------------------------------------------------
+-- helper functions for telescopes
+---------------------------------------------------------------------
 
 -- | type check a list of data constructor arguments against a telescope
 elabArgTele :: (MonadElab m) => [S.Arg] -> [I.Decl] -> m [I.Arg]
@@ -567,6 +591,8 @@ doSubst ss (I.TypeSig sig : tele') = do
 doSubst _ tele =
   Env.err [DS "Invalid telescope", DD tele]
 
+-----------------------------------------------------------
+-- helper functions for patterns
 -----------------------------------------------------------
 
 -- | Create a binding for each of the variables in the pattern
@@ -739,17 +765,113 @@ duplicateTypeBindingCheck sig = do
        in Env.extendSourceLocation p sig $ Env.err msg
 
 
----------------------------------------------------------------------
--- helper functions for type checking
+-----------------------------------------------------------
+-- Checking that pattern matching is exhaustive
+-----------------------------------------------------------
 
--- | Create a Def if either side normalizes to a single variable
-def :: (MonadElab m) => I.Term -> I.Term -> m [I.Decl]
-def t1 t2 = do
-  let whnf = undefined
-  nf1 <- whnf t1
-  nf2 <- whnf t2
-  case (nf1, nf2) of
-    (I.Var x, I.Var y) | x == y -> return []
-    (I.Var x, _) -> return [I.Def x nf2]
-    (_, I.Var x) -> return [I.Def x nf1]
-    _ -> return []
+-- | Given a particular type and a list of patterns, make
+-- sure that the patterns cover all potential cases for that
+-- type.
+-- If the list of patterns starts with a variable, then it doesn't
+-- matter what the type is, the variable is exhaustive. (This code
+-- does not report unreachable patterns.)
+-- Otherwise, the scrutinee type must be a type constructor, so the
+-- code looks up the data constructors for that type and makes sure that
+-- there are patterns for each one.
+exhaustivityCheck :: (MonadElab m) => I.Term -> I.Type -> [I.Pattern] -> m ()
+exhaustivityCheck scrut ty (I.PatVar x : _) = return ()
+exhaustivityCheck scrut ty pats = do
+  let ensureTCon :: (MonadElab m) => I.Term -> m (TCName, [I.Arg])
+      -- FIXME
+      ensureTCon = undefined
+  (tcon, tys) <- ensureTCon ty
+  (I.Telescope delta, mdefs) <- Env.lookupTCon tcon
+  case mdefs of
+    Just datacons -> do
+      loop pats datacons
+      where
+        loop [] [] = return ()
+        loop [] dcons = do
+          l <- checkImpossible dcons
+          if null l
+            then return ()
+            else Env.err $ DS "Missing case for" : map DD l
+        loop (I.PatVar x : _) dcons = return ()
+        loop (I.PatCon dc args : pats') dcons = do
+          (I.ConstructorDef _ _ (I.Telescope tele), dcons') <- removeDCon dc dcons
+          tele' <- substTele delta tys tele
+          let (aargs, pats'') = relatedPats dc pats'
+          -- check the arguments of the data constructor
+          checkSubPats dc tele' (args : aargs)
+          loop pats'' dcons'
+
+        -- make sure that the given list of constructors is impossible
+        -- in the current environment
+        checkImpossible :: (MonadElab m) => [I.ConstructorDef] -> m [DCName]
+        checkImpossible [] = return []
+        checkImpossible (I.ConstructorDef _ dc (I.Telescope tele) : rest) = do
+          this <-
+            ( do
+                tele' <- substTele delta tys tele
+                --FIXME
+                --tcTypeTele tele'
+                return [dc]
+              )
+              `catchError` (\_ -> return [])
+          others <- checkImpossible rest
+          return (this ++ others)
+    Nothing ->
+      Env.err [DS "Cannot determine constructors of", DD ty]
+
+
+-- | Given a particular data constructor name and a list of data
+-- constructor definitions, pull the definition out of the list and
+-- return it paired with the remainder of the list.
+removeDCon ::
+  (MonadElab m) =>
+  DCName ->
+  [I.ConstructorDef] ->
+  m (I.ConstructorDef, [I.ConstructorDef])
+removeDCon dc (cd@(I.ConstructorDef _ dc' _) : rest)
+  | dc == dc' =
+    return (cd, rest)
+removeDCon dc (cd1 : rest) = do
+  (cd2, rr) <- removeDCon dc rest
+  return (cd2, cd1 : rr)
+removeDCon dc [] = Env.err [DS $ "Internal error: Can't find " ++ show dc]
+
+-- | Given a particular data constructor name and a list of patterns,
+-- pull out the subpatterns that occur as arguments to that data
+-- constructor and return them paired with the remaining patterns.
+relatedPats :: DCName -> [I.Pattern] -> ([[(I.Pattern, I.Epsilon)]], [I.Pattern])
+relatedPats dc [] = ([], [])
+relatedPats dc (pc@(I.PatVar _) : pats) = ([], pc : pats)
+relatedPats dc ((I.PatCon dc' args) : pats)
+  | dc == dc' =
+    let (aargs, rest) = relatedPats dc pats
+     in (args : aargs, rest)
+relatedPats dc (pc : pats) =
+  let (aargs, rest) = relatedPats dc pats
+   in (aargs, pc : rest)
+
+
+-- | Occurs check for the subpatterns of a data constructor. Given
+-- the telescope specifying the types of the arguments, plus the
+-- subpatterns identified by relatedPats, check that they are each
+-- exhaustive.
+
+-- for simplicity, this function requires that all subpatterns
+-- are pattern variables.
+checkSubPats :: (MonadElab m) =>
+                DCName -> [I.Decl] -> [[(I.Pattern, I.Epsilon)]] -> m ()
+checkSubPats dc [] _ = return ()
+checkSubPats dc (I.Def _ _ : tele) patss = checkSubPats dc tele patss
+checkSubPats dc (I.TypeSig _ : tele) patss
+  | (not . null) patss && not (any null patss) = do
+    let hds = map (fst . head) patss
+    let tls = map tail patss
+    case hds of
+      [I.PatVar _ ] -> checkSubPats dc tele tls
+      _ -> Env.err [DS "All subpatterns must be variables in this version."]
+checkSubPats dc t ps =
+  Env.err [DS "Internal error in checkSubPats", DD dc, DS (show ps)]
