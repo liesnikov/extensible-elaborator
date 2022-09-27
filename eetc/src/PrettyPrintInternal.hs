@@ -74,6 +74,7 @@ instance Disp Decl where
     PP.text "data" <+> disp t <+> disp delta <+> PP.colon
       <+> PP.text "Type"
 
+
 instance Disp ConstructorDef where
   disp (ConstructorDef _ c (Telescope [])) = PP.text c
   disp (ConstructorDef _ c tele) = PP.text c <+> PP.text "of" <+> disp tele
@@ -297,7 +298,11 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
-
+  display (MetaVar mid tel) = do
+    p <- asks prec
+    -- dtel <- withPrec 0 $ display tel
+    num <- display mid
+    return $ PP.text "?_" <+> num
 
 
 instance Display Arg where
@@ -329,6 +334,13 @@ instance Display Pattern where
 
 instance Disp Telescope where
   disp (Telescope t) = PP.sep $ map (PP.parens . disp) t
+
+-- instance Display Telescope where
+--   display (Telescope t) = do
+--     -- needs a Display instance for Decl
+--     -- feels like going against the design
+--     dt <- mapM display t
+--     return $ PP.sep $ map (PP.parens . disp) dt
 
 instance Display a => Display (a, Epsilon) where
   display (t, ep) = bindParens ep <$> display t
@@ -372,8 +384,6 @@ mandatoryBindParens :: Epsilon -> Doc -> Doc
 mandatoryBindParens Rel d = PP.parens d
 mandatoryBindParens Irr d = PP.brackets d
 
-
-
 -------------------------------------------------------------------------
 
 -- * LFresh instance for DisplayInfo reader monad
@@ -398,4 +408,3 @@ instance Unbound.LFresh ((->) DispInfo) where
           { dispAvoid =
               S.fromList names `S.union` dispAvoid di
           }
-
