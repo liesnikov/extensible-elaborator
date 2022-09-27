@@ -137,7 +137,7 @@ equateArg (Arg Irr t1) (Arg Irr t2) = return ()
 equateArg a1 a2 =
   Env.err [DS "Arg stage mismatch",
               DS "Expected " , DD a2,
-              DS "Found ", DD a1]
+              DS "Found "    , DD a1]
 
 
 -------------------------------------------------------
@@ -236,8 +236,14 @@ whnf (Case scrut mtchs) = do
           whnf (Unbound.substs ss br))
             `catchError` \ _ -> f alts
       f [] = Env.err $ [DS "Internal error: couldn't find a matching",
-                    DS "branch for", DD nf, DS "in"] ++ map DD mtchs
+                        DS "branch for", DD nf, DS "in"] ++ map DD mtchs
     _ -> return (Case nf mtchs)
+
+-- metavariables don't belong here
+whnf tm@(MetaVar m tel) =
+  Env.err [ DS "Internal error: can't compute a whnf of a metavariable"
+          , DD tm]
+
 -- all other terms are already in WHNF
 -- don't do anything special for them
 whnf tm = return tm
@@ -291,6 +297,14 @@ unify ns tx ty = do
         ds1 <- unify ns tyA1 tyA2
         ds2 <- unify (x:ns) tyB1 tyB2
         return (ds1 ++ ds2)
+      (m1@(MetaVar _ _), t2) -> Env.err [DS "Can't unify metavariable",
+                                      DD m1,
+                                      DS "with term",
+                                      DD t2]
+      (t1, m2@(MetaVar _ _)) -> Env.err [DS "Can't unify term",
+                                      DD t1,
+                                      DS "with metavariable",
+                                      DD m2]
       _ ->
         if amb txnf || amb tynf
           then return []

@@ -320,6 +320,10 @@ tcTerm tm (Just ty) = do
 
   return ty'
 
+-- metavariables don't belong in the whnf computations
+tcTerm tm@(MetaVar m tel) _ = do
+  Env.err [DS "Internal error: can't have metavariables in the core", DD tm]
+
 tcTerm tm Nothing =
   Env.err [DS "Must have a type annotation to check ", DD tm]
 
