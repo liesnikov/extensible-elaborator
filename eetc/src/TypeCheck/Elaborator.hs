@@ -489,13 +489,13 @@ elabTypeTele (S.Def x tm : tl) = do
   ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
   etm <- Env.withStage I.Irr $ checkType tm ty1
   let decl = (I.Def tx etm)
-  tl <- Env.extendCtx decl $ elabTypeTele tl
-  return $ decl : tl
+  etl <- Env.extendCtx decl $ elabTypeTele tl
+  return $ decl : etl
 elabTypeTele ((S.TypeSig sig) : tl) = do
   esig <- elabSig sig
   let decl = (I.TypeSig esig)
-  tl <- Env.extendCtx decl $ elabTypeTele tl
-  return $ decl : tl
+  etl <- Env.extendCtx decl $ elabTypeTele tl
+  return $ decl : etl
 elabTypeTele tele =
   Env.err [DS "Invalid telescope: ", DD tele]
 
