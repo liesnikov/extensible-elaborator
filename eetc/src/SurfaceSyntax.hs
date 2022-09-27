@@ -87,6 +87,8 @@ data Term
     DCon DCName [Arg]
   | -- | case analysis  `case a of matches`
     Case Term [Match]
+  | -- | implicit argument
+    Implicit
 
   deriving (Show, Generic)
 

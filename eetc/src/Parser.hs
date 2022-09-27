@@ -414,7 +414,7 @@ expr = do
 -- application.  Breaking it out as a seperate category both
 -- eliminates left-recursion in (<expr> := <expr> <expr>) and
 -- allows us to keep constructors fully applied in the abstract syntax.
-term = try dconapp <|> try tconapp <|>  funapp
+term = try dconapp <|> try tconapp <|> funapp
 
 arg :: LParser Arg
 arg = try (Arg Irr <$> brackets expr)
@@ -443,28 +443,31 @@ funapp = do
         app e1 (e2,ep)  =  App e1 (Arg ep e2)
 
 
-
 factor = choice [ varOrCon   <?> "a variable or nullary data constructor"
 
-                , typen      <?> "Type"
-                , lambda     <?> "a lambda"
+                , typen           <?> "Type"
+                , lambda          <?> "a lambda"
                 , try letPairExp  <?> "a let pair"
-                , letExpr <?> "a let"
-                                  , natenc     <?> "a literal"
-                , caseExpr   <?> "a case"
-                                  , substExpr  <?> "a subst"
-                , refl       <?> "Refl"
-                , contra     <?> "a contra"
-                , trustme    <?> "TRUSTME"
-                , printme    <?> "PRINTME"
-                                  , impProd    <?> "an implicit function type"
+                , letExpr         <?> "a let"
+                , natenc          <?> "a literal"
+                , caseExpr        <?> "a case"
+                , substExpr       <?> "a subst"
+                , refl            <?> "Refl"
+                , contra          <?> "a contra"
 
-                , bconst     <?> "a constant"
-                , ifExpr     <?> "an if expression"
-                , sigmaTy    <?> "a sigma type"
+                , trustme         <?> "TRUSTME"
+                , printme         <?> "PRINTME"
+
+                , impProd         <?> "an implicit function type"
+
+                , bconst          <?> "a constant"
+                , ifExpr          <?> "an if expression"
+                , sigmaTy         <?> "a sigma type"
 
                 , expProdOrAnnotOrParens
                     <?> "an explicit function type or annotated expression"
+
+                , impTerm         <?> "an implicit term"
                 ]
 
 impOrExpVar :: LParser (TName, Epsilon)
@@ -492,7 +495,6 @@ lambda = do reservedOp "\\"
 
 
 
-
 bconst  :: LParser Term
 bconst = choice [reserved "Bool"  >> return (TCon boolName []),
                  reserved "False" >> return (DCon falseName []),
@@ -515,7 +517,6 @@ ifExpr =
 
 
 
---
 letExpr :: LParser Term
 letExpr =
   do reserved "let"
@@ -541,7 +542,10 @@ letPairExp = do
     let pat = PatCon prodName [(PatVar x, Rel), (PatVar y, Rel)]
     return $ Case scrut [Match (Unbound.bind pat a)]
 
-
+-- impTerm - implicit arguments, terms
+-- these are represented by an underscore
+impTerm :: LParser Term
+impTerm = reserved "_" >> return Implicit
 
 -- impProd - implicit dependent products
 -- These have the syntax [x:a] -> b or [a] -> b .
@@ -676,6 +680,3 @@ sigmaTy = do
   b <- expr
   reservedOp "}"
   return $ TCon sigmaName [Arg Rel a, Arg Rel (Lam Rel (Unbound.bind x b))]
-
-
-
