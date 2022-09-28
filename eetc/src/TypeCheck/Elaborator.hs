@@ -814,6 +814,8 @@ exhaustivityCheck scrut ty pats = do
             ( do
                 tele' <- substTele delta tys tele
                 --FIXME
+                -- | Check all of the types contained within a telescope
+                --tcTypeTele :: (MonadElab m) => [I.Decl] -> m ()
                 --tcTypeTele tele'
                 return [dc]
               )
