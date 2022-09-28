@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 module TypeCheck.Monad (MonadTcReader(..), asksTc, asksTcEnv, localTcEnv,
                         MonadTcState(..), getsTc,
+                        MonadConstraints, createMeta, raiseConstraint, catchConstraint,
                         MonadTcCore, MonadElab,
                         TcMonad, runTcMonad) where
 
@@ -17,14 +18,29 @@ import           Control.Monad.State ( StateT(runStateT)
 import           Control.Monad.Trans ( MonadTrans(..), lift )
 import           Control.Monad.Trans.Control ( MonadTransControl(..), liftThrough )
 
+import qualified Data.Map.Strict as Map
+import           Data.Map.Strict (Map)
+
+import qualified Data.Set as Set
+import           Data.Set (Set)
+
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 
+import qualified InternalSyntax as Syntax
+import           TypeCheck.Constraints ( ConstraintF
+                                       , BasicConstraintsF
+                                       , (:<:) )
+
 import           TypeCheck.State ( Env(..)
                                  , Err(..) )
-
 data TcState = TcS {
-  env :: Env
+  -- FIXME
+  -- do I want to quantify a there?
+    metas :: forall a. Map Syntax.MetaId (Syntax.Meta a)
+  , metaSolutions :: Map Syntax.MetaId Syntax.Term
+  , constraints :: forall c. (BasicConstraintsF :<: c) => Set (ConstraintF c)
+  , env   :: Env
   }
 
 -- Monad with read access to TcState
@@ -80,6 +96,13 @@ instance (Monad m, MonadTcState m) => MonadTcReader m where
     v <- a
     putTc s
     return v
+
+-- raising and catching constraints
+
+class MonadConstraints m where
+  createMeta :: m Syntax.MetaId
+  raiseConstraint :: (BasicConstraintsF :<: c) => ConstraintF c -> m a
+  catchConstraint :: (BasicConstraintsF :<: c) => m a -> (ConstraintF c -> m a) -> m a
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState (ExceptT Err IO))
@@ -137,6 +160,12 @@ instance MonadTcState TcMonad where
   putTc = TcM . put
   modifyTc = TcM . modify
 
+-- FIXME
+instance MonadConstraints TcMonad where
+  createMeta      = undefined
+  raiseConstraint = undefined
+  catchConstraint = undefined
+
 type MonadTcCore m = (MonadTcReader m, MonadError Err m, MonadFail m,
                       Unbound.Fresh m, MonadPlus m,
                       MonadIO m)
@@ -151,4 +180,5 @@ type MonadElab m = (MonadTcState m, MonadError Err m, MonadFail m,
 runTcMonad :: Env -> TcMonad a -> IO (Either Err a)
 runTcMonad env m =
   runExceptT $ fmap fst $
-    runStateT (Unbound.runFreshMT $ unTcM $ m) $ TcS env
+    runStateT (Unbound.runFreshMT $ unTcM $ m) $
+    TcS Map.empty Map.empty Set.empty env

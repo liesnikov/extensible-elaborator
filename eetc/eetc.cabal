@@ -26,6 +26,7 @@ common shared-properties
     DefaultSignatures
     DeriveAnyClass
     DeriveDataTypeable
+    DeriveFunctor
     DeriveGeneric
     DerivingStrategies
     FlexibleContexts
@@ -41,6 +42,7 @@ common shared-properties
     ScopedTypeVariables
     TupleSections
     TypeSynonymInstances
+    TypeOperators
     UndecidableInstances
     ViewPatterns
   build-depends:
@@ -82,6 +84,7 @@ library
     TypeCheck.TypeCheck
     TypeCheck.Monad
     TypeCheck.State
+    TypeCheck.Constraints
 
 
 executable eetc

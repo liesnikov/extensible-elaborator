@@ -19,7 +19,8 @@ import           ModuleStub
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import qualified TypeCheck.Environment as Env
-import           TypeCheck.Monad       (MonadElab)
+import           TypeCheck.Monad (MonadElab, createMeta, raiseConstraint)
+import           TypeCheck.Constraints (EqualityConstraint(..), inject)
 
 
 transEpsilon :: S.Epsilon -> I.Epsilon
@@ -64,17 +65,28 @@ inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
   -- FIXME
   -- needs unification
-  let whnf = undefined
-      ensurePi ty = do
-       nf <- whnf ty
-       case nf of
-         (I.Pi ep tyA bnd) -> do
-           return (ep, tyA, bnd)
-         _ -> Env.err [DS "Expected a function type, instead found", DD nf]
-  (ep1, tyA, bnd) <- ensurePi ty1
+  -- let whnf = undefined
+  --     ensurePi ty = do
+  --      nf <- whnf ty
+  --      case nf of
+  --        (I.Pi ep tyA bnd) -> do
+  --          return (ep, tyA, bnd)
+  --        _ -> Env.err [DS "Expected a function type, instead found", DD nf]
+  -- (ep1, tyA, bnd) <- ensurePi ty1
+
+  ep1 <- createMeta
+  tyA <- createMeta
+  tyB <- createMeta
+  tx <- Unbound.lfresh (Unbound.string2Name "x")
+  bnd <- Unbound.bind tx tyB
+  let metaPi = I.Pi ep1 tyA bnd
+
+  raiseConstraint (inject $ EqualityConstraint ty1 metaPi I.Type)
+
   unless (ep1 == (transEpsilon $ S.argEp t2)) $ Env.err
-    [DS "In application, expected", DD ep1, DS "argument but found",
-                                    DD t2, DS "instead." ]
+    [DS "In application, expected",
+     DD ep1, DS "argument but found",
+     DD t2, DS "instead." ]
   -- if the argument is Irrelevant, resurrect the context
   tt2 <- (if ep1 == I.Irr then Env.extendCtx (I.Demote I.Rel) else id) $
     checkType (S.unArg t2) tyA
@@ -465,6 +477,8 @@ checkType (S.Case scrut alts) ty = do
 
   ealts <- traverse checkAlt alts
   let epats = map (\(I.Match bnd) -> fst (Unbound.Unsafe.unsafeUnbind bnd)) ealts
+  -- FIXME
+  -- exhaustivityCheck is currently non-functional in terms of empty cases
   exhaustivityCheck escrut' sty epats
   return $ I.Case escrut ealts
 
@@ -792,10 +806,13 @@ exhaustivityCheck scrut ty pats = do
       where
         loop [] [] = return ()
         loop [] dcons = do
-          l <- checkImpossible dcons
-          if null l
-            then return ()
-            else Env.err $ DS "Missing case for" : map DD l
+          Env.warn [DS "Can't verify impossible patterns at the moment in the elaborator"]
+          -- FIXME
+          -- | Can't verify impossible patterns atm
+          -- l <- checkImpossible dcons
+          -- if null l
+          --   then return ()
+          --   else Env.err $ DS "Missing case for" : map DD l
         loop (I.PatVar x : _) dcons = return ()
         loop (I.PatCon dc args : pats') dcons = do
           (I.ConstructorDef _ _ (I.Telescope tele), dcons') <- removeDCon dc dcons
