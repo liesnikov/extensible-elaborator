@@ -12,8 +12,8 @@ import           PrettyPrintSurface ()
 import           Text.PrettyPrint.HughesPJ ( ($$) )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
+import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
 import qualified Unbound.Generics.LocallyNameless.Unsafe as Unbound.Unsafe
-import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
 
 import           ModuleStub
 import qualified SurfaceSyntax as S

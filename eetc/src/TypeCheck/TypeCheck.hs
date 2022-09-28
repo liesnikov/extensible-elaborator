@@ -7,8 +7,8 @@ import Data.Maybe ( catMaybes )
 
 import TypeCheck.Monad (MonadTcCore)
 import TypeCheck.Environment (D (..))
-import TypeCheck.Environment qualified as Env
-import TypeCheck.Equal qualified as Equal
+import qualified TypeCheck.Environment as Env
+import qualified TypeCheck.Equal as Equal
 import PrettyPrint (Disp (disp))
 import PrettyPrintInternal ()
 import InternalSyntax
@@ -17,8 +17,8 @@ import ModuleStub
 
 import Text.PrettyPrint.HughesPJ (($$))
 
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
+import qualified Unbound.Generics.LocallyNameless as Unbound
+import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
 import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 
 

@@ -1,15 +1,15 @@
 module PrettyPrintSurface where
 
-import Control.Monad.Reader (MonadReader (ask, local), asks)
-import Data.Set qualified as S
-import Text.PrettyPrint (($$), (<+>))
+import           Control.Monad.Reader (MonadReader (ask, local), asks)
+import qualified Data.Set as S
+import           Text.PrettyPrint (($$), (<+>))
 import qualified Text.PrettyPrint as PP
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
+import qualified Unbound.Generics.LocallyNameless as Unbound
+import           Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
-import PrettyPrint
-import SurfaceSyntax
-import ModuleStub
+import           PrettyPrint
+import           SurfaceSyntax
+import           ModuleStub
 
 instance Disp (Unbound.Name Term) where
   disp = PP.text . Unbound.name2String

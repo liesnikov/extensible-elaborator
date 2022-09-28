@@ -3,14 +3,14 @@
 -- See comment at the top of 'Parser' for the concrete syntax of this language
 module SurfaceSyntax where
 
-import Data.Maybe (fromMaybe)
-import Data.Typeable (Typeable)
-import GHC.Generics (Generic,from)
-import Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Data.Function (on)
+import           Data.Function (on)
+import           Data.Maybe (fromMaybe)
+import           Data.Typeable (Typeable)
+import           GHC.Generics (Generic,from)
+import           Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
+import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import ModuleStub as M
+import           ModuleStub as M
 
 -----------------------------------------
 

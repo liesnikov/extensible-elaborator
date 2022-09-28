@@ -2,8 +2,7 @@
 -- | A Pretty Printer.
 module PrettyPrint (Disp (..), D (..), Display(..), DispInfo(..), SourcePos, PP.Doc, PP.render) where
 
-import Data.Set qualified as S
-
+import qualified Data.Set as S
 import           Text.ParserCombinators.Parsec.Error ( ParseError )
 import           Text.ParserCombinators.Parsec.Pos ( SourcePos
                                                    , sourceColumn
@@ -11,7 +10,7 @@ import           Text.ParserCombinators.Parsec.Pos ( SourcePos
                                                    , sourceName )
 import           Text.PrettyPrint ( Doc, (<+>) )
 import qualified Text.PrettyPrint as PP
-import Unbound.Generics.LocallyNameless qualified as Unbound
+import qualified Unbound.Generics.LocallyNameless as Unbound
 
 -------------------------------------------------------------------------
 

@@ -32,7 +32,6 @@ common shared-properties
     FlexibleInstances
     GADTs
     GeneralizedNewtypeDeriving
-    ImportQualifiedPost
     KindSignatures
     MultiParamTypeClasses
     NamedFieldPuns
