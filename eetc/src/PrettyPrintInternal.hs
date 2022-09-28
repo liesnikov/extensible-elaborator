@@ -298,10 +298,10 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
-  display (MetaVar mid tel) = do
+  display (MetaVar m) = do
     p <- asks prec
     -- dtel <- withPrec 0 $ display tel
-    num <- display mid
+    num <- display m
     return $ PP.text "?_" <+> num
 
 

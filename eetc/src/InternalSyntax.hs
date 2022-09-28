@@ -87,10 +87,19 @@ data Term
   | -- | case analysis  `case a of matches`
     Case Term [Match]
 
-  | MetaVar MetaId Telescope
+  | -- | meta variables done in contextual style
+    MetaVar MetaId
   deriving (Show, Generic)
 
 type MetaId = Integer
+
+data Meta c where
+  Meta :: MetaId -> Meta c
+  MetaTerm :: MetaId -> Telescope -> Meta Term
+
+instance Show (Meta c) where
+  show (Meta i) = show "?_" ++ show i
+  show (MetaTerm i _) = show "?_" ++ show i
 
 -- | An argument to a function
 data Arg = Arg {argEp :: Epsilon, unArg :: Term}
