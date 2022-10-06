@@ -34,13 +34,26 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Abel_Bernardy/2020/Abel_Bernardy_2020_A unified view of modalities in type systems.pdf}
 }
 
-@online{alekseykligerUnboundgenerics2022,
+@software{alekseykligerUnboundgenerics2022,
   title = {Unbound-Generics},
   author = {{Aleksey Kliger}},
   date = {2022-06-24},
-  url = {//hackage.haskell.org/package/unbound-generics},
+  url = {http://github.com/lambdageek/unbound-generics},
   urldate = {2022-09-20},
-  organization = {{Support for programming with names and binders using GHC Generics}}
+  abstract = {Support for programming with names and binders using GHC Generics}
+}
+
+@inproceedings{allaisTypOSOperatingSystem2022b,
+  title = {{{TypOS}}: {{An Operating System}} for {{Typechecking Actors}}},
+  author = {Allais, Guillaume and Altenmuller, Malin and McBride, Conor and Nakov, Georgi and Forsberg, Nordvall and Roy, Craig},
+  date = {2022-06-22},
+  pages = {3},
+  location = {{Nantes, France}},
+  url = {https://types22.inria.fr/files/2022/06/TYPES_2022_paper_31.pdf},
+  abstract = {Introduction We report work in progress on TypOS, a domain-specific language for experi- menting with typecheckers and elaborators. Our remit is similar to those of other domain-specific languages such as Andromeda [1], PLT Redex [ 3], or Turnstyle+ [ 2]. However, we try to minimise demands on the order in which subproblems are encountered and constraints are solved: when programs contain holes, and constraints are complex, it helps to be flexible about where to make progress. TypOS tackles typing tasks by spawning a network of concurrent actors [4], each responsible for one node of the syntax tree, communicating with its parent and child nodes via channels. Constraints demanded by one actor may generate enough information (by solving metavariables) for other actors to unblock. Metavariables thus provide a secondary and asynchronous means of communication, creating subtle difficulties modelling actor resumptions as host-language functions, because metavariables unsolved at the time of a resumption’s creation may be solved by the time it is invoked. Thus forced into a more syntactic representation of suspended processes, we decided to explore what opportunities a new language could bring.},
+  eventtitle = {{{TYPES}}},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Allais et al/2022/Allais et al_2022_TypOS.pdf}
 }
 
 @inproceedings{aspertiCraftingProofAssistant2007,
@@ -110,7 +123,7 @@
   editora = {Wagner, Michael},
   editoratype = {collaborator},
   langid = {english},
-  keywords = {000 Computer science; knowledge; general works,Computer Science},
+  keywords = {andromeda},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
 }
 
@@ -129,7 +142,7 @@
   abstract = {We designed a user-extensible judgemental equality checking algorithm for general type theories that supports computation rules and extensionality rules. The user needs only provide the equality rules they wish to use, after which the algorithm devises an appropriate notion of normal form. The algorithm is a generalization of type-directed equality checking for Martin-Löf type theory, and we implemented it in the Andromeda~2 prover.},
   isbn = {978-3-030-52200-1},
   langid = {english},
-  keywords = {Algorithmic equality checking,Dependent type theory,Proof assistant},
+  keywords = {Algorithmic equality checking,andromeda,Dependent type theory,Proof assistant},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2020/Bauer et al_2020_Equality Checking for General Type Theories in Andromeda 2.pdf}
 }
 
@@ -281,6 +294,17 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Guidi et al/2017/Guidi et al_2017_Implementing Type Theory in Higher Order Constraint Logic Programming.pdf;/home/bohdan/Zotero/storage/LUD3BH7S/hal-01410567v2.html}
 }
 
+@software{guillaumeallaisTypOS2022,
+  title = {{{TypOS}}},
+  author = {{Guillaume Allais} and {Malin Altenmüller} and {Conor McBride} and {Georgi Nakov} and {Fredrik Nordvall Forsberg}},
+  date = {2022-09-28T08:04:46Z},
+  origdate = {2021-05-14T15:51:37Z},
+  url = {https://github.com/msp-strath/TypOS},
+  urldate = {2022-10-04},
+  abstract = {being an operating system for typechecking processes},
+  organization = {{MSP group}}
+}
+
 @online{HeavyCouplingHaskell,
   title = {Heavy Coupling of {{Haskell}} Source Modules · {{Issue}} \#3512 · Agda/Agda},
   url = {https://github.com/agda/agda/issues/3512},
@@ -382,7 +406,7 @@
   urldate = {2022-09-15},
   abstract = {The intuitionistic modal logic of necessity is based on the judgmental notion of categorical truth. In this article we investigate the consequences of relativizing these concepts to explicitly specified contexts. We obtain contextual modal logic and its type-theoretic analogue. Contextual modal type theory provides an elegant, uniform foundation for understanding metavariables and explicit substitutions. We sketch some applications in functional programming and logical frameworks.},
   langid = {english},
-  file = {/home/bohdan/Zotero/storage/MB6ANYBJ/Nanevski et al. - 2008 - Contextual modal type theory.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Nanevski et al/2008/Nanevski et al_2008_Contextual modal type theory.pdf}
 }
 
 @article{norellPracticalProgrammingLanguage,
@@ -574,6 +598,22 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Tejiščák/2020/Tejiščák_2020_A dependently typed calculus with pattern matching and erasure inference.pdf}
 }
 
+@misc{theagdateamAgdaUserManual2022,
+  title = {Agda {{User Manual}}},
+  author = {{The Agda Team}},
+  date = {2022-09-30},
+  url = {https://agda.readthedocs.io/_/downloads/en/v2.6.2.2/pdf/}
+}
+
+@misc{theidristeamIdrisTutorial2021,
+  title = {The {{Idris}} Tutorial},
+  author = {{The Idris Team}},
+  date = {2021-10-23},
+  url = {https://docs.idris-lang.org/_/downloads/en/v1.3.4/pdf/},
+  urldate = {2022-04-10},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/The Idris Team/2021/The Idris Team_2021_The Idris tutorial.pdf}
+}
+
 @inproceedings{ullrichNotationsHygienicMacro2020a,
   title = {Beyond {{Notations}}: {{Hygienic Macro Expansion}} for {{Theorem Proving Languages}}},
   shorttitle = {Beyond {{Notations}}},
@@ -623,6 +663,18 @@
   abstract = {Advanced type system features, such as GADTs, type classes and type families, have proven to be invaluable language extensions for ensuring data invariants and program correctness. Unfortunately, they pose a tough problem for type inference when they are used as local type assumptions. Local type assumptions often result in the lack of principal types and cast the generalisation of local let-bindings prohibitively difficult to implement and specify. User-declared axioms only make this situation worse. In this paper, we explain the problems and – perhaps controversially – argue for abandoning local let-binding generalisation. We give empirical results that local let generalisation is only sporadically used by Haskell programmers. Moving on, we present a novel constraint-based type inference approach for local type assumptions. Our system, called OutsideIn(X), is parameterised over the particular underlying constraint domain X, in the same way as HM(X). This stratification allows us to use a common metatheory and inference algorithm. OutsideIn(X) extends the constraints of X by introducing implication constraints on top. We describe the strategy for solving these implication constraints, which, in turn, relies on a constraint solver for X. We characterise the properties of the constraint solver for X so that the resulting algorithm only accepts programs with principal types, even when the type system specification accepts programs that do not enjoy principal types. Going beyond the general framework, we give a particular constraint solver for X = type classes + GADTs + type families, a non-trivial challenge in its own right. This constraint solver has been implemented and distributed as part of GHC 7.},
   langid = {english},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions2.pdf;/home/bohdan/Zotero/storage/JUWGNJ8V/65110D74CF75563F91F9C68010604329.html}
+}
+
+@unpublished{weirichImplementingDependentTypes2022,
+  title = {Implementing {{Dependent Types}} in Pi-Forall},
+  author = {Weirich, Stephanie},
+  date = {2022-08-15},
+  location = {{OPLSS 2022}},
+  url = {https://raw.githubusercontent.com/sweirich/pi-forall/2022/doc/oplss.pdf},
+  howpublished = {Lecture notes},
+  langid = {english},
+  pagetotal = {54},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Weirich/2022/Weirich_2022_Implementing Dependent Types in pi-forall.pdf}
 }
 
 

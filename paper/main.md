@@ -1,7 +1,8 @@
 ---
 title: 'Extensible elaborator design'
-subtitle: Based on constraint-solving
+subtitle: draft
 author: Bohdan Liesnikov, Jesper Cockx
+date: \today
 
 link-citations: true
 
@@ -19,15 +20,38 @@ header-includes: |
     \usepackage{todonotes}
 ---
 
+# Abstract #
+
+
+
 # Introduction #
 
-Last decade brought a lot maturity into the dependently-typed language field.
-Some of the bigger proof assistants like Coq [@teamCoqProofAssistant2022] invested a lot of effort into user-facing features. Some like Agda [@norellPracticalProgrammingLanguage] experimented with core features.
-Lean [@mouraLeanTheoremProver2021] set out to become a default language for mathematics formalization, all the while bootstrapping the compiler. Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second. Andromeda [@bauerDesignImplementationAndromeda2018a; @bauerEqualityCheckingGeneral2020] appeared.
+Extensibility of a language has always been a lucrative target for compiler writers.
+Macros, compiler plugins in different languages tap into this desire.
+The same ideas made their way into functional languages, such as Haskell [@ghcdevelopmentteamGlasgowHaskellCompiler].
 
-# Bidirectional typing #
+In dependently-typed land last decade brought a lot maturity for the language implementations.
+Some of the bigger proof assistants like Coq [@teamCoqProofAssistant2022] invested a lot of effort into user-facing features while having a relatively stable core.
+Some like Agda [@norellPracticalProgrammingLanguage] experimented more with features baked into the core of the type system.
+Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
+We set out for a similar cause, aiming to find a design blueprint for a dependently-typed language.
 
-\todo{explain how it's done usually}
+Dependently-typed language implementations usually consist of at least four parts:
+parser, elaborator, core typechecker, and backend.
+Macros are an answer for the parser extensibility, included in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022].
+Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
+Andromeda [@bauerDesignImplementationAndromeda2018a; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
+Agda's philosophy allows developers to experiment with the core, but also results in a larger amount of unexpected behaviors.
+
+# Dependently-typed calculus and bidirectional typing #
+
+In this section we describe the core for type system we implement as well as the core typing rules.
+This work is based off pi-forall [@weirichImplementingDependentTypes2022] implementation.
+
+We leave the core rules intact and therefore, the core calculus too.
+This is dependently-typed calculus that includes Pi, Sigma and inductive types.
+Inductive types can be indexed.
+Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y`.
 
 # Constraint-based elaboration and design choices#
 
@@ -35,7 +59,7 @@ Lean [@mouraLeanTheoremProver2021] set out to become a default language for math
 
 We intend to avoid problems described in [@henryModularizingGHC] by using a solution described in [@swierstraDataTypesCarte2008] and [@najdTreesThatGrow2017].
 
-In particular, we intend to allow syntax extensions not only in the way of new constructors, but also in the annotations for the syntax.
+
 
 # Case-studies #
 
@@ -54,7 +78,14 @@ They allow the user to overload the commands, but if one defines a particular el
 In a way, this is an imperative view on extensibility.
 
 
+
+\todo{fix this}
+Lean [@mouraLeanTheoremProver2021] set out to become a default language for mathematics formalization, all the while bootstrapping the compiler.
+Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second. Andromeda [@bauerDesignImplementationAndromeda2018a; @bauerEqualityCheckingGeneral2020] appeared as an experiment in providing a specification for
+
 # Future work #
+
+
 
 There are some things we leave for future work.
 For example, coercive subtyping as implemented in Matita [@tassiBiDirectionalRefinementAlgorithm2012].
@@ -67,7 +98,7 @@ Or erasure inference [@tejiscakDependentlyTypedCalculus2020].
 
 <!---
 Local Variables:
-eval: (olivetti-mode) ;; because it looks better this way!
+eval: (progn (olivetti-mode 't) (flyspell-mode 't)) ;; because it looks better this way!
 reftex-default-bibliography: ("/home/bohdan/delft/extended-elab/paper/bib.bib") ;; add reftex support
 End:
 -->

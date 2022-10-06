@@ -14,6 +14,9 @@ open: main.pdf
 #         --bibliography=bib.bib --biblatex\
 #         --pdf-engine=xelatex -o main.pdf
 
+nix-build: main.md Makefile bib.bib
+	nix-build . ""
+
 main.pdf: main.tex Makefile
 	latexmk -xelatex="xelatex -interaction=nonstopmode" -pdf -use-make main.tex
 
