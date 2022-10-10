@@ -6,6 +6,7 @@ import           Control.Monad.Except ( MonadError(..)
                                       , foldM )
 import           Data.List ( nub )
 import           Data.Maybe ( catMaybes )
+import qualified Data.Map.Strict as Map
 import           PrettyPrint ( D(..), Disp(..))
 import           PrettyPrintInternal ()
 import           PrettyPrintSurface ()
@@ -19,7 +20,11 @@ import           ModuleStub
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import qualified TypeCheck.Environment as Env
-import           TypeCheck.Monad (MonadElab, createMeta, raiseConstraint)
+import           TypeCheck.Monad ( MonadElab
+                                 , createMeta
+                                 , raiseConstraint
+                                 , asksTcNames
+                                 , modifyTcNames )
 import           TypeCheck.Constraints (EqualityConstraint(..), inject)
 
 
@@ -27,17 +32,27 @@ transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
 transEpsilon S.Irr = I.Irr
 
-transName :: S.TName -> I.TName
-transName n =
-  let s = Unbound.name2String n
-      i = Unbound.name2Integer n
-  in Unbound.makeName s i
+transName :: (MonadElab m) => S.TName -> m I.TName
+transName n = do
+  namemap <- asksTcNames id
+  case (Map.lookup n namemap) of
+    Nothing -> do
+      let s = Unbound.name2String n
+      m <- Unbound.fresh $ Unbound.string2Name s
+      modifyTcNames (Map.insert n m)
+      return m
+    Just m -> return m
 
-transPattern :: S.Pattern -> I.Pattern
+transPattern :: (MonadElab m) => S.Pattern -> m I.Pattern
 transPattern (S.PatCon dc l) =
-  I.PatCon dc $ map (\(p,e) -> (transPattern p, transEpsilon e)) l
+  I.PatCon dc <$> traverse (uncurry helper) l
+  where
+    helper :: (MonadElab m) => S.Pattern -> S.Epsilon -> m (I.Pattern, I.Epsilon)
+    helper p e = do
+      mp <- transPattern p
+      return (mp, transEpsilon e)
 transPattern (S.PatVar n) =
-  I.PatVar $ transName n
+  I.PatVar <$> transName n
 
 elabTerm :: (MonadElab m) => S.Term -> m I.Term
 elabTerm = (fmap fst) . inferType
@@ -50,7 +65,7 @@ inferType (S.Type) = return (I.Type, I.Type)
 
 -- variable lookup
 inferType (S.Var x) = do
-  let tx = transName x
+  tx <- transName x
   sig <- Env.lookupTy tx   -- make sure the variable is accessible
   Env.checkStage (I.sigEp sig)
   return (I.Var tx, I.sigType sig)
@@ -65,7 +80,7 @@ inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
   -- FIXME
   -- needs unification
-  -- let whnf = undefined
+  -- let whnf = id
   --     ensurePi ty = do
   --      nf <- whnf ty
   --      case nf of
@@ -98,7 +113,7 @@ inferType (S.Pi ep tyA bnd) = do
   ttyA <- elabType tyA
   let tep = transEpsilon ep
   (x, tyB) <- Unbound.unbind bnd
-  let tx = transName x
+  tx <- transName x
   ttyB <- Env.extendCtx (I.TypeSig (I.Sig tx tep ttyA)) (checkType tyB I.Type)
   let tpib = Unbound.bind tx ttyB
   return (I.Pi (transEpsilon ep) ttyA tpib, I.Type)
@@ -125,7 +140,7 @@ inferType t@(S.PrintMe) = Env.err [DS "PrintMes must be checked not inferred",
 -- let-binding
 inferType (S.Let rhs bnd) = do
   (x, body) <- Unbound.unbind bnd
-  let tx = transName x
+  tx <- transName x
   (erhs, erty) <- inferType rhs
   Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ inferType body
 
@@ -148,7 +163,7 @@ inferType (S.If t1 t2 t3) = do
 -- sigma-types
 inferType t@(S.Sigma tyA bnd) = do
   (x, tyB) <- Unbound.unbind bnd
-  let tx = transName x
+  tx <- transName x
   etyA <- elabType tyA
   etyB <- Env.extendCtx (I.mkSig tx etyA) $ elabType tyB
   let ebnd = Unbound.bind tx etyB
@@ -248,7 +263,7 @@ checkType :: (MonadElab m) => S.Term -> I.Type -> m I.Term
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
   (x, body, _, tyB) <- Unbound.unbind2Plus lam bnd2
-  let tx = transName x
+  tx <- transName x
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 tyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
@@ -288,7 +303,7 @@ checkType (S.PrintMe) typ = do
 -- | `let x = a in b`
 checkType (S.Let rhs bnd) typ = do
   (x, body) <- Unbound.unbind bnd
-  let tx = transName x
+  tx <- transName x
   (erhs, erty) <- inferType rhs
   Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
 
@@ -345,8 +360,8 @@ checkType (S.Prod a b) typ = do
 -- | elimination form for Sigma-types `let (x,y) = a in b`
 checkType (S.LetPair p bnd) typ = do
   ((x, y), body) <- Unbound.unbind bnd
-  let tx = transName x
-  let ty = transName y
+  tx <- transName x
+  ty <- transName y
   (ep, pty) <- inferType p
 -- FIXME
   let whnf = undefined
@@ -461,7 +476,7 @@ checkType (S.Case scrut alts) ty = do
   let checkAlt :: (MonadElab m) => S.Match -> m I.Match
       checkAlt (S.Match bnd) = do
         (pat, body) <- Unbound.unbind bnd
-        let epat = transPattern pat
+        epat <- transPattern pat
         -- add variables from pattern to context
         -- could fail if branch is in-accessible
         decls <- declarePat epat I.Rel (I.TCon c args)
@@ -497,8 +512,8 @@ elabType tm = Env.withStage I.Irr $ checkType tm I.Type
 
 elabSig :: (MonadElab m) => S.Sig -> m I.Sig
 elabSig (S.Sig name ep typ) = do
-  let ename = transName name
-      eep   = transEpsilon ep
+  ename <- transName name
+  let eep   = transEpsilon ep
   etyp <- elabType typ
   return $ I.Sig ename eep etyp
 
@@ -696,11 +711,13 @@ elabModule defs m' = do
 -- | Elaborate each sort of declaration in a module
 elabEntry :: (MonadElab m) => S.Decl -> m HintOrCtx
 elabEntry (S.Def n term) = do
-  oldDef <- Env.lookupDef $ transName $ n
+  en <- transName n
+  oldDef <- Env.lookupDef en
   maybe elab die oldDef
   where
     elab = do
-      lkup <- Env.lookupHint $ transName $ n
+      en <- transName n
+      lkup <- Env.lookupHint en
       case lkup of
         Nothing -> do
           Env.extendSourceLocation (S.unPosFlaky term) term $
@@ -717,16 +734,18 @@ elabEntry (S.Def n term) = do
                   ]
            in do
                 elabterm <- checkType term (I.sigType sig) `catchError` handler
-                Env.extendCtx (I.TypeSig sig) $
-                  let tn = transName n
-                  in if tn `elem` Unbound.toListOf Unbound.fv term
-                       then return $ AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
-                       else return $ AddCtx [I.TypeSig sig, I.Def tn elabterm]
+                Env.extendCtx (I.TypeSig sig) $ do
+                  tn <- transName n
+                  return $
+                    if tn `elem` Unbound.toListOf Unbound.fv term
+                    then AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
+                    else AddCtx [I.TypeSig sig, I.Def tn elabterm]
     die term' = do
+      en <- transName n
       Env.extendSourceLocation (S.unPosFlaky term) term $
         Env.err
           [ DS "Multiple definitions of",
-            DD $ transName n,
+            DD en,
             DS "Previous definition was",
             DD term'
           ]

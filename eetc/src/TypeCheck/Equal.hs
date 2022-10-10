@@ -240,7 +240,7 @@ whnf (Case scrut mtchs) = do
     _ -> return (Case nf mtchs)
 
 -- metavariables don't belong here
-whnf tm@(MetaVar m tel) =
+whnf tm@(MetaVar _) =
   Env.err [ DS "Internal error: can't compute a whnf of a metavariable"
           , DD tm]
 
@@ -297,11 +297,11 @@ unify ns tx ty = do
         ds1 <- unify ns tyA1 tyA2
         ds2 <- unify (x:ns) tyB1 tyB2
         return (ds1 ++ ds2)
-      (m1@(MetaVar _ _), t2) -> Env.err [DS "Can't unify metavariable",
+      (m1@(MetaVar _), t2) -> Env.err [DS "Can't unify metavariable",
                                       DD m1,
                                       DS "with term",
                                       DD t2]
-      (t1, m2@(MetaVar _ _)) -> Env.err [DS "Can't unify term",
+      (t1, m2@(MetaVar _)) -> Env.err [DS "Can't unify term",
                                       DD t1,
                                       DS "with metavariable",
                                       DD m2]

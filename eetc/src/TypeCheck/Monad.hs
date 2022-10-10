@@ -1,9 +1,14 @@
 {-# LANGUAGE ConstraintKinds #-}
-module TypeCheck.Monad (MonadTcReader(..), asksTc, asksTcEnv, localTcEnv,
-                        MonadTcState(..), getsTc,
-                        MonadConstraints, createMeta, raiseConstraint, catchConstraint,
+module TypeCheck.Monad ( MonadTcReader(..)
+                       , asksTc, asksTcEnv, localTcEnv
+                       , asksTcNames, localTcNames
+                       , MonadTcState(..), getsTc, modifyTcNames
+                       , MonadConstraints, createMeta, raiseConstraint, catchConstraint,
                         MonadTcCore, MonadElab,
                         TcMonad, runTcMonad) where
+
+import qualified Data.Map.Strict as Map
+import           Data.Map.Strict (Map)
 
 import           Control.Monad (join, MonadPlus(..))
 import           Control.Applicative (Alternative(..))
@@ -26,21 +31,23 @@ import           Data.Set (Set)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
-
-import qualified InternalSyntax as Syntax
+import qualified SurfaceSyntax as S
+import qualified InternalSyntax as I
 import           TypeCheck.Constraints ( ConstraintF
                                        , BasicConstraintsF
                                        , (:<:) )
 
 import           TypeCheck.State ( Env(..)
                                  , Err(..) )
+
 data TcState = TcS {
   -- FIXME
   -- do I want to quantify a there?
-    metas :: forall a. Map Syntax.MetaId (Syntax.Meta a)
-  , metaSolutions :: Map Syntax.MetaId Syntax.Term
+    metas :: forall a. Map I.MetaId (I.Meta a)
+  , metaSolutions :: Map I.MetaId I.Term
   , constraints :: forall c. (BasicConstraintsF :<: c) => Set (ConstraintF c)
   , env   :: Env
+  , vars :: Map S.TName I.TName
   }
 
 -- Monad with read access to TcState
@@ -66,6 +73,12 @@ asksTcEnv f = f <$> env <$> askTc
 localTcEnv :: (MonadTcReader m) => (Env -> Env) -> m a -> m a
 localTcEnv f = localTc (\s -> s {env = f $ env s})
 
+asksTcNames :: (MonadTcReader m) => (Map S.TName I.TName -> a) -> m a
+asksTcNames f = f <$> vars <$> askTc
+
+localTcNames :: (MonadTcReader m) => (Map S.TName I.TName -> Map S.TName I.TName) -> m a -> m a
+localTcNames f = localTc (\s -> s {vars = f $ vars s})
+
 -- Monad with write access to TcState
 
 class Monad m => MonadTcState m where
@@ -87,6 +100,8 @@ getsTc f = do
   s <- getTc
   return $ f s
 
+modifyTcNames :: (MonadTcState m) => (Map S.TName I.TName -> Map S.TName I.TName) ->  m ()
+modifyTcNames f = modifyTc (\s -> s {vars = f $ vars s})
 
 instance (Monad m, MonadTcState m) => MonadTcReader m where
   askTc = getTc
@@ -100,7 +115,7 @@ instance (Monad m, MonadTcState m) => MonadTcReader m where
 -- raising and catching constraints
 
 class MonadConstraints m where
-  createMeta :: m Syntax.MetaId
+  createMeta :: m I.MetaId
   raiseConstraint :: (BasicConstraintsF :<: c) => ConstraintF c -> m a
   catchConstraint :: (BasicConstraintsF :<: c) => m a -> (ConstraintF c -> m a) -> m a
 
@@ -181,4 +196,8 @@ runTcMonad :: Env -> TcMonad a -> IO (Either Err a)
 runTcMonad env m =
   runExceptT $ fmap fst $
     runStateT (Unbound.runFreshMT $ unTcM $ m) $
-    TcS Map.empty Map.empty Set.empty env
+    TcS { metas = Map.empty
+        , metaSolutions = Map.empty
+        , constraints = Set.empty
+        , env = env
+        , vars = Map.empty}
