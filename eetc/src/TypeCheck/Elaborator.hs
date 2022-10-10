@@ -74,7 +74,7 @@ inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
   -- FIXME
   -- needs unification
-  let whnf = undefined
+  let whnf = return
       ensurePi ty = do
        nf <- whnf ty
        case nf of
