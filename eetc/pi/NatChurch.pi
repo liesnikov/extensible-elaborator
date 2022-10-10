@@ -1,13 +1,12 @@
 module NatChurch where
-
 -- Church encoding of natural numbers
 
 nat : Type
 nat = (x:Type) -> x -> (x -> x) -> x
-	 
+
 z : nat
 z = \x zf sf. zf
-	 
+
 s : nat -> nat
 s = \n. \x zf sf. sf (n x zf sf)
 
@@ -35,7 +34,7 @@ spec0 = \n . Refl
 spec1 : (n : nat) -> (m : nat) -> plus (s n) m  = s (plus n m)
 spec1 = \n m . Refl
 
--- The predecessor function is *really* tricky! Don't try this 
+-- The predecessor function is *really* tricky! Don't try this
 -- first if you have never seen it before.
 
 pred : nat -> nat
@@ -76,7 +75,7 @@ testNC1 = TRUSTME -- replace with Refl
 
 -- Now write plus: with Scott encoded nats, note that you need to use recursion.
 
-scott_plus : scott_nat -> scott_nat -> scott_nat 
+scott_plus : scott_nat -> scott_nat -> scott_nat
 scott_plus = TRUSTME
 
 testNC2 : scott_plus scott_one scott_two = scott_three

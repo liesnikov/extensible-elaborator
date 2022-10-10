@@ -1,25 +1,24 @@
 module Lambda where
-
 import Nat
 import Fin
-import Vec 
+import Vec
 
-{- This version also requires that the object language be statically typed. 
+{- This version also requires that the object language be statically typed.
    It eliminates all run-time errors from the expression. -}
 
 lookup : [a:Type] -> [n:Nat] -> Fin n -> Vec a n -> a
-lookup = \[a][n] f v. case f of 
-   Zero [m] -> case v of 
-           Cons [m'] x xs -> x 
-   Succ [m] f' -> case v of 
+lookup = \[a][n] f v. case f of
+   Zero [m] -> case v of
+           Cons [m'] x xs -> x
+   Succ [m] f' -> case v of
               Cons [m'] x xs -> lookup [a][m] f' xs
 
 data Ty : Type where
    TyFun of (Ty)(Ty)
-   TyNat 
+   TyNat
 
 data List (a : Type) : Type where
-   Nil 
+   Nil
    Cons of (a) (List a)
 
 data VarRef (n : List Ty) (t : Ty) : Type where
@@ -52,7 +51,7 @@ data Env (val : Ty -> Type) (n : List Ty)  : Type where
    Cons of [t : Ty][ts : List Ty](val t)(Env val ts) [n = Cons t ts]
 
 data Val (t : Ty) : Type where
-   Clos of [n:List Ty][t1:Ty][t2:Ty] 
+   Clos of [n:List Ty][t1:Ty][t2:Ty]
                (Env (\t. Val t) n) (Exp (Cons t1 n) t2)[t = TyFun t1 t2]
    VNat of (Nat)[t = TyNat]
 
@@ -60,29 +59,29 @@ env : List Ty -> Type
 env = \u.  Env (\t. Val t) u
 
 nth : [n : List Ty] -> [t:Ty] -> env n -> VarRef n t -> Val t
-nth = \ [n][t] e var. case var of 
-   VZ [ts]       -> case e of 
+nth = \ [n][t] e var. case var of
+   VZ [ts]       -> case e of
                       Cons [u][ts] v vs -> v
-   VS [ts][u] v' -> case e of 
-	              Cons [u][ts] v vs -> nth [ts][t] vs v'
+   VS [ts][u] v' -> case e of
+                Cons [u][ts] v vs -> nth [ts][t] vs v'
 
 
 interp : [n:List Ty] -> [t:Ty] -> env n -> Exp n t -> Val t
-interp = \[n][t] rho exp. 
-  case exp of 
+interp = \[n][t] rho exp.
+  case exp of
     Var x          -> nth [n][t] rho x
-    App [t1] e1 e2 -> 
+    App [t1] e1 e2 ->
       let v1 = interp [n][TyFun t1 t] rho e1 in
-      let v2 = interp [n][t1]         rho e2 in 
+      let v2 = interp [n][t1]         rho e2 in
       case v1 of
-        Clos [m][t1'][t2'] rho' body -> 
-          let rho'' = (Cons [t1][m] v2 rho' : env (Cons t1 m)) in 
+        Clos [m][t1'][t2'] rho' body ->
+          let rho'' = (Cons [t1][m] v2 rho' : env (Cons t1 m)) in
           interp [Cons t1 m][t2'] rho'' body
 
     Lam [t1][t2] body -> Clos [n][t1][t2] rho body
     Lit i          -> VNat i
-    If0 e1 e2 e3 -> case (interp [n][TyNat] rho e1) of 
-        VNat x -> case x of 
+    If0 e1 e2 e3 -> case (interp [n][TyNat] rho e1) of
+        VNat x -> case x of
           Zero     -> interp [n][t] rho e2
           (Succ y) -> interp [n][t] rho e3
 
@@ -94,4 +93,4 @@ t1 = Refl
 -- t2 = Refl
 
 -- t3 : interp [Nil][TyNat] Nil (App[TyNat] (Lit 1) (Lit 2)) = TRUSTME
--- t3 = Refl  
+-- t3 = Refl

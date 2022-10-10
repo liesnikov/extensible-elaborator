@@ -4,7 +4,6 @@
 --
 -- Author: Stephanie Weirich
 --
-
 module Nat where
 
 data Nat : Type where
@@ -12,7 +11,7 @@ data Nat : Type where
   Succ of (Nat)
 
 is_zero : Nat -> Bool
-is_zero = \ x . case x of 
+is_zero = \ x . case x of
   Zero -> True
   Succ n' -> False
 
@@ -23,16 +22,16 @@ pred = \n . case n of
 
 
 m_eq_n_Sm_eq_Sn : (m:Nat) -> (n:Nat) -> m = n -> ((Succ m : Nat) = Succ n)
-m_eq_n_Sm_eq_Sn = \m n pf . 
-  subst Refl by pf 
+m_eq_n_Sm_eq_Sn = \m n pf .
+  subst Refl by pf
 
 nat_eq : Nat -> Nat -> Bool
 nat_eq = \ x y .
-  case x of 
+  case x of
      Zero -> case y of
         Zero -> True
         Succ n -> False
-     Succ m -> case y of 
+     Succ m -> case y of
         Zero -> False
         Succ n -> nat_eq m n
 
@@ -64,13 +63,13 @@ minus = \n m .
 minus_same_zero : (n : Nat) -> (minus n n = 0)
 minus_same_zero = \ n .
     case n of
-      Zero -> Refl 
+      Zero -> Refl
       Succ p -> (minus_same_zero p : minus p p = 0)
 
 lemma_minus_zero_id : (n : Nat) -> (minus n 0 = n)
-lemma_minus_zero_id =   \n . case n of 
-    Zero -> Refl 
-    Succ n' -> Refl 
+lemma_minus_zero_id =   \n . case n of
+    Zero -> Refl
+    Succ n' -> Refl
 
 
 lemma_minus_plus_id : (m : Nat) -> (n : Nat) -> ((minus (plus m n) m) = n)
@@ -86,7 +85,7 @@ plus_associates = \ i j k .
     Zero -> Refl
     -- associate `plus` in `Succ` of the inductive case:
     -- S ((i'+j)+k) = S (i'+(j+k))
-    Succ i' -> 
+    Succ i' ->
       let ih = (plus_associates i' j k) in
-		m_eq_n_Sm_eq_Sn (plus (plus i' j) k) (plus i' (plus j k)) ih
+    m_eq_n_Sm_eq_Sn (plus (plus i' j) k) (plus i' (plus j k)) ih
 

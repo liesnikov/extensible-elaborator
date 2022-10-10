@@ -1,6 +1,5 @@
 module Lennart where
-
--- stack exec -- pi-forall Lennart.pi  
+-- stack exec -- pi-forall Lennart.pi
 -- with unbind / subst
 -- 7.81s user 0.52s system 97% cpu 8.568 total
 -- with substBind
@@ -40,7 +39,7 @@ fst = \[A][B] ab. ab [A] (\a.\b.a)
 snd : [A:Type] -> [B:Type] -> prod A B -> B
 snd = \[A][B] ab.ab [B] (\a.\b.b)
 add : nat -> nat -> nat
-add = fix [nat -> nat -> nat] 
+add = fix [nat -> nat -> nat]
         \radd . \x.\y. x [nat] y (\ n. succ (radd n y))
 mul : nat -> nat -> nat
 mul = fix [nat -> nat -> nat]
@@ -49,12 +48,12 @@ fac : nat -> nat
 fac = fix [nat -> nat]
         \rfac. \x. x [nat] one (\ n. mul x (rfac n))
 eqnat : nat -> nat -> bool
-eqnat = fix [nat -> nat -> bool] 
-        \reqnat. \x. \y. 
-           x [bool] 
-             (y [bool] true (\b.false)) 
+eqnat = fix [nat -> nat -> bool]
+        \reqnat. \x. \y.
+           x [bool]
+             (y [bool] true (\b.false))
              (\x1.y [bool] false (\y1. reqnat x1 y1))
-sumto : nat -> nat 
+sumto : nat -> nat
 sumto = fix [nat -> nat]
           \rsumto. \x. x [nat] zero (\n. add x (rsumto n))
 n5 : nat

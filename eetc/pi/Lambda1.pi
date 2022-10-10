@@ -1,6 +1,5 @@
-{- This version of the interpreter indexes datatype by the 
+{- This version of the interpreter indexes datatype by the
 scoping depth of the expression. -}
-
 module Lambda where
 
 import Nat
@@ -19,34 +18,34 @@ data Val : Type where
   Clos of [n:Nat] (Vec Val n) (Exp (Succ n))
   VNat of (Nat)
   Wrong
-  
 
--- Safely access a vector using an index that is known 
+
+-- Safely access a vector using an index that is known
 -- to be in bounds.
 nth : [a:Type] -> [n:Nat] -> Vec a n -> Fin n -> a
-nth = \[a][n] v f. case f of 
-   Zero [m] -> case v of 
-           Cons [m'] x xs -> x 
-   Succ [m] f' -> case v of 
+nth = \[a][n] v f. case f of
+   Zero [m] -> case v of
+           Cons [m'] x xs -> x
+   Succ [m] f' -> case v of
            Cons [m'] x xs -> nth [a][m] xs f'
 
 
 interp : [n:Nat] -> Vec Val n -> Exp n -> Val
-interp = \[n] rho e. 
-  case e of 
+interp = \[n] rho e.
+  case e of
     Var x     -> nth [Val] [n] rho x
-    App e1 e2 -> 
+    App e1 e2 ->
        let v1 = interp [n] rho e1 in
        let v2 = interp [n] rho e2 in
-       case v1 of        
-         Clos [m] rho' body -> 
-            interp [Succ m] (Cons [m] v2 rho') body 
+       case v1 of
+         Clos [m] rho' body ->
+            interp [Succ m] (Cons [m] v2 rho') body
          _ -> Wrong
     Lam e     -> Clos [n] rho e
     Lit i     -> VNat i
-    If0 e1 e2 e3 -> 
-      case (interp [n] rho e1) of 
-        VNat x -> case x of 
+    If0 e1 e2 e3 ->
+      case (interp [n] rho e1) of
+        VNat x -> case x of
           Zero     -> interp [n] rho e2
           (Succ y) -> interp [n] rho e3
         _ -> Wrong
