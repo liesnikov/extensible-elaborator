@@ -1,7 +1,10 @@
 {-# LANGUAGE ConstraintKinds, FunctionalDependencies #-}
 module TypeCheck.Monad ( MonadTcReader(..)
-                       , asksTc, asksTcEnv, localTcEnv
+                       , asksTc
                        , asksTcNames, localTcNames
+
+                       , MonadTcReaderEnv(..)
+                       , asksEnv
 
                        , MonadTcState(..)
                        , getsTc, modifyTcNames
@@ -21,6 +24,9 @@ import           Control.Monad.Except ( MonadError(..)
                                       , ExceptT
                                       , runExceptT )
 import           Control.Monad.IO.Class ( MonadIO(..) )
+import           Control.Monad.Reader ( ReaderT(runReaderT)
+                                      , ask
+                                      , local )
 import           Control.Monad.State ( StateT(runStateT)
                                      , put
                                      , modify
@@ -95,11 +101,8 @@ class Monad m => MonadTcReaderEnv m where
   localEnv = liftThrough . localEnv
 
 
-asksTcEnv :: (MonadTcReaderEnv m) => (Env -> a) -> m a
-asksTcEnv f = f <$> askEnv
-
-localTcEnv :: (MonadTcReaderEnv m) => (Env -> Env) -> m a -> m a
-localTcEnv f = localEnv f
+asksEnv :: (MonadTcReaderEnv m) => (Env -> a) -> m a
+asksEnv f = f <$> askEnv
 
 -- Monad with write access to TcState
 
@@ -156,7 +159,12 @@ runTcMonad state m =
 -- environment), freshness state (for supporting locally-nameless
 -- representations), error (for error reporting), and IO
 -- (for e.g.  warning messages).
-newtype TcMonad c a = TcM { unTcM :: Unbound.FreshMT (StateT (TcState c) (ExceptT Err IO)) a }
+newtype TcMonad c a = TcM { unTcM :: Unbound.FreshMT
+                                       (StateT (TcState c)
+                                         (ReaderT Env
+                                          (ExceptT Err
+                                            IO)))
+                                       a }
 
 instance Functor (TcMonad c) where
   fmap = \f (TcM m) -> TcM $ fmap f m
@@ -192,10 +200,9 @@ instance MonadIO (TcMonad c) where
 instance Unbound.Fresh (TcMonad c) where
   fresh = TcM . Unbound.fresh
 
--- FIXME
 instance MonadTcReaderEnv (TcMonad c) where
-  askEnv = undefined
-  localEnv = undefined
+  askEnv = TcM $ ask
+  localEnv f (TcM m) = TcM $ local f m
 
 instance MonadTcState c (TcMonad c) where
   getTc = TcM $ get
@@ -223,8 +230,10 @@ type MonadElab c m = (MonadTcState c m, MonadTcReaderEnv m,
 -- or some result.
 runTcMonad :: Env -> TcMonad c a -> IO (Either Err a)
 runTcMonad env m =
-  runExceptT $ fmap fst $
-    runStateT (Unbound.runFreshMT $ unTcM $ m) $
+  runExceptT $
+    (flip runReaderT) env $
+      fmap fst $
+        runStateT (Unbound.runFreshMT $ unTcM $ m) $
     TcS { metas = Map.empty
         , metaSolutions = Map.empty
         , constraints = Set.empty

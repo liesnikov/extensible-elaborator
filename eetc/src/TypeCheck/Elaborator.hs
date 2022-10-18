@@ -32,7 +32,7 @@ transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
 transEpsilon S.Irr = I.Irr
 
-transName :: (MonadElab m) => S.TName -> m I.TName
+transName :: (MonadElab c m) => S.TName -> m I.TName
 transName n = do
   namemap <- asksTcNames id
   case (Map.lookup n namemap) of
@@ -43,22 +43,22 @@ transName n = do
       return m
     Just m -> return m
 
-transPattern :: (MonadElab m) => S.Pattern -> m I.Pattern
+transPattern :: (MonadElab c m) => S.Pattern -> m I.Pattern
 transPattern (S.PatCon dc l) =
   I.PatCon dc <$> traverse (uncurry helper) l
   where
-    helper :: (MonadElab m) => S.Pattern -> S.Epsilon -> m (I.Pattern, I.Epsilon)
+    helper :: (MonadElab c m) => S.Pattern -> S.Epsilon -> m (I.Pattern, I.Epsilon)
     helper p e = do
       mp <- transPattern p
       return (mp, transEpsilon e)
 transPattern (S.PatVar n) =
   I.PatVar <$> transName n
 
-elabTerm :: (MonadElab m) => S.Term -> m I.Term
+elabTerm :: (MonadElab c m) => S.Term -> m I.Term
 elabTerm = (fmap fst) . inferType
 
 
-inferType :: (MonadElab m) => S.Term -> m (I.Term, I.Type)
+inferType :: forall c m. (MonadElab c m) => S.Term -> m (I.Term, I.Type)
 
 -- type has type type for now
 inferType (S.Type) = return (I.Type, I.Type)
@@ -248,7 +248,7 @@ inferType t@(S.Implicit) =
            DS "not supported yet"
           ]
 
-checkType :: (MonadElab m) => S.Term -> I.Type -> m I.Term
+checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 
 -- | type of types  `Type`
 -- checkType t@(S.Type) typ =
@@ -385,7 +385,7 @@ checkType t@(S.TyEq ta tb) typ =
       ]
 -- | Proof of equality `Refl`
 checkType (S.Refl) typ@(I.TyEq a b) = do
-  let equate :: (MonadElab m) => I.Term -> I.Term -> m ()
+  let equate :: (MonadElab c m) => I.Term -> I.Term -> m ()
       -- FIXME
       equate = undefined
   equate a b
@@ -409,10 +409,10 @@ checkType (S.Subst a b) typ = do
 -- | witness to an equality contradiction
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
-  let ensureTyEq :: (MonadElab m) => I.Term -> m (I.Term, I.Term)
+  let ensureTyEq :: (MonadElab c m) => I.Term -> m (I.Term, I.Term)
       -- FIXME
       ensureTyEq = undefined
-      whnf :: (MonadElab m) => I.Term -> m I.Term
+      whnf :: (MonadElab c m) => I.Term -> m I.Term
       -- FIXME
       whnf = undefined
   (a, b) <- ensureTyEq ty'
@@ -467,15 +467,15 @@ checkType t@(S.DCon c args) ty = do
 
 checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
-  let whnf :: (MonadElab m) => I.Term -> m I.Term
+  let whnf :: (MonadElab c m) => I.Term -> m I.Term
       -- FIXME
       whnf = undefined
   escrut' <- whnf escrut
-  let ensureTCon :: (MonadElab m) => I.Term -> m (TCName, [I.Arg])
+  let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
       -- FIXME
       ensureTCon = undefined
   (c, args) <- ensureTCon sty
-  let checkAlt :: (MonadElab m) => S.Match -> m I.Match
+  let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
       checkAlt (S.Match bnd) = do
         (pat, body) <- Unbound.unbind bnd
         epat <- transPattern pat
@@ -485,7 +485,7 @@ checkType (S.Case scrut alts) ty = do
         -- add defs to the contents from scrut = pat
         -- could fail if branch is in-accessible
         --FIXME
-        let unify :: MonadElab m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
+        let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
             unify = undefined
         decls' <- unify [] escrut' (pat2Term epat)
         ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
@@ -502,17 +502,17 @@ checkType (S.Case scrut alts) ty = do
 -- c-infer
 checkType tm ty = do
   (etm, ty') <- inferType tm
-  let equate :: (MonadElab m) => I.Term -> I.Term -> m ()
+  let equate :: (MonadElab c m) => I.Term -> I.Term -> m ()
       -- FIXME
       equate = \_ _ -> return ()
   equate ty' ty
   return $ etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
-elabType :: (MonadElab m) => S.Term -> m I.Term
+elabType :: (MonadElab c m) => S.Term -> m I.Term
 elabType tm = Env.withStage I.Irr $ checkType tm I.Type
 
-elabSig :: (MonadElab m) => S.Sig -> m I.Sig
+elabSig :: (MonadElab c m) => S.Sig -> m I.Sig
 elabSig (S.Sig name ep typ) = do
   ename <- transName name
   let eep   = transEpsilon ep
@@ -520,7 +520,7 @@ elabSig (S.Sig name ep typ) = do
   return $ I.Sig ename eep etyp
 
 -- | Check all of the types contained within a telescope
-elabTypeTele :: (MonadElab m) => [S.Decl] -> m [I.Decl]
+elabTypeTele :: (MonadElab c m) => [S.Decl] -> m [I.Decl]
 elabTypeTele [] = return []
 elabTypeTele (S.Def x tm : tl) = do
   ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
@@ -542,7 +542,7 @@ elabTypeTele tele =
 ---------------------------------------------------------------------
 
 -- | Create a Def if either side normalizes to a single variable
-def :: (MonadElab m) => I.Term -> I.Term -> m [I.Decl]
+def :: (MonadElab c m) => I.Term -> I.Term -> m [I.Decl]
 def t1 t2 = do
   let whnf = undefined
   nf1 <- whnf t1
@@ -553,13 +553,13 @@ def t1 t2 = do
     (_, I.Var x) -> return [I.Def x nf1]
     _ -> return []
 
-createMetaTerm :: (MonadElab m) => m I.Term
+createMetaTerm :: (MonadElab c m) => m I.Term
 createMetaTerm = do
   t <- Env.getCtx
   i <- createMeta (I.MetaTermTag . I.Telescope $ t)
   return $ I.MetaVar i
 
-createUnknownVar :: (MonadElab m) => m I.TName
+createUnknownVar :: (MonadElab c m) => m I.TName
 createUnknownVar = Unbound.fresh (Unbound.string2Name "_")
 
 ---------------------------------------------------------------------
@@ -567,7 +567,7 @@ createUnknownVar = Unbound.fresh (Unbound.string2Name "_")
 ---------------------------------------------------------------------
 
 -- | type check a list of data constructor arguments against a telescope
-elabArgTele :: (MonadElab m) => [S.Arg] -> [I.Decl] -> m [I.Arg]
+elabArgTele :: (MonadElab c m) => [S.Arg] -> [I.Decl] -> m [I.Arg]
 elabArgTele [] [] = return []
 elabArgTele args (I.Def x ty : tele) = do
   tele' <- doSubst [(x,ty)] tele
@@ -597,7 +597,7 @@ elabArgTele _  tele =
 -- This is used to instantiate the parameters of a data constructor
 -- to find the types of its arguments.
 -- The first argument should only contain 'Rel' type declarations.
-substTele :: (MonadElab m) => [I.Decl] -> [I.Arg] -> [I.Decl] -> m [I.Decl]
+substTele :: (MonadElab c m) => [I.Decl] -> [I.Arg] -> [I.Decl] -> m [I.Decl]
 substTele tele args = doSubst (mkSubst tele (map I.unArg args))
   where
     mkSubst :: [I.Decl] -> [I.Term] -> [(I.TName, I.Term)]
@@ -609,20 +609,20 @@ substTele tele args = doSubst (mkSubst tele (map I.unArg args))
 
 -- Propagate the given substitution through the telescope, potentially
 -- reworking the constraints
-doSubst :: (MonadElab m) => [(I.TName, I.Term)] -> [I.Decl] -> m [I.Decl]
+doSubst :: (MonadElab c m) => [(I.TName, I.Term)] -> [I.Decl] -> m [I.Decl]
 doSubst ss [] = return []
 doSubst ss (I.Def x ty : tele') = do
   let tx' = Unbound.substs ss (I.Var x)
   let ty' = Unbound.substs ss ty
   --FIXME
-  let unify :: MonadElab m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
+  let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
       unify = undefined
   decls1 <- unify [] tx' ty'
   decls2 <- Env.extendCtxs decls1 (doSubst ss tele')
   return $ decls1 ++ decls2
 doSubst ss (I.TypeSig sig : tele') = do
   --FIXME
-  let whnf :: (MonadElab m) => I.Term -> m I.Term
+  let whnf :: (MonadElab c m) => I.Term -> m I.Term
       whnf = undefined
   tynf <- whnf (Unbound.substs ss (I.sigType sig))
   let sig' = sig{I.sigType = tynf}
@@ -636,10 +636,10 @@ doSubst _ tele =
 -----------------------------------------------------------
 
 -- | Create a binding for each of the variables in the pattern
-declarePat :: (MonadElab m) => I.Pattern -> I.Epsilon -> I.Type -> m [I.Decl]
+declarePat :: (MonadElab c m) => I.Pattern -> I.Epsilon -> I.Type -> m [I.Decl]
 declarePat (I.PatVar x)       ep ty  = return [I.TypeSig (I.Sig x ep ty)]
 declarePat (I.PatCon dc pats) I.Rel ty = do
-  let ensureTCon :: (MonadElab m) => I.Term -> m (TCName, [I.Arg])
+  let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
       -- FIXME
       ensureTCon = undefined
   (tc,params) <- ensureTCon ty
@@ -651,7 +651,7 @@ declarePat pat I.Irr _ty =
 
 -- | Given a list of pattern arguments and a telescope, create a binding for
 -- each of the variables in the pattern,
-declarePats :: (MonadElab m) => DCName -> [(I.Pattern, I.Epsilon)] -> [I.Decl] -> m [I.Decl]
+declarePats :: (MonadElab c m) => DCName -> [(I.Pattern, I.Epsilon)] -> [I.Decl] -> m [I.Decl]
 declarePats dc pats (I.Def x ty : tele) = do
   let ds1 = [I.Def x ty]
   ds2 <- Env.extendCtxs ds1 $ declarePats dc pats tele
@@ -681,7 +681,7 @@ pat2Term (I.PatCon dc pats) = I.DCon dc (pats2Terms pats)
 -- Using the typechecker for decls and modules and stuff
 --------------------------------------------------------
 
-elabModules :: (MonadElab m) => [S.Module] -> m [I.Module]
+elabModules :: (MonadElab c m) => [S.Module] -> m [I.Module]
 elabModules = foldM elabM []
   where
     -- Check module m against modules in defs, then add m to the list.
@@ -697,7 +697,7 @@ data HintOrCtx
   = AddHint I.Sig
   | AddCtx [I.Decl]
 
-elabModule :: (MonadElab m) => [I.Module] -> S.Module -> m I.Module
+elabModule :: (MonadElab c m) => [I.Module] -> S.Module -> m I.Module
 elabModule defs m' = do
   checkedEntries <-
     Env.extendCtxMods importedModules $
@@ -707,7 +707,7 @@ elabModule defs m' = do
         (moduleEntries m')
   return $ m' {moduleEntries = checkedEntries}
   where
-    elabE :: (MonadElab m) => S.Decl -> m [I.Decl] -> m [I.Decl]
+    elabE :: (MonadElab c m) => S.Decl -> m [I.Decl] -> m [I.Decl]
     d `elabE` m = do
       -- Extend the Env per the current Decl before checking
       -- subsequent Decls.
@@ -720,7 +720,7 @@ elabModule defs m' = do
     importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports m') defs
 
 -- | Elaborate each sort of declaration in a module
-elabEntry :: (MonadElab m) => S.Decl -> m HintOrCtx
+elabEntry :: (MonadElab c m) => S.Decl -> m HintOrCtx
 elabEntry (S.Def n term) = do
   en <- transName n
   oldDef <- Env.lookupDef en
@@ -788,7 +788,7 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
 
 -- | Make sure that we don't have the same name twice in the
 -- environment. (We don't rename top-level module definitions.)
-duplicateTypeBindingCheck :: (MonadElab m) => I.Sig -> m ()
+duplicateTypeBindingCheck :: (MonadElab c m) => I.Sig -> m ()
 duplicateTypeBindingCheck sig = do
   -- Look for existing type bindings ...
   let n = I.sigName sig
@@ -822,10 +822,10 @@ duplicateTypeBindingCheck sig = do
 -- Otherwise, the scrutinee type must be a type constructor, so the
 -- code looks up the data constructors for that type and makes sure that
 -- there are patterns for each one.
-exhaustivityCheck :: (MonadElab m) => I.Term -> I.Type -> [I.Pattern] -> m ()
+exhaustivityCheck :: (MonadElab c m) => I.Term -> I.Type -> [I.Pattern] -> m ()
 exhaustivityCheck scrut ty (I.PatVar x : _) = return ()
 exhaustivityCheck scrut ty pats = do
-  let ensureTCon :: (MonadElab m) => I.Term -> m (TCName, [I.Arg])
+  let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
       -- FIXME
       ensureTCon = undefined
   (tcon, tys) <- ensureTCon ty
@@ -854,7 +854,7 @@ exhaustivityCheck scrut ty pats = do
 
         -- make sure that the given list of constructors is impossible
         -- in the current environment
-        checkImpossible :: (MonadElab m) => [I.ConstructorDef] -> m [DCName]
+        checkImpossible :: (MonadElab c m) => [I.ConstructorDef] -> m [DCName]
         checkImpossible [] = return []
         checkImpossible (I.ConstructorDef _ dc (I.Telescope tele) : rest) = do
           this <-
@@ -862,7 +862,7 @@ exhaustivityCheck scrut ty pats = do
                 tele' <- substTele delta tys tele
                 --FIXME
                 -- | Check all of the types contained within a telescope
-                --tcTypeTele :: (MonadElab m) => [I.Decl] -> m ()
+                --tcTypeTele :: (MonadElab c m) => [I.Decl] -> m ()
                 --tcTypeTele tele'
                 return [dc]
               )
@@ -877,7 +877,7 @@ exhaustivityCheck scrut ty pats = do
 -- constructor definitions, pull the definition out of the list and
 -- return it paired with the remainder of the list.
 removeDCon ::
-  (MonadElab m) =>
+  (MonadElab c m) =>
   DCName ->
   [I.ConstructorDef] ->
   m (I.ConstructorDef, [I.ConstructorDef])
@@ -911,7 +911,7 @@ relatedPats dc (pc : pats) =
 
 -- for simplicity, this function requires that all subpatterns
 -- are pattern variables.
-checkSubPats :: (MonadElab m) =>
+checkSubPats :: (MonadElab c m) =>
                 DCName -> [I.Decl] -> [[(I.Pattern, I.Epsilon)]] -> m ()
 checkSubPats dc [] _ = return ()
 checkSubPats dc (I.Def _ _ : tele) patss = checkSubPats dc tele patss
