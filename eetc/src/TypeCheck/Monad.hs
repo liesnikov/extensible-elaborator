@@ -1,11 +1,16 @@
-{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE ConstraintKinds, FunctionalDependencies #-}
 module TypeCheck.Monad ( MonadTcReader(..)
                        , asksTc, asksTcEnv, localTcEnv
                        , asksTcNames, localTcNames
-                       , MonadTcState(..), getsTc, modifyTcNames
-                       , MonadConstraints, createMeta, raiseConstraint, catchConstraint,
-                        MonadTcCore, MonadElab,
-                        TcMonad, runTcMonad) where
+
+                       , MonadTcState(..)
+                       , getsTc, modifyTcNames
+
+                       , MonadConstraints
+                       , createMeta, raiseConstraint
+
+                       , MonadTcCore, MonadElab
+                       , TcMonad, runTcMonad ) where
 
 import qualified Data.Map.Strict as Map
 import           Data.Map.Strict (Map)
@@ -33,6 +38,9 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
+import           InternalSyntax ( Meta
+                                , MetaTag
+                                , MetaId )
 import           TypeCheck.Constraints ( ConstraintF
                                        , BasicConstraintsF
                                        , (:<:) )
@@ -40,70 +48,84 @@ import           TypeCheck.Constraints ( ConstraintF
 import           TypeCheck.State ( Env(..)
                                  , Err(..) )
 
-data TcState = TcS {
+type NameMap = Map S.TName I.TName
+
+data TcState c = TcS {
   -- FIXME
   -- do I want to quantify a there?
-    metas :: forall a. Map I.MetaId (I.Meta a)
-  , metaSolutions :: Map I.MetaId I.Term
-  , constraints :: forall c. (BasicConstraintsF :<: c) => Set (ConstraintF c)
-  , env   :: Env
-  , vars :: Map S.TName I.TName
+    metas :: forall a. Map MetaId (Meta a)
+  , metaSolutions :: Map MetaId I.Term
+  , constraints :: Set (ConstraintF c)
+  , vars :: NameMap
   }
 
 -- Monad with read access to TcState
 
-class Monad m => MonadTcReader m where
-  askTc :: m TcState
-  localTc :: (TcState -> TcState) -> m a -> m a
+class Monad m => MonadTcReader c m | m -> c where
+  askTc :: m (TcState c)
+  localTc :: (TcState c -> TcState c) -> m a -> m a
 
-  default askTc :: (MonadTrans t, MonadTcReader n, t n ~ m) => m TcState
+  default askTc :: (MonadTrans t, MonadTcReader c n, t n ~ m) => m (TcState c)
   askTc = lift askTc
 
   default localTc
-    :: (MonadTransControl t, MonadTcReader n, t n ~ m)
-    =>  (TcState -> TcState) -> m a -> m a
+    :: (MonadTransControl t, MonadTcReader c n, t n ~ m)
+    =>  (TcState c -> TcState c) -> m a -> m a
   localTc = liftThrough . localTc
 
-asksTc :: (MonadTcReader m) => (TcState -> a) -> m a
+asksTc :: (MonadTcReader c m) => (TcState c -> a) -> m a
 asksTc f = f <$> askTc
 
-asksTcEnv :: (MonadTcReader m) => (Env -> a) -> m a
-asksTcEnv f = f <$> env <$> askTc
-
-localTcEnv :: (MonadTcReader m) => (Env -> Env) -> m a -> m a
-localTcEnv f = localTc (\s -> s {env = f $ env s})
-
-asksTcNames :: (MonadTcReader m) => (Map S.TName I.TName -> a) -> m a
+asksTcNames :: (MonadTcReader c m) => (NameMap -> a) -> m a
 asksTcNames f = f <$> vars <$> askTc
 
-localTcNames :: (MonadTcReader m) => (Map S.TName I.TName -> Map S.TName I.TName) -> m a -> m a
+localTcNames :: (MonadTcReader c m) => (NameMap -> NameMap) -> m a -> m a
 localTcNames f = localTc (\s -> s {vars = f $ vars s})
+
+class Monad m => MonadTcReaderEnv m where
+  askEnv :: m Env
+  localEnv :: (Env -> Env) -> m a -> m a
+
+  default askEnv :: (MonadTrans t, MonadTcReaderEnv n, t n ~ m) => m Env
+  askEnv = lift askEnv
+
+  default localEnv
+    :: (MonadTransControl t, MonadTcReaderEnv n, t n ~ m)
+    =>  (Env -> Env) -> m a -> m a
+  localEnv = liftThrough . localEnv
+
+
+asksTcEnv :: (MonadTcReaderEnv m) => (Env -> a) -> m a
+asksTcEnv f = f <$> askEnv
+
+localTcEnv :: (MonadTcReaderEnv m) => (Env -> Env) -> m a -> m a
+localTcEnv f = localEnv f
 
 -- Monad with write access to TcState
 
-class Monad m => MonadTcState m where
-  getTc :: m TcState
-  putTc :: TcState -> m ()
-  modifyTc :: (TcState -> TcState) -> m ()
+class Monad m => MonadTcState c m | m -> c where
+  getTc :: m (TcState c)
+  putTc :: (TcState c) -> m ()
+  modifyTc :: (TcState c -> TcState c) -> m ()
 
-  default getTc :: (MonadTrans t, MonadTcState n, t n ~ m) => m TcState
+  default getTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => m (TcState c)
   getTc = lift getTc
 
-  default putTc :: (MonadTrans t, MonadTcState n, t n ~ m) => TcState -> m ()
+  default putTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => TcState c -> m ()
   putTc = lift . putTc
 
-  default modifyTc :: (MonadTrans t, MonadTcState n, t n ~ m) => (TcState -> TcState) -> m ()
+  default modifyTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => (TcState c -> TcState c) -> m ()
   modifyTc = lift . modifyTc
 
-getsTc :: (MonadTcState m) => (TcState -> a) -> m a
+getsTc :: (MonadTcState c m) => (TcState c -> a) -> m a
 getsTc f = do
   s <- getTc
   return $ f s
 
-modifyTcNames :: (MonadTcState m) => (Map S.TName I.TName -> Map S.TName I.TName) ->  m ()
+modifyTcNames :: (MonadTcState c m) => (NameMap -> NameMap) ->  m ()
 modifyTcNames f = modifyTc (\s -> s {vars = f $ vars s})
 
-instance (Monad m, MonadTcState m) => MonadTcReader m where
+instance (Monad m, MonadTcState c m) => MonadTcReader c m where
   askTc = getTc
   localTc f a = do
     s <- getTc
@@ -114,15 +136,15 @@ instance (Monad m, MonadTcState m) => MonadTcReader m where
 
 -- raising and catching constraints
 
-class MonadConstraints m where
-  createMeta :: m I.MetaId
-  raiseConstraint :: (BasicConstraintsF :<: c) => ConstraintF c -> m a
-  catchConstraint :: (BasicConstraintsF :<: c) => m a -> (ConstraintF c -> m a) -> m a
+class MonadConstraints cs m | m -> cs where
+  createMeta :: MetaTag -> m MetaId
+  lookupMeta :: forall p. MonadConstraints cs m => MetaId -> m (Meta p)
+  raiseConstraint :: forall c a. (c :<: cs) => ConstraintF c -> m a
 
 {--
-type TcMonad = Unbound.FreshMT (StateT TcState (ExceptT Err IO))
+type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
 
-runTcMonad :: TcState -> TcMonad a -> IO (Either Err a)
+runTcMonad :: TcState c -> TcMonad a -> IO (Either Err a)
 runTcMonad state m =
   runExceptT $
     fmap fst $
@@ -134,70 +156,76 @@ runTcMonad state m =
 -- environment), freshness state (for supporting locally-nameless
 -- representations), error (for error reporting), and IO
 -- (for e.g.  warning messages).
-newtype TcMonad a = TcM { unTcM :: Unbound.FreshMT (StateT TcState (ExceptT Err IO)) a }
+newtype TcMonad c a = TcM { unTcM :: Unbound.FreshMT (StateT (TcState c) (ExceptT Err IO)) a }
 
-instance Functor TcMonad where
+instance Functor (TcMonad c) where
   fmap = \f (TcM m) -> TcM $ fmap f m
 
-instance Applicative TcMonad where
+instance Applicative (TcMonad c) where
   pure = TcM . pure
   (TcM f) <*> (TcM a) = TcM $ f <*> a
 
-instance Monad TcMonad where
+instance Monad (TcMonad c) where
   return = pure
   (TcM a) >>= f = TcM $ join $ fmap (unTcM . f) a
 
-instance MonadError Err TcMonad where
+instance MonadError Err (TcMonad c) where
   throwError = TcM . throwError
   catchError (TcM e) c = TcM $ catchError e (\x -> case c x of TcM v -> v)
 
-instance MonadFail TcMonad where
+instance MonadFail (TcMonad c) where
   fail = TcM . fail
 
-instance Alternative TcMonad where
+instance Alternative (TcMonad c) where
   empty = TcM $ empty
   (TcM a) <|> (TcM b) = TcM $ a <|> b
   some (TcM a) = TcM $ some a
   many (TcM a) = TcM $ many a
 
-instance MonadPlus TcMonad where
+instance MonadPlus (TcMonad c) where
   mzero = TcM $ mzero
   mplus (TcM a) (TcM b) = TcM $ mplus a b
 
-instance MonadIO TcMonad where
+instance MonadIO (TcMonad c) where
   liftIO = TcM . liftIO
 
-instance Unbound.Fresh TcMonad where
+instance Unbound.Fresh (TcMonad c) where
   fresh = TcM . Unbound.fresh
 
-instance MonadTcState TcMonad where
+-- FIXME
+instance MonadTcReaderEnv (TcMonad c) where
+  askEnv = undefined
+  localEnv = undefined
+
+instance MonadTcState c (TcMonad c) where
   getTc = TcM $ get
   putTc = TcM . put
   modifyTc = TcM . modify
 
 -- FIXME
-instance MonadConstraints TcMonad where
+instance MonadConstraints c (TcMonad c) where
   createMeta      = undefined
   raiseConstraint = undefined
-  catchConstraint = undefined
+  lookupMeta      = undefined
 
-type MonadTcCore m = (MonadTcReader m, MonadError Err m, MonadFail m,
+type MonadTcCore m = (MonadTcReaderEnv m,
+                      MonadError Err m, MonadFail m,
                       Unbound.Fresh m, MonadPlus m,
                       MonadIO m)
 
-type MonadElab m = (MonadTcState m, MonadError Err m, MonadFail m,
-                    Unbound.Fresh m, MonadPlus m,
-                    MonadIO m)
+type MonadElab c m = (MonadTcState c m, MonadTcReaderEnv m,
+                      MonadError Err m, MonadFail m,
+                      Unbound.Fresh m, MonadPlus m, MonadConstraints c m,
+                      MonadIO m)
 
 -- | Entry point for the type checking monad, given an
 -- initial environment, returns either an error message
 -- or some result.
-runTcMonad :: Env -> TcMonad a -> IO (Either Err a)
+runTcMonad :: Env -> TcMonad c a -> IO (Either Err a)
 runTcMonad env m =
   runExceptT $ fmap fst $
     runStateT (Unbound.runFreshMT $ unTcM $ m) $
     TcS { metas = Map.empty
         , metaSolutions = Map.empty
         , constraints = Set.empty
-        , env = env
         , vars = Map.empty}

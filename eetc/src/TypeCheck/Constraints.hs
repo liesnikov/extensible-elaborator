@@ -23,11 +23,9 @@ data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Ty
 data ConjunctionConstraint e = ConjunctionConstraint e e
   deriving Functor
 
-type BasicConstraintsF =   EmptyConstraint
+type BasicConstraintsF =   EqualityConstraint
                        :+: ConjunctionConstraint
-                       :+: EqualityConstraint
-
-type BasicConstraints = ConstraintF BasicConstraintsF
+                       :+: EmptyConstraint
 
 
 
@@ -48,18 +46,17 @@ instance (Functor f , Functor g) => Functor (f :+: g) where
   fmap f (Inr e) = Inr (fmap f e)
 
 
-
 class (Functor sub, Functor sup) => (sub :<: sup) where
   inj :: sub a -> sup a
 
 instance Functor f => (f :<: f) where
   inj = id
 
-instance (Functor f , Functor g) => f :<: (f :+: g) where
+instance (Functor f, Functor g) => f :<: (f :+: g) where
   inj = Inl
 
-instance (Functor f , Functor g, Functor h, f :<: g) => f :<: (h :+: g) where
+instance (Functor f, Functor g, Functor h, f :<: g) => f :<: (h :+: g) where
   inj = Inr . inj
 
-inject :: (g :<: f ) => g (ConstraintF f ) -> ConstraintF f
+inject :: (g :<: f) => g (ConstraintF f ) -> ConstraintF f
 inject = In . inj

@@ -93,9 +93,15 @@ data Term
 
 type MetaId = Integer
 
+data MetaTag where
+  MetaTag :: MetaTag
+  MetaTermTag :: Telescope -> MetaTag
+
 data Meta c where
   Meta :: MetaId -> Meta c
-  MetaTerm :: MetaId -> Telescope -> Meta Term
+  MetaTerm :: Telescope -> MetaId -> Meta Term
+
+type MetaTerm = Meta Term
 
 instance Show (Meta c) where
   show (Meta i) = show "?_" ++ show i

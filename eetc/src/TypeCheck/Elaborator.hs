@@ -78,7 +78,7 @@ inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred"
 -- application
 inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
-  -- FIXME
+
   -- needs unification
   -- let whnf = id
   --     ensurePi ty = do
@@ -89,21 +89,23 @@ inferType (S.App t1 t2) = do
   --        _ -> Env.err [DS "Expected a function type, instead found", DD nf]
   -- (ep1, tyA, bnd) <- ensurePi ty1
 
-  ep1 <- createMeta
-  tyA <- createMeta
-  tyB <- createMeta
-  tx <- Unbound.lfresh (Unbound.string2Name "x")
-  bnd <- Unbound.bind tx tyB
-  let metaPi = I.Pi ep1 tyA bnd
+  -- FIXME
+  -- we're defaulting to relevant arguments for now
+  let epx = I.Rel
+  tyA <- createMetaTerm
+  tx <- createUnknownVar
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) (createMetaTerm)
+  let bnd = Unbound.bind tx tyB
+  let metaPi = I.Pi epx tyA bnd
 
   raiseConstraint (inject $ EqualityConstraint ty1 metaPi I.Type)
 
-  unless (ep1 == (transEpsilon $ S.argEp t2)) $ Env.err
+  unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected",
-     DD ep1, DS "argument but found",
+     DD epx, DS "argument but found",
      DD t2, DS "instead." ]
   -- if the argument is Irrelevant, resurrect the context
-  tt2 <- (if ep1 == I.Irr then Env.extendCtx (I.Demote I.Rel) else id) $
+  tt2 <- (if epx == I.Irr then Env.extendCtx (I.Demote I.Rel) else id) $
     checkType (S.unArg t2) tyA
   return (I.App et1 (I.Arg (transEpsilon $ S.argEp t2) tt2),
           Unbound.instantiate bnd [tt2])
@@ -550,6 +552,15 @@ def t1 t2 = do
     (I.Var x, _) -> return [I.Def x nf2]
     (_, I.Var x) -> return [I.Def x nf1]
     _ -> return []
+
+createMetaTerm :: (MonadElab m) => m I.Term
+createMetaTerm = do
+  t <- Env.getCtx
+  i <- createMeta (I.MetaTermTag . I.Telescope $ t)
+  return $ I.MetaVar i
+
+createUnknownVar :: (MonadElab m) => m I.TName
+createUnknownVar = Unbound.fresh (Unbound.string2Name "_")
 
 ---------------------------------------------------------------------
 -- helper functions for telescopes
