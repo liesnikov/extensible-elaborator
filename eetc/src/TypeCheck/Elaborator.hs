@@ -368,19 +368,21 @@ checkType (S.LetPair p bnd) typ = do
   tx <- transName x
   ty <- transName y
   (ep, pty) <- inferType p
--- FIXME
-  let whnf = undefined
-  pty' <- whnf pty
-  case pty' of
-    I.Sigma tyA bnd' -> do
-      let tyB = Unbound.instantiate bnd' [I.Var tx]
-      decl <- def ep (I.Prod (I.Var tx) (I.Var ty))
-      ebody <- Env.extendCtxs ([I.mkSig tx tyA, I.mkSig ty tyB] ++ decl) $
-               checkType body typ
-      let ebnd = Unbound.bind (tx,ty) ebody
-      return $ I.LetPair ep ebnd
-    _ -> Env.err [DS "Scrutinee of LetPair must have Sigma type"]
 
+  tyA <- createMetaTerm
+  -- do we really need it to be relevant here?
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx I.Rel tyA)) (createMetaTerm)
+  let tybnd = Unbound.bind tx tyB
+  let sigmaPi = I.Sigma tyA tybnd
+  raiseConstraint $ inj @_ @BasicConstraintsF
+                  $ EqualityConstraint pty sigmaPi I.Type
+
+  let tyB = Unbound.instantiate tybnd [I.Var tx]
+  decl <- def ep (I.Prod (I.Var tx) (I.Var ty))
+  ebody <- Env.extendCtxs ([I.mkSig tx tyA, I.mkSig ty tyB] ++ decl) $
+           checkType body typ
+  let ebnd = Unbound.bind (tx,ty) ebody
+  return $ I.LetPair ep ebnd
 -- | Equality type  `a = b`
 checkType t@(S.TyEq ta tb) typ =
   Env.err [DS "Equality type must be inferred not checked",
@@ -388,10 +390,11 @@ checkType t@(S.TyEq ta tb) typ =
       ]
 -- | Proof of equality `Refl`
 checkType (S.Refl) typ@(I.TyEq a b) = do
-  let equate :: (MonadElab c m) => I.Term -> I.Term -> m ()
-      -- FIXME
-      equate = undefined
-  equate a b
+  -- FIXME
+  -- create a metavar here?
+  let unknownType = undefined
+  raiseConstraint $ inj @_ @BasicConstraintsF
+                  $ EqualityConstraint a b unknownType
   return $ I.Refl
 checkType (S.Refl) typ =
   Env.err [DS "Refl annotated with ", DD typ]
@@ -400,9 +403,14 @@ checkType (S.Subst a b) typ = do
   -- infer the type of the proof 'b'
   (eb, tp) <- inferType b
   -- make sure that it is an equality between m and n
-  -- FIXME
-  let ensureTyEq = undefined
-  (m, n) <- ensureTyEq tp
+  m <- createMetaTerm
+  n <- createMetaTerm
+  let metaeq = I.TyEq m n
+  raiseConstraint $ inj @_ @BasicConstraintsF
+                  $ EqualityConstraint tp metaeq I.Type
+
+  --FIXME
+  -- the two defs below probably (?) won't fire because they'll be metas
   -- if either side is a variable, add a definition to the context
   edecl <- def m n
   -- if proof is a variable, add a definition to the context
@@ -505,10 +513,8 @@ checkType (S.Case scrut alts) ty = do
 -- c-infer
 checkType tm ty = do
   (etm, ty') <- inferType tm
-  let equate :: (MonadElab c m) => I.Term -> I.Term -> m ()
-      -- FIXME
-      equate = \_ _ -> return ()
-  equate ty' ty
+  raiseConstraint $ inj @_ @BasicConstraintsF
+                  $ EqualityConstraint ty' ty I.Type
   return $ etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
