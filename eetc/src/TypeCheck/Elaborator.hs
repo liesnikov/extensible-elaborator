@@ -100,7 +100,7 @@ inferType (S.App t1 t2) = do
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
 
-  raiseConstraint $ inj @EqualityConstraint @BasicConstraintsF
+  raiseConstraint $ inj @_ @BasicConstraintsF
                   $ EqualityConstraint ty1 metaPi I.Type
 
   unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
