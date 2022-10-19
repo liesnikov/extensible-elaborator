@@ -24,8 +24,8 @@ data ConjunctionConstraint e = ConjunctionConstraint e e
   deriving Functor
 
 type BasicConstraintsF =   EqualityConstraint
-                       :+: ConjunctionConstraint
-                       :+: EmptyConstraint
+                       :+: (ConjunctionConstraint
+                       :+: EmptyConstraint)
 
 
 
@@ -52,7 +52,7 @@ class (Functor sub, Functor sup) => (sub :<: sup) where
 instance Functor f => (f :<: f) where
   inj = id
 
-instance (Functor f, Functor g) => f :<: (f :+: g) where
+instance {-# OVERLAPPING  #-} (Functor f, Functor g) => f :<: (f :+: g) where
   inj = Inl
 
 instance (Functor f, Functor g, Functor h, f :<: g) => f :<: (h :+: g) where

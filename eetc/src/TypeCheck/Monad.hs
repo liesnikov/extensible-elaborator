@@ -142,7 +142,7 @@ instance (Monad m, MonadTcState c m) => MonadTcReader c m where
 class MonadConstraints cs m | m -> cs where
   createMeta :: MetaTag -> m MetaId
   lookupMeta :: forall p. MonadConstraints cs m => MetaId -> m (Meta p)
-  raiseConstraint :: forall c a. (c :<: cs) => c (ConstraintF cs) -> m a
+  raiseConstraint :: forall c a. (c :<: cs) => c (ConstraintF cs) -> m ()
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
