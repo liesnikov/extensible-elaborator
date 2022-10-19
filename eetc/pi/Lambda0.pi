@@ -1,12 +1,11 @@
 module Lambda0 where
-
-{- 
-   A Simple example of an environment-based interpreter for a small lambda calculus. 
-   This example could easily be written in vanilla Haskell or ML. 
+{-
+   A Simple example of an environment-based interpreter for a small lambda calculus.
+   This example could easily be written in vanilla Haskell or ML.
 -}
-  
 
-import Nat     
+
+import Nat
 import List
 
 -- A small language of lambda-calculus expressions
@@ -20,13 +19,13 @@ data Exp : Type where
 
 -- example expressions
 --
-idfun : Exp   -- \ x -> x 
+idfun : Exp   -- \ x -> x
 idfun = Lam (Var 0)
 
 k : Exp   -- \x y -> x
 k = Lam (Lam (Var 1))
 
-s : Exp   -- \ x y z -> x z (y z) 
+s : Exp   -- \ x y z -> x z (y z)
 s = Lam (Lam (Lam (App (App (Var 2) (Var 0)) (App (Var 1) (Var 0)))))
 
 
@@ -40,32 +39,32 @@ data Val : Type where
 -- List index (subscript) operator, starting from 0.
 
 nth : [a : Type] -> List a -> Nat -> a
-nth = \[a] l n. case l of 
+nth = \[a] l n. case l of
   Nil -> TRUSTME -- "index too large"
-  Cons x xs -> case n of 
+  Cons x xs -> case n of
     Zero -> x
     Succ m -> nth [a] xs m
-    
--- The interpreter itself    
+
+-- The interpreter itself
 
 interp : List Val -> Exp -> Val
-interp = \ rho exp . case exp of 
-   Var x -> nth [Val] rho x 
-   App e1 e2 -> 
+interp = \ rho exp . case exp of
+   Var x -> nth [Val] rho x
+   App e1 e2 ->
       let v1 = interp rho e1 in
-      let v2 = interp rho e2 in 
-      case v1 of 
-        Clos rho' body -> 
+      let v2 = interp rho e2 in
+      case v1 of
+        Clos rho' body ->
           interp (Cons v2 rho') body
         VNat i -> TRUSTME  -- can't apply numbers
    Lam e -> Clos rho e
    Lit i -> VNat i
-   If0 e1 e2 e3 -> 
-      case (interp rho e1) of 
-        VNat x -> case x of 
+   If0 e1 e2 e3 ->
+      case (interp rho e1) of
+        VNat x -> case x of
           Zero     -> interp rho e2
           (Succ y) -> interp rho e3
-        Clos rho exp -> TRUSTME 
+        Clos rho exp -> TRUSTME
 
 t1 : interp Nil (App (Lam (Var 0)) (Lit 3)) = VNat 3
 t1 = Refl
@@ -73,7 +72,7 @@ t1 = Refl
 t2 : interp Nil (If0 (Lit 1) (Lit 2) (Lit 3)) = VNat 3
 t2 = Refl
 
--- an "unbound variable" error (i.e. scope error) 
+-- an "unbound variable" error (i.e. scope error)
 
 e1 : interp Nil (App (Lam (Var 1)) (Lit 2)) = TRUSTME
 e1 = Refl

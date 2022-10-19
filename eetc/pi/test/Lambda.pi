@@ -1,0 +1,4 @@
+module Lambda where
+
+id : (x:Type) -> x -> x
+id = \x y . y
