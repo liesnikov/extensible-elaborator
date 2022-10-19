@@ -25,7 +25,9 @@ import           TypeCheck.Monad ( MonadElab
                                  , raiseConstraint
                                  , asksTcNames
                                  , modifyTcNames )
-import           TypeCheck.Constraints (EqualityConstraint(..), inject)
+import           TypeCheck.Constraints ( EqualityConstraint(..)
+                                       , inj
+                                       , BasicConstraintsF(..))
 
 
 transEpsilon :: S.Epsilon -> I.Epsilon
@@ -72,8 +74,8 @@ inferType (S.Var x) = do
 
 -- lambda
 inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred",
-                                   DD t
-                                  ]
+                                       DD t
+                                      ]
 
 -- application
 inferType (S.App t1 t2) = do
@@ -98,7 +100,8 @@ inferType (S.App t1 t2) = do
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
 
-  raiseConstraint (inject $ EqualityConstraint ty1 metaPi I.Type)
+  raiseConstraint $ inj @EqualityConstraint @BasicConstraintsF
+                  $ EqualityConstraint ty1 metaPi I.Type
 
   unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected",

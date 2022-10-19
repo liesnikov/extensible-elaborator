@@ -5,7 +5,7 @@ module TypeCheck.Constraints ( ConstraintF
                              , ConjunctionConstraint(..)
                              , BasicConstraintsF
                              , (:+:)
-                             , (:<:)
+                             , (:<:)(..)
                              , inject ) where
 
 import InternalSyntax as Syntax
