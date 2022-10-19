@@ -160,8 +160,8 @@ runTcMonad state m =
 -- representations), error (for error reporting), and IO
 -- (for e.g.  warning messages).
 newtype TcMonad c a = TcM { unTcM :: Unbound.FreshMT
-                                       (StateT (TcState c)
-                                         (ReaderT Env
+                                       (ReaderT Env
+                                         (StateT (TcState c)
                                           (ExceptT Err
                                             IO)))
                                        a }
@@ -233,10 +233,11 @@ type MonadElab c m = (MonadTcState c m,
 runTcMonad :: Env -> TcMonad c a -> IO (Either Err a)
 runTcMonad env m =
   runExceptT $
-    (flip runReaderT) env $
-      fmap fst $
-        runStateT (Unbound.runFreshMT $ unTcM $ m) $
-    TcS { metas = Map.empty
-        , metaSolutions = Map.empty
-        , constraints = Set.empty
-        , vars = Map.empty}
+  fmap fst $ (flip runStateT) initial $
+  (flip runReaderT) env $
+  (Unbound.runFreshMT $ unTcM $ m)
+  where
+    initial = TcS { metas = Map.empty
+                  , metaSolutions = Map.empty
+                  , constraints = Set.empty
+                  , vars = Map.empty}
