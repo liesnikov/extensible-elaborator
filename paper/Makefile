@@ -1,4 +1,4 @@
-all: pdf
+all: nix-build
 
 .PHONY: open reset
 
