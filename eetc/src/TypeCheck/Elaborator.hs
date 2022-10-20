@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
 import           Control.Monad ( unless )
@@ -27,7 +28,7 @@ import           TypeCheck.Monad ( MonadElab
                                  , modifyTcNames )
 import           TypeCheck.Constraints ( EqualityConstraint(..)
                                        , inj
-                                       , BasicConstraintsF(..))
+                                       , BasicConstraintsF)
 
 
 transEpsilon :: S.Epsilon -> I.Epsilon
@@ -371,8 +372,8 @@ checkType (S.LetPair p bnd) typ = do
 
   tyA <- createMetaTerm
   -- do we really need it to be relevant here?
-  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx I.Rel tyA)) (createMetaTerm)
-  let tybnd = Unbound.bind tx tyB
+  mtyB <- Env.extendCtx (I.mkSig tx tyA) (createMetaTerm)
+  let tybnd = Unbound.bind tx mtyB
   let sigmaPi = I.Sigma tyA tybnd
   raiseConstraint $ inj @_ @BasicConstraintsF
                   $ EqualityConstraint pty sigmaPi I.Type
@@ -386,8 +387,8 @@ checkType (S.LetPair p bnd) typ = do
 -- | Equality type  `a = b`
 checkType t@(S.TyEq ta tb) typ =
   Env.err [DS "Equality type must be inferred not checked",
-       DD t
-      ]
+           DD t
+          ]
 -- | Proof of equality `Refl`
 checkType (S.Refl) typ@(I.TyEq a b) = do
   -- FIXME

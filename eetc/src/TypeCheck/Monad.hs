@@ -15,8 +15,11 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , MonadTcCore, MonadElab
                        , TcMonad, runTcMonad ) where
 
+import           Data.Foldable (foldl')
 import qualified Data.Map.Strict as Map
 import           Data.Map.Strict (Map)
+import qualified Data.Set as Set
+import           Data.Set (Set)
 
 import           Control.Monad (join, MonadPlus(..))
 import           Control.Applicative (Alternative(..))
@@ -34,22 +37,17 @@ import           Control.Monad.State ( StateT(runStateT)
 import           Control.Monad.Trans ( MonadTrans(..), lift )
 import           Control.Monad.Trans.Control ( MonadTransControl(..), liftThrough )
 
-import qualified Data.Map.Strict as Map
-import           Data.Map.Strict (Map)
-
-import qualified Data.Set as Set
-import           Data.Set (Set)
-
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
-import           InternalSyntax ( Meta
-                                , MetaTag
+import           InternalSyntax ( Meta(..)
+                                , MetaTag(..)
                                 , MetaId )
 import           TypeCheck.Constraints ( ConstraintF
                                        , BasicConstraintsF
-                                       , (:<:) )
+                                       , (:<:)
+                                       , inject )
 
 import           TypeCheck.State ( Env(..)
                                  , Err(..) )
@@ -58,8 +56,9 @@ type NameMap = Map S.TName I.TName
 
 data TcState c = TcS {
   -- FIXME
-  -- do I want to quantify a there?
-    metas :: forall a. Map MetaId (Meta a)
+  -- previously was an existential forall a. Map .. (Meta a)
+  -- but that can't be matched without ImpredicativeTypes
+    metas :: Map MetaId (Meta I.Term)
   , metaSolutions :: Map MetaId I.Term
   , constraints :: Set (ConstraintF c)
   , vars :: NameMap
@@ -141,8 +140,8 @@ instance (Monad m, MonadTcState c m) => MonadTcReader c m where
 
 class MonadConstraints cs m | m -> cs where
   createMeta :: MetaTag -> m MetaId
-  lookupMeta :: forall p. MonadConstraints cs m => MetaId -> m (Meta p)
-  raiseConstraint :: forall c a. (c :<: cs) => c (ConstraintF cs) -> m ()
+  lookupMeta :: MetaId -> m (Maybe (Meta I.Term))
+  raiseConstraint :: (c :<: cs) => c (ConstraintF cs) -> m ()
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
@@ -209,11 +208,33 @@ instance MonadTcState c (TcMonad c) where
   putTc = TcM . put
   modifyTc = TcM . modify
 
--- FIXME
+createMetaTc :: MetaTag -> TcMonad c MetaId
+createMetaTc (MetaTermTag tel) = do
+  dict <- metas <$> getTc
+  let newMetaId = succ $ foldl' max 0 $ Map.keys dict
+  let newMeta = MetaTerm tel newMetaId
+  modifyTc (\s -> s {metas = Map.insert newMetaId newMeta (metas s)})
+  return $ newMetaId
+createMetaTc (MetaTag) = undefined
+
+lookupMetaTc :: MetaId -> TcMonad c (Maybe (Meta I.Term))
+lookupMetaTc mid = do
+  dict <- metas <$> getTc
+  return $ Map.lookup mid dict
+
+--FIXME
+--handle different constraints in different ways
+raiseConstraintTc :: (c :<: cs) => c (ConstraintF cs) -> TcMonad cs ()
+raiseConstraintTc cons = do
+  modifyTc (\s -> s {constraints = Set.insert (inject cons) (constraints s)})
+
 instance MonadConstraints c (TcMonad c) where
-  createMeta      = undefined
-  raiseConstraint = undefined
-  lookupMeta      = undefined
+  createMeta      = createMetaTc
+  lookupMeta      = lookupMetaTc
+  raiseConstraint = raiseConstraintTc
+
+
+
 
 type MonadTcCore m = (MonadTcReaderEnv m,
                       MonadError Err m, MonadFail m,

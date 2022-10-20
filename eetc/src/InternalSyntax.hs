@@ -94,8 +94,9 @@ data Term
 type MetaId = Integer
 
 data MetaTag where
-  MetaTag :: MetaTag
   MetaTermTag :: Telescope -> MetaTag
+  -- for other things, haven't decided yet on the design
+  MetaTag     :: MetaTag
 
 data Meta c where
   Meta :: MetaId -> Meta c
