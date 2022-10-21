@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators #-}
 module TypeCheck.Constraints ( ConstraintF
                              , EmptyConstraint(..)
                              , EqualityConstraint(..)
@@ -8,24 +8,17 @@ module TypeCheck.Constraints ( ConstraintF
                              , (:<:)(..)
                              , inject ) where
 
-import Data.Functor.Classes ( Eq1, eq1
-                            , Ord1, compare1 )
-
 import InternalSyntax as Syntax
 
 -- following data types a-la carte approach
 
 data ConstraintF f = In (f (ConstraintF f))
 
-instance (Eq1 f) => Eq (ConstraintF f) where
-  (In a) == (In b) = eq1 a b
-
-instance (Ord1 f) => Ord (ConstraintF f) where
-  compare (In a) (In b) = compare1 a b
-
 data EmptyConstraint e = EmptyConstraint
+  deriving Functor
 
 data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
+  deriving Functor
 
 data ConjunctionConstraint e = ConjunctionConstraint e e
   deriving Functor
@@ -55,22 +48,44 @@ instance (Functor f , Functor g) => Functor (f :+: g) where
   fmap f (Inl e) = Inl (fmap f e)
   fmap f (Inr e) = Inr (fmap f e)
 
+class (Functor sub, Functor sup) => (In sub sup) where
+   injel :: sub a -> sup a
+
+{- the reasoning for pragmas is as follows:
+-- We first must deconstruct the list on the right to find the right head-element
+-- Which is why e being the head is OVERLAPPING i.e. the highest priority
+-- Otherwise an injection of, say, EqualityConstraint into the BasicConstraintF
+-- will fail with testing the head head and recursion into tail (2 and 3)
+-- being equi-specific (?)
+-}
+
+instance (Functor e) => In e e where
+  injel = id
+
+instance (Functor e, Functor h, Functor t, In e t) => (In e (h :+: t)) where
+  injel = Inr . injel
+
+instance {-# OVERLAPPING #-} (Functor e, Functor t) => (In e (e :+: t)) where
+  injel = Inl
+
 
 class (Functor sub, Functor sup) => (sub :<: sup) where
   inj :: sub a -> sup a
 
-instance Functor f => (f :<: f) where
-  inj = id
+{- Here the reasoning for pragmas is similar:
+-- We are recursing over the sub functor and we want to test the head first
+-- An example that would fail here otherwise is BasicConstraintsF :<: BasicConstraintsF
+-- Instance search doesn't know whether BasicConstraintsF is an element or a list,
+-- So you get two equi-specific instances.
+-- The Overlapping pragma on sub deconstruction forces GHC to look into
+-- the structure of sub.
+-}
+instance (Functor el, Functor list, In el list) => el :<: list where
+  inj = injel
 
--- otherwise looking for eg EqualityConstraint :<: BasicConstraints
--- errors out because Haskell somehow can't disprove that
--- ConjunctionConstraint :+: EmptyConstraint isn't a single element
--- we want to try this one first, hence OVERLAPPING and not OVERLAPPABLE here
-instance {-# OVERLAPPING #-} (Functor f, Functor g) => f :<: (f :+: g) where
-  inj = Inl
-
-instance (Functor f, Functor g, Functor h, f :<: g) => f :<: (h :+: g) where
-  inj = Inr . inj
+instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl, In hl rl, ll :<: rl) => (hl :+: ll) :<: rl where
+  inj (Inl a) = injel a
+  inj (Inr b) = inj b
 
 inject :: (g :<: f) => g (ConstraintF f ) -> ConstraintF f
 inject = In . inj

@@ -1,4 +1,4 @@
-{- pi-forall language -}
+{-# LANGUAGE TypeApplications #-}
 -- | The command line interface to the pi type checker.
 -- Also provides functions for type checking individual terms
 -- and files.
@@ -11,6 +11,7 @@ import TypeCheck.Monad (runTcMonad)
 import TypeCheck.Elaborator ( elabModules, elabTerm )
 import TypeCheck.Environment ( emptyEnv)
 import TypeCheck.TypeCheck ( tcModules, inferType )
+import TypeCheck.Constraints (BasicConstraintsF)
 import Parser ( parseExpr )
 import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
 import Control.Monad.Except ( runExceptT )
@@ -30,10 +31,9 @@ go str = do
   case parseExpr str of
     Left parseError -> putParseError parseError
     Right term -> do
-      -- FIXME: declare a display instance for SurfaceSyntax
       putStrLn "parsed as"
       putStrLn $ render $ disp term
-      elabterm <- runTcMonad emptyEnv (elabTerm term)
+      elabterm <- runTcMonad emptyEnv (elabTerm @BasicConstraintsF term)
       case elabterm of
         Left elaberror -> putElabError elaberror
         Right elabt -> do
@@ -72,7 +72,7 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcMonad emptyEnv (elabModules val)
+  e <- runTcMonad @BasicConstraintsF emptyEnv (elabModules @BasicConstraintsF val)
   elabs <- e `exitWith` putTypeError
   putStrLn "type checking..."
   d <- runTcMonad emptyEnv (tcModules elabs)

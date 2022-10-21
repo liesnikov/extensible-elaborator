@@ -694,6 +694,7 @@ pat2Term (I.PatCon dc pats) = I.DCon dc (pats2Terms pats)
 elabModules :: (MonadElab c m) => [S.Module] -> m [I.Module]
 elabModules = foldM elabM []
   where
+    elabM :: (MonadElab c m) => [I.Module] -> S.Module -> m [I.Module]
     -- Check module m against modules in defs, then add m to the list.
     defs `elabM` m = do
       -- "M" is for "Module" not "monad"
