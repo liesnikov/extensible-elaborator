@@ -1,9 +1,14 @@
+{-# LANGUAGE TypeApplications #-}
 module Main where
+
 import Test.QuickCheck
 import Test.HUnit
-import Environment
 import PrettyPrint
-import TypeCheck
+import TypeCheck.Monad (runTcMonad)
+import TypeCheck.Elaborator ( elabModules, elabTerm )
+import TypeCheck.Environment ( emptyEnv)
+import TypeCheck.TypeCheck ( tcModules, inferType )
+import TypeCheck.Constraints (BasicConstraintsF)
 import SurfaceSyntax
 import Control.Monad.Except
 import Modules
@@ -25,6 +30,8 @@ testFile :: String -> Test
 testFile name = name ~: TestCase $ do
   v <- runExceptT (getModules ["pi"] name)
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))
-  d <- runTcMonad emptyEnv (tcModules val)
+  ev <- runTcMonad emptyEnv (elabModules @BasicConstraintsF val)
+  eval <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
+  d <- runTcMonad emptyEnv (tcModules eval)
   defs <- d `exitWith` (\s -> assertFailure $ "Type error:" ++ render (disp s))
   putStrLn $ render $ disp (last defs)

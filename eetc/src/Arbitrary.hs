@@ -3,10 +3,6 @@
 --     * if we generate a random AST term and print it, then it should parse back to an alpha-equivalent term
 module Arbitrary where
 
--- FIXME
--- This broke because now round-trip isn't possible
--- there's no printing for surface and no translation from internal to surface
-
 
 import qualified Data.Set as Set
 import Test.QuickCheck
