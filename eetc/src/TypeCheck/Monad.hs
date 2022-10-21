@@ -60,7 +60,7 @@ data TcState c = TcS {
   -- but that can't be matched without ImpredicativeTypes
     metas :: Map MetaId (Meta I.Term)
   , metaSolutions :: Map MetaId I.Term
-  , constraints :: Set (ConstraintF c)
+  , constraints :: [ConstraintF c]
   , vars :: NameMap
   }
 
@@ -226,13 +226,13 @@ lookupMetaTc mid = do
 --handle different constraints in different ways
 raiseConstraintTc :: (c :<: cs) => c (ConstraintF cs) -> TcMonad cs ()
 raiseConstraintTc cons = do
-  modifyTc (\s -> s {constraints = Set.insert (inject cons) (constraints s)})
+    modifyTc (\s -> s {constraints = inject cons : constraints s})
+--  modifyTc (\s -> s {constraints = Set.insert (inject cons) (constraints s)})
 
 instance MonadConstraints c (TcMonad c) where
   createMeta      = createMetaTc
   lookupMeta      = lookupMetaTc
   raiseConstraint = raiseConstraintTc
-
 
 
 
@@ -260,5 +260,5 @@ runTcMonad env m =
   where
     initial = TcS { metas = Map.empty
                   , metaSolutions = Map.empty
-                  , constraints = Set.empty
+                  , constraints = []
                   , vars = Map.empty}
