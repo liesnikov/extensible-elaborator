@@ -1,4 +1,4 @@
-{-# LANGUAGE ConstraintKinds, FunctionalDependencies #-}
+{-# LANGUAGE ConstraintKinds, FunctionalDependencies, TypeApplications #-}
 module TypeCheck.Monad ( MonadTcReader(..)
                        , asksTc
                        , asksTcNames, localTcNames
@@ -13,13 +13,12 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , createMeta, raiseConstraint
 
                        , MonadTcCore, MonadElab
-                       , TcMonad, runTcMonad ) where
+                       , TcMonad, runTcStateMonad, runTcMonad
+                       ) where
 
 import           Data.Foldable (foldl')
 import qualified Data.Map.Strict as Map
-import           Data.Map.Strict (Map)
-import qualified Data.Set as Set
-import           Data.Set (Set)
+-- import qualified Data.Set as Set
 
 import           Control.Monad (join, MonadPlus(..))
 import           Control.Applicative (Alternative(..))
@@ -50,19 +49,9 @@ import           TypeCheck.Constraints ( ConstraintF
                                        , inject )
 
 import           TypeCheck.State ( Env(..)
-                                 , Err(..) )
-
-type NameMap = Map S.TName I.TName
-
-data TcState c = TcS {
-  -- FIXME
-  -- previously was an existential forall a. Map .. (Meta a)
-  -- but that can't be matched without ImpredicativeTypes
-    metas :: Map MetaId (Meta I.Term)
-  , metaSolutions :: Map MetaId I.Term
-  , constraints :: [ConstraintF c]
-  , vars :: NameMap
-  }
+                                 , Err(..)
+                                 , NameMap
+                                 , TcState(..))
 
 -- Monad with read access to TcState
 
@@ -235,7 +224,6 @@ instance MonadConstraints c (TcMonad c) where
   raiseConstraint = raiseConstraintTc
 
 
-
 type MonadTcCore m = (MonadTcReaderEnv m,
                       MonadError Err m, MonadFail m,
                       Unbound.Fresh m, MonadPlus m,
@@ -248,13 +236,11 @@ type MonadElab c m = (MonadTcState c m,
                       Unbound.Fresh m, MonadPlus m, MonadConstraints c m,
                       MonadIO m)
 
--- | Entry point for the type checking monad, given an
--- initial environment, returns either an error message
--- or some result.
-runTcMonad :: Env -> TcMonad c a -> IO (Either Err a)
-runTcMonad env m =
+-- Slightly more general version of TcMonad runner, where we don't throw away the state
+runTcStateMonad :: Env -> TcMonad c a -> IO (Either Err (a, TcState c))
+runTcStateMonad env m =
   runExceptT $
-  fmap fst $ (flip runStateT) initial $
+  (flip runStateT) initial $
   (flip runReaderT) env $
   (Unbound.runFreshMT $ unTcM $ m)
   where
@@ -262,3 +248,9 @@ runTcMonad env m =
                   , metaSolutions = Map.empty
                   , constraints = []
                   , vars = Map.empty}
+
+-- | Entry point for the type checking monad, given an
+-- initial environment, returns either an error message
+-- or some result.
+runTcMonad :: Env -> TcMonad c a -> IO (Either Err a)
+runTcMonad e m = fmap @IO (fmap @(Either Err) fst) $ runTcStateMonad e m

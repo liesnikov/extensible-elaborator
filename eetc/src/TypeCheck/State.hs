@@ -1,29 +1,36 @@
-module TypeCheck.State (SourceLocation(..),
-                        Env(..), emptyEnv,
-                        Err(..)) where
+module TypeCheck.State ( SourceLocation(..)
+                       , Env(..), emptyEnv
+                       , Err(..)
+                       , TcState(..), NameMap
+                       ) where
 
-import InternalSyntax
+import           Data.Map.Strict (Map)
+-- import           Data.Set (Set)
+
+import SurfaceSyntax as S
+import InternalSyntax as I
 import PrettyPrint ( SourcePos, Disp(..), Doc )
 import PrettyPrintInternal ()
 import Text.PrettyPrint.HughesPJ ( ($$), nest, text, vcat )
-
-
--- | Marked locations in the source code
-data SourceLocation where
-  SourceLocation :: forall a. Disp a => SourcePos -> a -> SourceLocation
+import TypeCheck.Constraints ( ConstraintF
+                             , BasicConstraintsF
+                             , (:<:)
+                             , inject
+                             , SourceLocation(..)
+                             )
 
 -- | Environment manipulation and accessing functions
 -- The context 'gamma' is a list
 data Env = Env
   { -- | elaborated term and datatype declarations.
-    ctx :: [Decl],
+    ctx :: [I.Decl],
     -- | how long the tail of "global" variables in the context is
     --    (used to supress printing those in error messages)
     globals :: Int,
     -- | Type declarations (signatures): it's not safe to
     -- put these in the context until a corresponding term
     -- has been checked.
-    hints :: [Sig],
+    hints :: [I.Sig],
     -- | what part of the file we are in (for errors/warnings)
     sourceLocation :: [SourceLocation]
   }
@@ -32,11 +39,24 @@ data Env = Env
 
 -- | The initial environment.
 emptyEnv :: Env
-emptyEnv = Env {ctx = preludeDataDecls
-               , globals = length preludeDataDecls
+emptyEnv = Env {ctx = I.preludeDataDecls
+               , globals = length I.preludeDataDecls
                , hints = []
                , sourceLocation = []
               }
+
+type NameMap = Map S.TName I.TName
+
+data TcState c = TcS {
+  -- FIXME
+  -- previously was an existential forall a. Map .. (Meta a)
+  -- but that can't be matched without ImpredicativeTypes
+    metas :: Map MetaId (Meta I.Term)
+  , metaSolutions :: Map MetaId I.Term
+  -- constraints :: Set (ConstraintF c)
+  , constraints :: [ConstraintF c]
+  , vars :: NameMap
+  }
 
 instance Disp Env where
   disp e = vcat [disp decl | decl <- ctx e]

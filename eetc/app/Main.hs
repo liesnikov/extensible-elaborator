@@ -4,26 +4,33 @@
 -- and files.
 module Main(goFilename,go,main) where
 
-import Modules (getModules)
-import PrettyPrint ( render, Disp(..) )
-import PrettyPrintSurface ()
-import TypeCheck.Monad (runTcMonad)
-import TypeCheck.Elaborator ( elabModules, elabTerm )
-import TypeCheck.Environment ( emptyEnv)
-import TypeCheck.TypeCheck ( tcModules, inferType )
-import TypeCheck.Constraints (BasicConstraintsF)
-import Parser ( parseExpr )
-import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
-import Control.Monad.Except ( runExceptT )
+
+import Control.Monad.Except (runExceptT )
+import Data.List (intercalate)
 import System.Environment(getArgs)
 import System.Exit (exitFailure,exitSuccess)
 import System.FilePath (splitFileName)
+
+import Parser ( parseExpr )
+import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
+import PrettyPrint ( render, Disp(..) )
+import PrettyPrintSurface ()
+
+import Modules (getModules)
+
+import TypeCheck.State (TcState(constraints))
+import TypeCheck.Monad (runTcMonad, runTcStateMonad)
+import TypeCheck.Environment ( emptyEnv)
+import TypeCheck.Constraints (BasicConstraintsF)
+import TypeCheck.Elaborator ( elabModules, elabTerm )
+import TypeCheck.TypeCheck ( tcModules, inferType )
 
 exitWith :: Either a b -> (a -> IO ()) -> IO b
 exitWith res f =
   case res of
     Left x -> f x >> exitFailure
     Right y -> return y
+
 
 -- | Type check the given string in the empty environment
 go :: String -> IO ()
@@ -33,10 +40,11 @@ go str = do
     Right term -> do
       putStrLn "parsed as"
       putStrLn $ render $ disp term
-      elabterm <- runTcMonad emptyEnv (elabTerm @BasicConstraintsF term)
+      elabterm <- runTcStateMonad emptyEnv (elabTerm @BasicConstraintsF term)
       case elabterm of
         Left elaberror -> putElabError elaberror
-        Right elabt -> do
+        Right (elabt, s) -> do
+          putStateDump . constraints $ s
           res <- runTcMonad emptyEnv (inferType elabt)
           case res of
             Left typeError -> putTypeError typeError
@@ -62,6 +70,11 @@ putTypeError typeError = do
   putStrLn "Type Error:"
   putStrLn $ render $ disp typeError
 
+putStateDump :: Disp d => [d] -> IO ()
+putStateDump d = do
+  putStrLn "State is:"
+  putStrLn $ intercalate ",\n" $ fmap (render . disp) $ reverse $ d
+
 -- | Type check the given file
 goFilename :: String -> IO ()
 goFilename pathToMainFile = do
@@ -72,8 +85,9 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcMonad @BasicConstraintsF emptyEnv (elabModules @BasicConstraintsF val)
-  elabs <- e `exitWith` putTypeError
+  e <- runTcStateMonad @BasicConstraintsF emptyEnv (elabModules @BasicConstraintsF val)
+  (elabs, s) <- e `exitWith` putElabError
+  --putStateDump . constraints $ s
   putStrLn "type checking..."
   d <- runTcMonad emptyEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError

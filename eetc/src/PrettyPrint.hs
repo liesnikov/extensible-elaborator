@@ -1,6 +1,9 @@
 {- pi-forall language -}
 -- | A Pretty Printer.
-module PrettyPrint (Disp (..), D (..), Display(..), DispInfo(..), SourcePos, PP.Doc, PP.render) where
+module PrettyPrint ( Disp (..), Disp1 (..), D (..)
+                   , Display(..) , DispInfo(..)
+                   , SourcePos, PP.Doc, PP.render
+                   ) where
 
 import qualified Data.Set as S
 import           Text.ParserCombinators.Parsec.Error ( ParseError )
@@ -24,6 +27,11 @@ class Disp d where
   disp :: d -> Doc
   default disp :: (Display d) => d -> Doc
   disp d = display d (DI {showAnnots = False, dispAvoid = S.empty, prec = 0})
+
+-- | The Disp1 class governs all functors which,
+-- given a Disp instance for the argument, would be able to become Disp themselves
+class Disp1 f where
+  liftdisp :: (a -> PP.Doc) -> (f a -> PP.Doc)
 
 -- | The 'Display' class is like the 'Disp' class. It qualifies
 --   types that can be turned into 'Doc'.  The difference is that the

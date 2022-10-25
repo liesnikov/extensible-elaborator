@@ -6,27 +6,54 @@ module TypeCheck.Constraints ( ConstraintF
                              , BasicConstraintsF
                              , (:+:)
                              , (:<:)(..)
-                             , inject ) where
+                             , inject
+                             , SourceLocation(..)
+                             ) where
 
-import InternalSyntax as Syntax
+import qualified InternalSyntax as Syntax
+import           Text.PrettyPrint ( (<+>) )
+import qualified Text.PrettyPrint as PP
+import PrettyPrint (Disp, Disp1(..), disp, SourcePos)
+import PrettyPrintInternal ()
 
 -- following data types a-la carte approach
 
 data ConstraintF f = In (f (ConstraintF f))
 
-data EmptyConstraint e = EmptyConstraint
+instance (Disp1 f) => Disp (ConstraintF f) where
+  disp (In fv) = liftdisp (disp) fv
+
+data EmptyConstraint e = EmptyConstraint SourceLocation
   deriving Functor
 
-data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
+instance Disp1 EmptyConstraint where
+  liftdisp _ (EmptyConstraint s) = PP.text "empty_constraint" <+> raisedat s
+
+data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term
+                                               Syntax.Type SourceLocation
   deriving Functor
 
-data ConjunctionConstraint e = ConjunctionConstraint e e
+instance Disp1 EqualityConstraint where
+  liftdisp _ (EqualityConstraint t1 t2 ty s) = (PP.parens $
+                                                disp t1 <+>
+                                                PP.text ":~:" <+>
+                                                disp t2) <+>
+                                               PP.text " :" <+> disp ty <+>
+                                               raisedat s
+
+data ConjunctionConstraint e = ConjunctionConstraint e e SourceLocation
   deriving Functor
+
+instance Disp1 ConjunctionConstraint where
+  liftdisp f (ConjunctionConstraint c1 c2 s) = PP.parens (
+                                                 (f c1) <+>
+                                                 PP.text " , " <+>
+                                                 (f c2)) <+>
+                                               raisedat s
 
 type BasicConstraintsF =   EqualityConstraint
                        :+: ConjunctionConstraint
                        :+: EmptyConstraint
-
 
 
 {--
@@ -47,6 +74,10 @@ data (f :+: g) e = Inl (f e) | Inr (g e)
 instance (Functor f , Functor g) => Functor (f :+: g) where
   fmap f (Inl e) = Inl (fmap f e)
   fmap f (Inr e) = Inr (fmap f e)
+
+instance (Disp1 f, Disp1 g) => Disp1 (f :+: g) where
+  liftdisp f (Inl e) = liftdisp f e
+  liftdisp f (Inr e) = liftdisp f e
 
 class (Functor sub, Functor sup) => (In sub sup) where
    injel :: sub a -> sup a
@@ -89,3 +120,14 @@ instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl, In hl rl, ll :
 
 inject :: (g :<: f) => g (ConstraintF f ) -> ConstraintF f
 inject = In . inj
+
+
+-- Pretty-printing boilerplate
+
+-- FIXME this doesn't belong here, but putting it in State results in import cycle
+-- | Marked locations in the source code
+data SourceLocation where
+  SourceLocation :: forall a. Disp a => SourcePos -> a -> SourceLocation
+
+raisedat :: SourceLocation -> PP.Doc
+raisedat (SourceLocation s _) = PP.text " raised at " <+> disp s

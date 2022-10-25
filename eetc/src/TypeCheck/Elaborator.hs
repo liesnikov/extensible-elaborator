@@ -100,9 +100,10 @@ inferType (S.App t1 t2) = do
   tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) (createMetaTerm)
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
+  s <- fmap head $ Env.getSourceLocation
 
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint ty1 metaPi I.Type
+                  $ EqualityConstraint ty1 metaPi I.Type s
 
   unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected",
@@ -375,8 +376,10 @@ checkType (S.LetPair p bnd) typ = do
   mtyB <- Env.extendCtx (I.mkSig tx tyA) (createMetaTerm)
   let tybnd = Unbound.bind tx mtyB
   let sigmaPi = I.Sigma tyA tybnd
+  s <- fmap head $ Env.getSourceLocation
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint pty sigmaPi I.Type
+                  $ EqualityConstraint pty sigmaPi I.Type s
+
 
   let tyB = Unbound.instantiate tybnd [I.Var tx]
   decl <- def ep (I.Prod (I.Var tx) (I.Var ty))
@@ -394,8 +397,9 @@ checkType (S.Refl) typ@(I.TyEq a b) = do
   -- FIXME
   -- create a metavar here?
   let unknownType = undefined
+  s <- fmap head $ Env.getSourceLocation
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint a b unknownType
+                  $ EqualityConstraint a b unknownType s
   return $ I.Refl
 checkType (S.Refl) typ =
   Env.err [DS "Refl annotated with ", DD typ]
@@ -407,8 +411,10 @@ checkType (S.Subst a b) typ = do
   m <- createMetaTerm
   n <- createMetaTerm
   let metaeq = I.TyEq m n
+  s <- fmap head $ Env.getSourceLocation
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint tp metaeq I.Type
+                  $ EqualityConstraint tp metaeq I.Type s
+
 
   --FIXME
   -- the two defs below probably (?) won't fire because they'll be metas
@@ -514,8 +520,9 @@ checkType (S.Case scrut alts) ty = do
 -- c-infer
 checkType tm ty = do
   (etm, ty') <- inferType tm
+  s <- fmap head $ Env.getSourceLocation
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint ty' ty I.Type
+                  $ EqualityConstraint ty' ty I.Type s
   return $ etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
