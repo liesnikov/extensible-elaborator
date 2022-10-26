@@ -269,8 +269,8 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
-  (x, body) <- Unbound.unbind lam
-  (_, tyB) <- Unbound.unbind bnd2
+  (x, body, _, tyB) <- Unbound.unbind2Plus lam bnd2
+  Env.warn $ DS . show $ tyB
   tx <- transName x
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 tyA)) (checkType body tyB)

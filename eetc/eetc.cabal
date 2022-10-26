@@ -59,7 +59,8 @@ common shared-properties
     directory,
     filepath,
     HUnit,
-    QuickCheck
+    QuickCheck,
+    ghc-prim
   if !impl(ghc >= 8.0)
     build-depends: semigroups == 0.18.*
 
