@@ -268,7 +268,18 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 --           ]
 
 -- | abstraction  `\x. a`
-checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
+checkType (S.Lam ep1 lam) ty = do
+  let ep2 = I.Rel
+  tyA <- createMetaTerm
+  tx <- createUnknownVar
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx ep2 tyA)) (createMetaTerm)
+  let bnd2 = Unbound.bind tx tyB
+  let metaPi = I.Pi ep2 tyA bnd2
+  s <- fmap head $ Env.getSourceLocation
+
+  raiseConstraint $ inj @_ @BasicConstraintsF
+                  $ EqualityConstraint ty metaPi I.Type s
+
   (x, body) <- Unbound.unbind lam
   (_, tyB) <- Unbound.unbind bnd2
   tx <- transName x
@@ -276,8 +287,6 @@ checkType (S.Lam ep1 lam) (I.Pi ep2 tyA bnd2) = do
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 tyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
   return $ I.Lam tep1 tlam
-checkType (S.Lam ep lam) (nf) =
-  Env.err [DS "Lambda expression should have a function type, not", DD nf]
 -- | application `a b`
 -- checkType t@(S.App terma termb) typ =
 --   Env.err [DS "Type of an application must be inferred not checked",
