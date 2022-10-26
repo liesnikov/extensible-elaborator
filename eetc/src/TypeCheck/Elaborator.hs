@@ -258,7 +258,7 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 -- | type of types  `Type`
 -- checkType t@(S.Type) typ =
 --   Env.err [DS "Type of Type must be inferred not checked",
---            DD t
+--            DD typ
 --           ]
 
 -- | variables  `x`
