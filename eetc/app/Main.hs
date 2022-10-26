@@ -87,7 +87,7 @@ goFilename pathToMainFile = do
   putStrLn "elaborating..."
   e <- runTcStateMonad @BasicConstraintsF emptyEnv (elabModules @BasicConstraintsF val)
   (elabs, s) <- e `exitWith` putElabError
-  --putStateDump . constraints $ s
+  putStateDump . constraints $ s
   putStrLn "type checking..."
   d <- runTcMonad emptyEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError
