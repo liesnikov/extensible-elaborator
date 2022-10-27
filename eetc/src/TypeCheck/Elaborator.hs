@@ -772,13 +772,11 @@ elabEntry (S.Def n term) = do
                     DD sig
                   ]
            in do
-                elabterm <- checkType term (I.sigType sig) `catchError` handler
-                Env.extendCtx (I.TypeSig sig) $ do
-                  tn <- transName n
-                  return $
-                    if tn `elem` Unbound.toListOf Unbound.fv term
-                    then AddCtx [I.TypeSig sig, I.RecDef tn elabterm]
-                    else AddCtx [I.TypeSig sig, I.Def tn elabterm]
+                elabterm <- Env.extendCtx (I.TypeSig sig) $
+                  checkType term (I.sigType sig) `catchError` handler
+                return $ if en `elem` Unbound.toListOf Unbound.fv elabterm
+                         then AddCtx [I.TypeSig sig, I.RecDef en elabterm]
+                         else AddCtx [I.TypeSig sig, I.Def en elabterm]
     die term' = do
       en <- transName n
       Env.extendSourceLocation (S.unPosFlaky term) term $
