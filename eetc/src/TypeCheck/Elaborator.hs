@@ -775,7 +775,11 @@ elabEntry (S.Def n term) = do
                 elabterm <- Env.extendCtx (I.TypeSig sig) $
                   checkType term (I.sigType sig) `catchError` handler
                 return $ if en `elem` Unbound.toListOf Unbound.fv elabterm
-                         then AddCtx [I.TypeSig sig, I.RecDef en elabterm]
+                         -- FIXME
+                         -- this would be a RecDef, but currently core is erroring out
+                         -- on RecDef (rightfully) claiming that this is an internal
+                         -- construct
+                         then AddCtx [I.TypeSig sig, I.Def en elabterm]
                          else AddCtx [I.TypeSig sig, I.Def en elabterm]
     die term' = do
       en <- transName n

@@ -576,6 +576,9 @@ tcEntry (Data t (Telescope delta) cs) =
       Env.err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
     -- finally, add the datatype to the env and perform action m
     return $ AddCtx [Data t (Telescope delta) ecs]
+-- FIXME
+-- we can produce RecDefs in the elaborator when dealing with a recursive function
+-- so it also makes sense to accept them in the core
 tcEntry (DataSig _ _) = Env.err [DS "internal construct"]
 tcEntry (RecDef _ _) = Env.err [DS "internal construct"]
 
