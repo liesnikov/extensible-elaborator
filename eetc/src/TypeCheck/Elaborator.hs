@@ -437,16 +437,17 @@ checkType (S.Subst a b) typ = do
 -- | witness to an equality contradiction
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
-  let ensureTyEq :: (MonadElab c m) => I.Term -> m (I.Term, I.Term)
-      -- FIXME
-      ensureTyEq = undefined
-      whnf :: (MonadElab c m) => I.Term -> m I.Term
-      -- FIXME
-      whnf = undefined
-  (a, b) <- ensureTyEq ty'
-  a' <- whnf a
-  b' <- whnf b
-  case (a', b') of
+  a <- createMetaTerm
+  b <- createMetaTerm
+  s <- fmap head $ Env.getSourceLocation
+  let metaEq $ TyEq a b
+  raiseConstraint $ inj @_ @BasicConstraintsF
+                  $ EqualityConstraint typ metaEq I.Type s
+
+  -- FIXME
+  -- This relies on a and b being in whnf
+  -- We can't guarantee it
+  case (a, b) of
     (I.DCon da _, I.DCon db _)
       | da /= db ->
         return $ I.Contra ep
