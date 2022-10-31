@@ -909,6 +909,10 @@ exhaustivityCheck scrut ty pats = do
             ( do
                 tele' <- substTele delta tys tele
                 --FIXME
+                -- this has to typecheck the telescope, but takes internal syntax as input
+                -- currently all elaboration is going from surface to internal
+                -- so implementing this would mean either reimplementing core tc
+                -- or translating the terms back to surface
                 -- | Check all of the types contained within a telescope
                 --tcTypeTele :: (MonadElab c m) => [I.Decl] -> m ()
                 --tcTypeTele tele'
