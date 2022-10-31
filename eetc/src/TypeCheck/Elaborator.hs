@@ -440,7 +440,7 @@ checkType (S.Contra p) typ = do
   a <- createMetaTerm
   b <- createMetaTerm
   s <- fmap head $ Env.getSourceLocation
-  let metaEq $ TyEq a b
+  let metaEq = I.TyEq a b
   raiseConstraint $ inj @_ @BasicConstraintsF
                   $ EqualityConstraint typ metaEq I.Type s
 
