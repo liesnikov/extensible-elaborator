@@ -82,15 +82,15 @@ inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred"
 inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
 
-  -- needs unification
-  -- let whnf = id
-  --     ensurePi ty = do
-  --      nf <- whnf ty
-  --      case nf of
-  --        (I.Pi ep tyA bnd) -> do
-  --          return (ep, tyA, bnd)
-  --        _ -> Env.err [DS "Expected a function type, instead found", DD nf]
-  -- (ep1, tyA, bnd) <- ensurePi ty1
+  -- needs conversion checker
+  -- FIXME
+  let whnf :: (MonadElab c m) => I.Term -> m I.Term
+      whnf t = do
+        Env.warn [DS "supposed to reduce",
+                  DD t,
+                  DS "for now returning it without reduction"]
+        return t
+  nty1 <- whnf ty1
 
   -- FIXME
   -- we're defaulting to relevant arguments for now
@@ -103,7 +103,7 @@ inferType (S.App t1 t2) = do
   s <- fmap head $ Env.getSourceLocation
 
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint ty1 metaPi I.Type s
+                  $ EqualityConstraint nty1 metaPi I.Type s
 
   unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected",
@@ -498,11 +498,18 @@ checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
   let whnf :: (MonadElab c m) => I.Term -> m I.Term
       -- FIXME
-      whnf = undefined
+      whnf t = do
+        Env.warn [DS "supposed to reduce",
+                  DD t,
+                  DS "for now returning it without reduction"]
+        return t
   escrut' <- whnf escrut
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
       -- FIXME
-      ensureTCon = undefined
+      ensureTCon (I.TCon c args) = return $ (c, args)
+      ensureTCon term = Env.err $ [DS "can't verify that",
+                                   DD term,
+                                   DS "has TCon as head-symbol"]
   (c, args) <- ensureTCon sty
   let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
       checkAlt (S.Match bnd) = do
@@ -572,7 +579,13 @@ elabTypeTele tele =
 -- | Create a Def if either side normalizes to a single variable
 def :: (MonadElab c m) => I.Term -> I.Term -> m [I.Decl]
 def t1 t2 = do
-  let whnf = undefined
+  let whnf :: (MonadElab c m) => I.Term -> m I.Term
+      -- FIXME
+      whnf t = do
+        Env.warn [DS "supposed to reduce",
+                  DD t,
+                  DS "for now returning it without reduction"]
+        return t
   nf1 <- whnf t1
   nf2 <- whnf t2
   case (nf1, nf2) of
@@ -651,7 +664,11 @@ doSubst ss (I.Def x ty : tele') = do
 doSubst ss (I.TypeSig sig : tele') = do
   --FIXME
   let whnf :: (MonadElab c m) => I.Term -> m I.Term
-      whnf = undefined
+      whnf t = do
+        Env.warn [DS "supposed to reduce",
+                  DD t,
+                  DS "for now returning it without reduction"]
+        return t
   tynf <- whnf (Unbound.substs ss (I.sigType sig))
   let sig' = sig{I.sigType = tynf}
   tele'' <- doSubst ss tele'
