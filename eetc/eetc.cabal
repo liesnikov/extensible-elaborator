@@ -84,6 +84,7 @@ library
     TypeCheck.TypeCheck
     TypeCheck.Monad
     TypeCheck.State
+    TypeCheck.StateActions
     TypeCheck.Constraints
 
 

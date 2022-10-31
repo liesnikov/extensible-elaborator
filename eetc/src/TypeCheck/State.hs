@@ -56,6 +56,9 @@ data TcState c = TcS {
   -- constraints :: Set (ConstraintF c)
   , constraints :: [ConstraintF c]
   , vars :: NameMap
+  , decls :: [I.Decl]
+  , shints :: [I.Sig]
+  , udecls :: [S.Decl]
   }
 
 instance Disp Env where
