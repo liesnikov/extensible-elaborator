@@ -405,8 +405,8 @@ checkType t@(S.TyEq ta tb) typ =
 -- | Proof of equality `Refl`
 checkType (S.Refl) typ@(I.TyEq a b) = do
   -- FIXME
-  -- create a metavar here?
-  let unknownType = undefined
+  -- Is creating a meta term the right thing to do here?
+  unknownType <- createMetaTerm
   s <- fmap head $ Env.getSourceLocation
   raiseConstraint $ inj @_ @BasicConstraintsF
                   $ EqualityConstraint a b unknownType s
