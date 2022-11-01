@@ -203,7 +203,7 @@ extendCtxsGlobal ds =
     )
 
 -- | Extend the context with a telescope
-extendCtxTele :: (MonadTcReaderEnv m, MonadIO m, MonadError Err m) => [Decl] -> m a -> m a
+extendCtxTele :: (MonadTcReaderEnv m, MonadError Err m) => [Decl] -> m a -> m a
 extendCtxTele [] m = m
 extendCtxTele (Def x t2 : tele) m =
   extendCtx (Def x t2) $ extendCtxTele tele m

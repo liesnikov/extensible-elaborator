@@ -1,4 +1,4 @@
--- | The main routines for type-checking
+-- | The main routines for core type-checking
 module TypeCheck.TypeCheck (tcModules, inferType, checkType) where
 import Control.Monad.Except
 import Data.List (nub)
