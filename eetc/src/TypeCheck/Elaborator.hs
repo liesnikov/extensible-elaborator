@@ -121,7 +121,7 @@ inferType (S.Pi ep tyA bnd) = do
   let tep = transEpsilon ep
   (x, tyB) <- Unbound.unbind bnd
   tx <- transName x
-  ttyB <- Env.extendCtx (I.TypeSig (I.Sig tx tep ttyA)) (checkType tyB I.Type)
+  ttyB <- Env.extendCtx (I.TypeSig (I.Sig tx tep ttyA)) (elabType tyB)
   let tpib = Unbound.bind tx ttyB
   return (I.Pi (transEpsilon ep) ttyA tpib, I.Type)
 
