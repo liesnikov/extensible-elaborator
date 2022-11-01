@@ -777,8 +777,8 @@ elabEntry (S.Def n term) = do
       lkup <- Env.lookupHint en
       case lkup of
         Nothing -> do
-          Env.extendSourceLocation (S.unPosFlaky term) term $
-            Env.err [ DS "Doing very dumb inference, can't infer anything"]
+          (eterm, ty) <- inferType term
+          return $ AddCtx [I.TypeSig (I.Sig en I.Rel ty), I.Def en eterm]
         Just sig ->
           let handler (Env.Err ps msg) = throwError $ Env.Err ps (msg $$ msg')
               msg' =

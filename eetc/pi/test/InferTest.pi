@@ -1,0 +1,5 @@
+module InferTest where
+
+b1 = True
+
+b2 =  b1
