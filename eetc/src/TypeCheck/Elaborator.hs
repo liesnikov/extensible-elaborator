@@ -272,9 +272,9 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 checkType (S.Lam ep1 lam) ty = do
   let ep2 = I.Rel
   tyA <- createMetaTerm
-  tx <- createUnknownVar
-  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx ep2 tyA)) (createMetaTerm)
-  let bnd2 = Unbound.bind tx tyB
+  mtx <- createUnknownVar
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig mtx ep2 tyA)) (createMetaTerm)
+  let bnd2 = Unbound.bind mtx tyB
   let metaPi = I.Pi ep2 tyA bnd2
   s <- fmap head $ Env.getSourceLocation
 
@@ -745,14 +745,14 @@ data HintOrCtx
   | AddCtx [I.Decl]
 
 elabModule :: (MonadElab c m) => [I.Module] -> S.Module -> m I.Module
-elabModule defs m' = do
+elabModule defs modul = do
   checkedEntries <-
     SA.extendCtxMods importedModules $
       foldr
         elabE
         (return [])
-        (moduleEntries m')
-  return $ m' {moduleEntries = checkedEntries}
+        (moduleEntries modul)
+  return $ modul {moduleEntries = checkedEntries}
   where
     elabE :: (MonadElab c m) => S.Decl -> m [I.Decl] -> m [I.Decl]
     d `elabE` m = do
@@ -764,7 +764,7 @@ elabModule defs m' = do
         -- Add decls to the Decls to be returned
         AddCtx decls -> (decls ++) <$> SA.extendCtxsGlobal decls m
     -- Get all of the defs from imported modules (this is the env to check current module in)
-    importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports m') defs
+    importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports modul) defs
 
 -- | Elaborate each sort of declaration in a module
 elabEntry :: (MonadElab c m) => S.Decl -> m HintOrCtx
