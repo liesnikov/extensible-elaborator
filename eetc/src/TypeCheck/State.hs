@@ -1,10 +1,14 @@
 module TypeCheck.State ( SourceLocation(..)
-                       , Env(..), emptyEnv
+                       , Env(..)
+                       , emptyCoreEnv, emptyElabEnv
                        , Err(..)
-                       , TcState(..), NameMap
+                       , TcState(..)
+                       , emptyCoreState, emptyElabState
+                       , NameMap
                        ) where
 
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 -- import           Data.Set (Set)
 
 import SurfaceSyntax as S
@@ -36,14 +40,24 @@ data Env = Env
   }
 
 --deriving Show
+instance Disp Env where
+  disp e = vcat [disp decl | decl <- ctx e]
 
 -- | The initial environment.
-emptyEnv :: Env
-emptyEnv = Env {ctx = I.preludeDataDecls
-               , globals = length I.preludeDataDecls
-               , hints = []
-               , sourceLocation = []
-              }
+emptyCoreEnv :: Env
+emptyCoreEnv = Env { ctx = I.preludeDataDecls
+                   , globals = length I.preludeDataDecls
+                   , hints = []
+                   , sourceLocation = []
+                   }
+
+emptyElabEnv :: Env
+emptyElabEnv = Env { ctx = []
+                   , globals = 0
+                   , hints = []
+                   , sourceLocation = []
+                   }
+
 
 type NameMap = Map S.TName I.TName
 
@@ -57,12 +71,25 @@ data TcState c = TcS {
   , constraints :: [ConstraintF c]
   , vars :: NameMap
   , decls :: [I.Decl]
-  , shints :: [I.Sig]
   , udecls :: [S.Decl]
   }
 
-instance Disp Env where
-  disp e = vcat [disp decl | decl <- ctx e]
+emptyCoreState :: TcState c
+emptyCoreState = TcS { metas = Map.empty
+                     , metaSolutions = Map.empty
+                     , constraints = []
+                     , vars = Map.empty
+                     , decls = []
+                     , udecls = []}
+
+emptyElabState :: TcState c
+emptyElabState = TcS { metas = Map.empty
+                     , metaSolutions = Map.empty
+                     , constraints = []
+                     , vars = Map.empty
+                     , decls = I.preludeDataDecls
+                     , udecls = []}
+
 
 -- | An error that should be reported to the user
 data Err = Err [SourceLocation] Doc

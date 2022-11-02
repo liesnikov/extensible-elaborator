@@ -21,6 +21,7 @@ import           ModuleStub
 import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import qualified TypeCheck.Environment as Env
+import qualified TypeCheck.StateActions as SA
 import           TypeCheck.Monad ( MonadElab
                                  , createMeta
                                  , raiseConstraint
@@ -69,7 +70,7 @@ inferType (S.Type) = return (I.Type, I.Type)
 -- variable lookup
 inferType (S.Var x) = do
   tx <- transName x
-  sig <- Env.lookupTy tx   -- make sure the variable is accessible
+  sig <- SA.lookupTy tx   -- make sure the variable is accessible
   Env.checkStage (I.sigEp sig)
   return (I.Var tx, I.sigType sig)
 
@@ -201,7 +202,7 @@ inferType t@(S.Contra p) = Env.err [DS "Contradiction must be checked not inferr
 -- inductive datatypes
 -- Type constructor application
 inferType (S.TCon c params) =do
-  (I.Telescope delta, _) <- Env.lookupTCon c
+  (I.Telescope delta, _) <- SA.lookupTCon c
   unless (length params == length delta) $
     Env.err
       [ DS "Datatype constructor",
@@ -219,7 +220,7 @@ inferType (S.TCon c params) =do
 -- is only one datacon of that name that takes no
 -- parameters
 inferType (S.DCon c args) = do
-  matches <- Env.lookupDConAll c
+  matches <- SA.lookupDConAll c
   case matches of
     [(tname, (I.Telescope [], I.ConstructorDef _ _ (I.Telescope deltai)))] -> do
       let numArgs = length deltai
@@ -472,7 +473,7 @@ checkType (S.Contra p) typ = do
 checkType t@(S.DCon c args) ty = do
   case ty of
     (I.TCon tname params) -> do
-      (I.Telescope delta, I.Telescope deltai) <- Env.lookupDCon c tname
+      (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
       let isTypeSig :: I.Decl -> Bool
           isTypeSig (I.TypeSig _) = True
           isTypeSig _ = False
@@ -688,7 +689,7 @@ declarePat (I.PatCon dc pats) I.Rel ty = do
       -- FIXME
       ensureTCon = undefined
   (tc,params) <- ensureTCon ty
-  (I.Telescope delta, I.Telescope deltai) <- Env.lookupDCon dc tc
+  (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon dc tc
   tele <- substTele delta params deltai
   declarePats dc pats tele
 declarePat pat I.Irr _ty =
@@ -746,7 +747,7 @@ data HintOrCtx
 elabModule :: (MonadElab c m) => [I.Module] -> S.Module -> m I.Module
 elabModule defs m' = do
   checkedEntries <-
-    Env.extendCtxMods importedModules $
+    SA.extendCtxMods importedModules $
       foldr
         elabE
         (return [])
@@ -761,7 +762,7 @@ elabModule defs m' = do
       case x of
         AddHint hint -> Env.extendHints hint m
         -- Add decls to the Decls to be returned
-        AddCtx decls -> (decls ++) <$> Env.extendCtxsGlobal decls m
+        AddCtx decls -> (decls ++) <$> SA.extendCtxsGlobal decls m
     -- Get all of the defs from imported modules (this is the env to check current module in)
     importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports m') defs
 
@@ -769,12 +770,12 @@ elabModule defs m' = do
 elabEntry :: (MonadElab c m) => S.Decl -> m HintOrCtx
 elabEntry (S.Def n term) = do
   en <- transName n
-  oldDef <- Env.lookupDef en
+  oldDef <- SA.lookupDef en
   maybe elab die oldDef
   where
     elab = do
       en <- transName n
-      lkup <- Env.lookupHint en
+      lkup <- SA.lookupHint en
       case lkup of
         Nothing -> do
           (eterm, ty) <- inferType term
@@ -840,8 +841,8 @@ duplicateTypeBindingCheck :: (MonadElab c m) => I.Sig -> m ()
 duplicateTypeBindingCheck sig = do
   -- Look for existing type bindings ...
   let n = I.sigName sig
-  l <- Env.lookupTyMaybe n
-  l' <- Env.lookupHint n
+  l <- SA.lookupTyMaybe n
+  l' <- SA.lookupHint n
   -- ... we don't care which, if either are Just.
   case catMaybes [l, l'] of
     [] -> return ()
@@ -877,7 +878,7 @@ exhaustivityCheck scrut ty pats = do
       -- FIXME
       ensureTCon = undefined
   (tcon, tys) <- ensureTCon ty
-  (I.Telescope delta, mdefs) <- Env.lookupTCon tcon
+  (I.Telescope delta, mdefs) <- SA.lookupTCon tcon
   case mdefs of
     Just datacons -> do
       loop pats datacons

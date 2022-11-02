@@ -237,20 +237,15 @@ type MonadElab c m = (MonadTcState c m,
                       MonadIO m)
 
 -- Slightly more general version of TcMonad runner, where we don't throw away the state
-runTcStateMonad :: Env -> TcMonad c a -> IO (Either Err (a, TcState c))
-runTcStateMonad env m =
+runTcStateMonad :: TcState c -> Env -> TcMonad c a -> IO (Either Err (a, TcState c))
+runTcStateMonad state env m =
   runExceptT $
-  (flip runStateT) initial $
+  (flip runStateT) state $
   (flip runReaderT) env $
   (Unbound.runFreshMT $ unTcM $ m)
-  where
-    initial = TcS { metas = Map.empty
-                  , metaSolutions = Map.empty
-                  , constraints = []
-                  , vars = Map.empty}
 
 -- | Entry point for the type checking monad, given an
 -- initial environment, returns either an error message
 -- or some result.
-runTcMonad :: Env -> TcMonad c a -> IO (Either Err a)
-runTcMonad e m = fmap @IO (fmap @(Either Err) fst) $ runTcStateMonad e m
+runTcMonad :: TcState c -> Env -> TcMonad c a -> IO (Either Err a)
+runTcMonad s e m = fmap @IO (fmap @(Either Err) fst) $ runTcStateMonad s e m

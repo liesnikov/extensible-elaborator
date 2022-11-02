@@ -1,7 +1,6 @@
 -- | Utilities for managing a typechecking context.
 module TypeCheck.Environment
 (   Env (..),
-    emptyEnv,
     lookupTy,
     lookupTyMaybe,
     lookupDef,

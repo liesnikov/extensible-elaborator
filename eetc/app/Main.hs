@@ -18,9 +18,10 @@ import PrettyPrintSurface ()
 
 import Modules (getModules)
 
-import TypeCheck.State (TcState(constraints))
+import TypeCheck.State ( TcState(constraints),
+                         emptyElabEnv, emptyElabState,
+                         emptyCoreEnv, emptyCoreState)
 import TypeCheck.Monad (runTcMonad, runTcStateMonad)
-import TypeCheck.Environment ( emptyEnv)
 import TypeCheck.Constraints (BasicConstraintsF)
 import TypeCheck.Elaborator ( elabModules, elabTerm )
 import TypeCheck.TypeCheck ( tcModules, inferType )
@@ -40,12 +41,12 @@ go str = do
     Right term -> do
       putStrLn "parsed as"
       putStrLn $ render $ disp term
-      elabterm <- runTcStateMonad emptyEnv (elabTerm @BasicConstraintsF term)
+      elabterm <- runTcStateMonad emptyElabState emptyElabEnv (elabTerm @BasicConstraintsF term)
       case elabterm of
         Left elaberror -> putElabError elaberror
         Right (elabt, s) -> do
           putStateDump . constraints $ s
-          res <- runTcMonad emptyEnv (inferType elabt)
+          res <- runTcMonad emptyCoreState emptyCoreEnv (inferType elabt)
           case res of
             Left typeError -> putTypeError typeError
             Right ty -> do
@@ -85,11 +86,11 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcStateMonad @BasicConstraintsF emptyEnv (elabModules @BasicConstraintsF val)
+  e <- runTcStateMonad @BasicConstraintsF emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
   (elabs, s) <- e `exitWith` putElabError
   putStateDump . constraints $ s
   putStrLn "type checking..."
-  d <- runTcMonad emptyEnv (tcModules elabs)
+  d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError
   putStrLn $ render $ disp (last defs)
 
