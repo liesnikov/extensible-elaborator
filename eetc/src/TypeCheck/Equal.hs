@@ -298,13 +298,13 @@ unify ns tx ty = do
         ds2 <- unify (x:ns) tyB1 tyB2
         return (ds1 ++ ds2)
       (m1@(MetaVar _), t2) -> Env.err [DS "Can't unify metavariable",
-                                      DD m1,
-                                      DS "with term",
-                                      DD t2]
+                                       DD m1,
+                                       DS "with term",
+                                       DD t2]
       (t1, m2@(MetaVar _)) -> Env.err [DS "Can't unify term",
-                                      DD t1,
-                                      DS "with metavariable",
-                                      DD m2]
+                                       DD t1,
+                                       DS "with metavariable",
+                                       DD m2]
       _ ->
         if amb txnf || amb tynf
           then return []
