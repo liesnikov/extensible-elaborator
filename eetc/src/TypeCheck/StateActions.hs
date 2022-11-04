@@ -1,18 +1,15 @@
 -- | Utilities for managing a typechecking context, but moved to the State
-module TypeCheck.StateActions
-(   lookupTy,
-    lookupTyMaybe,
-    lookupDef,
-    lookupRecDef,
-    lookupHint ,
-    lookupTCon,
-    lookupDCon,
-    lookupDConAll,
-    extendCtxsGlobal,
-    extendCtxMods,
-  )
-where
-
+module TypeCheck.StateActions ( lookupTy
+                              , lookupTyMaybe
+                              , lookupDef
+                              , lookupRecDef
+                              , lookupHint
+                              , lookupTCon
+                              , lookupDCon
+                              , lookupDConAll
+                              , extendGlobal
+                              , extendCtxMods
+                              ) where
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
 import           Data.Maybe ( listToMaybe )
@@ -184,14 +181,13 @@ lookupDCon c tname = do
 -- FIXME
 -- should we really pass the continuation?
 -- | Extend the context with a list of bindings, marking them as "global"
-extendCtxsGlobal :: (MonadTcState c m) => [Decl] -> m a -> m a
-extendCtxsGlobal ds a = do
+extendGlobal :: (MonadTcState c m) => [Decl] -> m a -> m a
+extendGlobal ds a = do
   modifyTc
     ( \m@(TcS {decls = cs}) ->
         m { decls = ds ++ cs }
     )
   a
-
 
 extendCtxMods :: (MonadTcReaderEnv m) => [Module] -> m a -> m a
 extendCtxMods = Env.extendCtxMods

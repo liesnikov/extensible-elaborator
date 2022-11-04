@@ -771,7 +771,7 @@ elabModule defs modul = do
       case x of
         AddHint hint -> Env.extendHints hint m
         -- Add decls to the Decls to be returned
-        AddCtx decls -> (decls ++) <$> SA.extendCtxsGlobal decls m
+        AddCtx decls -> (decls ++) <$> SA.extendGlobal decls m
     -- Get all of the defs from imported modules (this is the env to check current module in)
     importedModules = filter (\x -> ModuleImport (moduleName x) `elem` moduleImports modul) defs
 
