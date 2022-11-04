@@ -37,7 +37,6 @@ import           Control.Monad.Trans.Control ( MonadTransControl(..), liftThroug
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import           InternalSyntax ( Meta(..)
                                 , MetaTag(..)

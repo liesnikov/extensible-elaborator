@@ -13,13 +13,10 @@ import qualified Data.Map.Strict as Map
 
 import SurfaceSyntax as S
 import InternalSyntax as I
-import PrettyPrint ( SourcePos, Disp(..), Doc )
+import PrettyPrint ( Disp(..), Doc )
 import PrettyPrintInternal ()
 import Text.PrettyPrint.HughesPJ ( ($$), nest, text, vcat )
 import TypeCheck.Constraints ( ConstraintF
-                             , BasicConstraintsF
-                             , (:<:)
-                             , inject
                              , SourceLocation(..)
                              )
 
