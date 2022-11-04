@@ -223,6 +223,9 @@ inferType (S.DCon c args) = do
   matches <- SA.lookupDConAll c
   case matches of
     [(tname, (I.Telescope [], I.ConstructorDef _ _ (I.Telescope deltai)))] -> do
+      -- insert a call to checkType (S.DCon c args) (I.TCon tname ...)?
+      -- can't do that because we don't know the intended parameters of the type
+      -- that's why we only match on I.Telescope [], i.e. when there are no parameters
       let numArgs = length deltai
       unless (length args == numArgs) $
         Env.err
@@ -471,6 +474,9 @@ checkType (S.Contra p) typ = do
 --           ]
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
+  -- FIXME
+  -- this should require ty to be TCon
+  -- similar issue with S.Case construct below
   case ty of
     (I.TCon tname params) -> do
       (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
@@ -659,6 +665,9 @@ doSubst ss (I.Def x ty : tele') = do
   --FIXME
   let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
       unify = undefined
+  -- relying on a behaviour of unify to produce a Def when tx is a variable
+  -- which it is here, so essentially the only thing this does is whnf-reduces the ty'
+  -- and then adds (I.Dex tx whnfty') to the decls1
   decls1 <- unify [] tx' ty'
   decls2 <- Env.extendCtxs decls1 (doSubst ss tele')
   return $ decls1 ++ decls2
