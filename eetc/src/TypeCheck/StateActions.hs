@@ -14,12 +14,17 @@ module TypeCheck.StateActions
 where
 
 import           Control.Monad.Except (MonadError(..))
-import           Data.List
+import           Data.List (find)
 import           Data.Maybe ( listToMaybe )
 
-import           ModuleStub
-import           InternalSyntax
-import           PrettyPrint (D(..) )
+import           ModuleStub ( TCName, DCName )
+import           InternalSyntax ( Term
+                                , TName, Epsilon, Sig (..)
+                                , ConstructorDef(..)
+                                , Telescope
+                                , Decl(..), Module
+                                )
+import           PrettyPrint ( D(..) )
 import           PrettyPrintInternal ()
 
 import qualified TypeCheck.Environment as Env
@@ -29,7 +34,7 @@ import           TypeCheck.Monad ( MonadTcReader(..)
                                  , MonadTcReaderEnv(..)
                                  , asksEnv
                                  )
-import           TypeCheck.State ( TcState(..), Err)
+import           TypeCheck.State ( TcState(..), Err )
 
 
 type Decls = [Decl]
