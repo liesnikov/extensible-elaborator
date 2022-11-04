@@ -273,22 +273,22 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) ty = do
-  let ep2 = I.Rel
-  tyA <- createMetaTerm
+  let mep = I.Rel
+  mtyA <- createMetaTerm
   mtx <- createUnknownVar
-  tyB <- Env.extendCtx (I.TypeSig (I.Sig mtx ep2 tyA)) (createMetaTerm)
-  let bnd2 = Unbound.bind mtx tyB
-  let metaPi = I.Pi ep2 tyA bnd2
+  mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) (createMetaTerm)
+  let mbnd = Unbound.bind mtx mtyB
+  let metaPi = I.Pi mep mtyA mbnd
   s <- fmap head $ Env.getSourceLocation
 
   raiseConstraint $ inj @_ @BasicConstraintsF
                   $ EqualityConstraint ty metaPi I.Type s
 
   (x, body) <- Unbound.unbind lam
-  (_, tyB) <- Unbound.unbind bnd2
+  (_, tyB) <- Unbound.unbind mbnd
   tx <- transName x
   let tep1 = transEpsilon ep1
-  tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 tyA)) (checkType body tyB)
+  tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
   return $ I.Lam tep1 tlam
 -- | application `a b`
