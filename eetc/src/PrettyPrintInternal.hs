@@ -300,9 +300,9 @@ instance Display Term where
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
   display (MetaVar m) = do
     p <- asks prec
-    -- dtel <- withPrec 0 $ display tel
-    num <- display m
-    return $ PP.text "?_" <+> num
+    let number = Unbound.name2Integer m
+    dnumber <- display number
+    return $ PP.text "?_" <> dnumber
 
 
 instance Display Arg where

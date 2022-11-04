@@ -88,10 +88,12 @@ data Term
     Case Term [Match]
 
   | -- | meta variables done in contextual style
-    MetaVar MetaId
+    MetaVar MetaVarId
   deriving (Show, Generic)
 
-type MetaId = Integer
+type MetaVarId = Unbound.Name Term
+
+type MetaId = Int
 
 data MetaTag where
   MetaTermTag :: Telescope -> MetaTag
@@ -100,7 +102,7 @@ data MetaTag where
 
 data Meta c where
   Meta :: MetaId -> Meta c
-  MetaTerm :: Telescope -> MetaId -> Meta Term
+  MetaTerm :: Telescope -> MetaVarId -> Meta Term
 
 type MetaTerm = Meta Term
 
@@ -326,6 +328,7 @@ idy = Lam Rel (Unbound.bind yName (Var yName))
 
 instance Unbound.Subst Term Term where
   isvar (Var x) = Just (Unbound.SubstName x)
+  isvar (MetaVar x) = Just (Unbound.SubstName x)
   isvar _ = Nothing
 
 

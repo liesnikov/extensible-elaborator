@@ -23,7 +23,7 @@ import qualified InternalSyntax as I
 import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import           TypeCheck.Monad ( MonadElab
-                                 , createMeta
+                                 , createMetaVar
                                  , raiseConstraint
                                  , asksTcNames
                                  , modifyTcNames )
@@ -598,7 +598,7 @@ def t1 t2 = do
 createMetaTerm :: (MonadElab c m) => m I.Term
 createMetaTerm = do
   t <- Env.getCtx
-  i <- createMeta (I.MetaTermTag . I.Telescope $ t)
+  i <- createMetaVar (I.MetaTermTag . I.Telescope $ t)
   return $ I.MetaVar i
 
 createUnknownVar :: (MonadElab c m) => m I.TName

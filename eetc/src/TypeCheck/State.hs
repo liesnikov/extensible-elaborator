@@ -65,8 +65,8 @@ data TcState c = TcS {
   -- FIXME
   -- previously was an existential forall a. Map .. (Meta a)
   -- but that can't be matched without ImpredicativeTypes
-    metas :: Map MetaId (Meta I.Term)
-  , metaSolutions :: Map MetaId I.Term
+    metas :: Map MetaVarId (Meta I.Term)
+  , metaSolutions :: Map MetaVarId I.Term
   -- constraints :: Set (ConstraintF c)
   , constraints :: [ConstraintF c]
   , vars :: NameMap

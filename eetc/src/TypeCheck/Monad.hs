@@ -10,13 +10,12 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , getsTc, modifyTcNames
 
                        , MonadConstraints
-                       , createMeta, raiseConstraint
+                       , createMetaVar, lookupMetaVar, raiseConstraint
 
                        , MonadTcCore, MonadElab
                        , TcMonad, runTcStateMonad, runTcMonad
                        ) where
 
-import           Data.Foldable (foldl')
 import qualified Data.Map.Strict as Map
 -- import qualified Data.Set as Set
 
@@ -42,7 +41,7 @@ import qualified SurfaceSyntax as S
 import qualified InternalSyntax as I
 import           InternalSyntax ( Meta(..)
                                 , MetaTag(..)
-                                , MetaId )
+                                , MetaVarId )
 import           TypeCheck.Constraints ( ConstraintF
                                        , BasicConstraintsF
                                        , (:<:)
@@ -128,8 +127,8 @@ instance (Monad m, MonadTcState c m) => MonadTcReader c m where
 -- raising and catching constraints
 
 class MonadConstraints cs m | m -> cs where
-  createMeta :: MetaTag -> m MetaId
-  lookupMeta :: MetaId -> m (Maybe (Meta I.Term))
+  createMetaVar :: MetaTag -> m MetaVarId
+  lookupMetaVar :: MetaVarId -> m (Maybe (Meta I.Term))
   raiseConstraint :: (c :<: cs) => c (ConstraintF cs) -> m ()
 
 {--
@@ -197,17 +196,17 @@ instance MonadTcState c (TcMonad c) where
   putTc = TcM . put
   modifyTc = TcM . modify
 
-createMetaTc :: MetaTag -> TcMonad c MetaId
-createMetaTc (MetaTermTag tel) = do
+createMetaVarFresh :: (Unbound.Fresh m, MonadTcState c m) => MetaTag -> m MetaVarId
+createMetaVarFresh (MetaTermTag tel) = do
   dict <- metas <$> getTc
-  let newMetaId = succ $ foldl' max 0 $ Map.keys dict
-  let newMeta = MetaTerm tel newMetaId
-  modifyTc (\s -> s {metas = Map.insert newMetaId newMeta (metas s)})
-  return $ newMetaId
-createMetaTc (MetaTag) = undefined
+  newMetaVarId <- Unbound.fresh $ Unbound.string2Name "?"
+  let newMeta = MetaTerm tel newMetaVarId
+  modifyTc (\s -> s {metas = Map.insert newMetaVarId newMeta (metas s)})
+  return $ newMetaVarId
+createMetaVarFresh (MetaTag) = undefined
 
-lookupMetaTc :: MetaId -> TcMonad c (Maybe (Meta I.Term))
-lookupMetaTc mid = do
+lookupMetaVarTc :: MetaVarId -> TcMonad c (Maybe (Meta I.Term))
+lookupMetaVarTc mid = do
   dict <- metas <$> getTc
   return $ Map.lookup mid dict
 
@@ -219,8 +218,8 @@ raiseConstraintTc cons = do
 --  modifyTc (\s -> s {constraints = Set.insert (inject cons) (constraints s)})
 
 instance MonadConstraints c (TcMonad c) where
-  createMeta      = createMetaTc
-  lookupMeta      = lookupMetaTc
+  createMetaVar   = createMetaVarFresh
+  lookupMetaVar   = lookupMetaVarTc
   raiseConstraint = raiseConstraintTc
 
 
