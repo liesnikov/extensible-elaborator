@@ -28,9 +28,9 @@ import           TypeCheck.Monad ( MonadElab
                                  , asksTcNames
                                  , modifyTcNames )
 import           TypeCheck.Constraints ( EqualityConstraint(..)
+                                       , TypeConstructorConstraint(..)
                                        , inj
                                        , BasicConstraintsF)
-
 
 transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
@@ -474,9 +474,9 @@ checkType (S.Contra p) typ = do
 --           ]
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
+  raiseConstraint $ inj @_ @BasicConstraintsF $ TConConstraint ty
   -- FIXME
-  -- this should require ty to be TCon
-  -- similar issue with S.Case construct below
+  -- take whnf here?
   case ty of
     (I.TCon tname params) -> do
       (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
@@ -517,6 +517,7 @@ checkType (S.Case scrut alts) ty = do
       ensureTCon term = Env.err $ [DS "can't verify that",
                                    DD term,
                                    DS "has TCon as head-symbol"]
+  raiseConstraint $ inj @_ @BasicConstraintsF $ TConConstraint sty
   (c, args) <- ensureTCon sty
   let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
       checkAlt (S.Match bnd) = do

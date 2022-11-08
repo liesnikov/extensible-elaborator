@@ -2,6 +2,7 @@
 module TypeCheck.Constraints ( ConstraintF
                              , EmptyConstraint(..)
                              , EqualityConstraint(..)
+                             , TypeConstructorConstraint(..)
                              , ConjunctionConstraint(..)
                              , BasicConstraintsF
                              , (:+:)
@@ -18,10 +19,13 @@ import PrettyPrintInternal ()
 
 -- following data types a-la carte approach
 
+
+-- Fix from the constraints world
 data ConstraintF f = In (f (ConstraintF f))
 
 instance (Disp1 f) => Disp (ConstraintF f) where
   disp (In fv) = liftdisp (disp) fv
+
 
 data EmptyConstraint e = EmptyConstraint SourceLocation
   deriving Functor
@@ -29,6 +33,8 @@ data EmptyConstraint e = EmptyConstraint SourceLocation
 instance Disp1 EmptyConstraint where
   liftdisp _ (EmptyConstraint s) = PP.text "empty_constraint" <+> raisedat s
 
+
+-- The two terms t1 and t2 of type typ should be unified
 data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term
                                                Syntax.Type SourceLocation
   deriving Functor
@@ -41,6 +47,16 @@ instance Disp1 EqualityConstraint where
                                                PP.text " :" <+> disp ty <+>
                                                raisedat s
 
+
+-- the term passed to the constraint should be a type cosntructor
+data TypeConstructorConstraint e = TConConstraint Syntax.Term
+  deriving Functor
+
+instance Disp1 TypeConstructorConstraint where
+  liftdisp _ (TConConstraint t) = disp t
+
+
+-- both constraints must be satisfied
 data ConjunctionConstraint e = ConjunctionConstraint e e SourceLocation
   deriving Functor
 
@@ -51,10 +67,11 @@ instance Disp1 ConjunctionConstraint where
                                                  (f c2)) <+>
                                                raisedat s
 
+
 type BasicConstraintsF =   EqualityConstraint
                        :+: ConjunctionConstraint
+                       :+: TypeConstructorConstraint
                        :+: EmptyConstraint
-
 
 {--
 data TypeClassConstrait e = InstanceNeeded Syntax.Type
