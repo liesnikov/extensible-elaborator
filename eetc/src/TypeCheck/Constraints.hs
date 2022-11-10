@@ -24,7 +24,7 @@ import PrettyPrintInternal ()
 data ConstraintF f = In ConstraintId (f (ConstraintF f))
 
 instance (Disp1 f) => Disp (ConstraintF f) where
-  disp (In fv) = liftdisp (disp) fv
+  disp (In i fv) = PP.text "constraint" <+> (PP.integer i <> PP.text ":") <+> liftdisp (disp) fv
 
 instance Eq (ConstraintF f) where
   (In id1 _) == (In id2 _) = id1 == id2
@@ -49,9 +49,9 @@ data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term
 instance Disp1 EqualityConstraint where
   liftdisp _ (EqualityConstraint t1 t2 ty s) = (PP.parens $
                                                 disp t1 <+>
-                                                PP.text ":~:" <+>
+                                                PP.text "~" <+>
                                                 disp t2) <+>
-                                               PP.text " :" <+> disp ty <+>
+                                               PP.text ":" <+> disp ty <+>
                                                raisedat s
 
 
@@ -154,4 +154,4 @@ data SourceLocation where
   SourceLocation :: forall a. Disp a => SourcePos -> a -> SourceLocation
 
 raisedat :: SourceLocation -> PP.Doc
-raisedat (SourceLocation s _) = PP.text " raised at " <+> disp s
+raisedat (SourceLocation s _) = PP.text "raised at" <+> disp s
