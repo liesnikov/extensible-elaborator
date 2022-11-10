@@ -103,8 +103,6 @@ instance (Disp1 f, Disp1 g) => Disp1 (f :+: g) where
   liftdisp f (Inl e) = liftdisp f e
   liftdisp f (Inr e) = liftdisp f e
 
-class (Functor sub, Functor sup) => (In sub sup) where
-   injel :: sub a -> sup a
 
 {- the reasoning for pragmas is as follows:
 -- We first must deconstruct the list on the right to find the right head-element
@@ -114,18 +112,18 @@ class (Functor sub, Functor sup) => (In sub sup) where
 -- being equi-specific (?)
 -}
 
-instance (Functor e) => In e e where
+class (Functor sub, Functor sup) => (El sub sup) where
+   injel :: sub a -> sup a
+
+instance (Functor e) => El e e where
   injel = id
 
-instance (Functor e, Functor h, Functor t, In e t) => (In e (h :+: t)) where
+instance (Functor e, Functor h, Functor t, El e t) => (El e (h :+: t)) where
   injel = Inr . injel
 
-instance {-# OVERLAPPING #-} (Functor e, Functor t) => (In e (e :+: t)) where
+instance {-# OVERLAPPING #-} (Functor e, Functor t) => (El e (e :+: t)) where
   injel = Inl
 
-
-class (Functor sub, Functor sup) => (sub :<: sup) where
-  inj :: sub a -> sup a
 
 {- Here the reasoning for pragmas is similar:
 -- We are recursing over the sub functor and we want to test the head first
@@ -135,10 +133,14 @@ class (Functor sub, Functor sup) => (sub :<: sup) where
 -- The Overlapping pragma on sub deconstruction forces GHC to look into
 -- the structure of sub.
 -}
-instance (Functor el, Functor list, In el list) => el :<: list where
+
+class (Functor sub, Functor sup) => (sub :<: sup) where
+  inj :: sub a -> sup a
+
+instance (Functor el, Functor list, El el list) => el :<: list where
   inj = injel
 
-instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl, In hl rl, ll :<: rl) => (hl :+: ll) :<: rl where
+instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl, El hl rl, ll :<: rl) => (hl :+: ll) :<: rl where
   inj (Inl a) = injel a
   inj (Inr b) = inj b
 
