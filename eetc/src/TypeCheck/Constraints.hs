@@ -21,11 +21,18 @@ import PrettyPrintInternal ()
 
 
 -- Fix from the constraints world
-data ConstraintF f = In (f (ConstraintF f))
+data ConstraintF f = In ConstraintId (f (ConstraintF f))
 
 instance (Disp1 f) => Disp (ConstraintF f) where
   disp (In fv) = liftdisp (disp) fv
 
+instance Eq (ConstraintF f) where
+  (In id1 _) == (In id2 _) = id1 == id2
+
+instance Ord (ConstraintF f) where
+  compare (In id1 _) (In id2 _) = compare id1 id2
+
+type ConstraintId = Integer
 
 data EmptyConstraint e = EmptyConstraint SourceLocation
   deriving Functor
@@ -135,8 +142,8 @@ instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl, In hl rl, ll :
   inj (Inl a) = injel a
   inj (Inr b) = inj b
 
-inject :: (g :<: f) => g (ConstraintF f ) -> ConstraintF f
-inject = In . inj
+inject :: (g :<: f) => ConstraintId -> g (ConstraintF f ) -> ConstraintF f
+inject cid = In cid . inj
 
 
 -- Pretty-printing boilerplate

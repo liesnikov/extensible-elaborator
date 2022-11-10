@@ -213,8 +213,10 @@ lookupMetaVarTc mid = do
 --handle different constraints in different ways
 raiseConstraintTc :: (c :<: cs) => c (ConstraintF cs) -> TcMonad cs ()
 raiseConstraintTc cons = do
-    modifyTc (\s -> s {constraints = inject cons : constraints s})
---  modifyTc (\s -> s {constraints = Set.insert (inject cons) (constraints s)})
+  f <- Unbound.fresh (Unbound.string2Name "constraint")
+  let fn = Unbound.name2Integer f
+  modifyTc (\s -> s {constraints = inject fn cons : constraints s})
+--  modifyTc (\s -> s {constraints = Set.insert (inject fn cons) (constraints s)})
 
 instance MonadConstraints c (TcMonad c) where
   createMetaVar   = createMetaVarFresh
