@@ -7,6 +7,7 @@ module Main(goFilename,go,main) where
 
 import Control.Monad.Except (runExceptT )
 import Data.List (intercalate)
+import qualified Data.Set as Set (toList)
 import System.Environment(getArgs)
 import System.Exit (exitFailure,exitSuccess)
 import System.FilePath (splitFileName)
@@ -45,7 +46,7 @@ go str = do
       case elabterm of
         Left elaberror -> putElabError elaberror
         Right (elabt, s) -> do
-          putStateDump . constraints $ s
+          putStateDump . Set.toList . constraints $ s
           res <- runTcMonad emptyCoreState emptyCoreEnv (inferType elabt)
           case res of
             Left typeError -> putTypeError typeError
@@ -74,7 +75,7 @@ putTypeError typeError = do
 putStateDump :: Disp d => [d] -> IO ()
 putStateDump d = do
   putStrLn "State is:"
-  putStrLn $ intercalate ",\n" $ fmap (render . disp) $ reverse $ d
+  putStrLn $ intercalate ",\n" $ fmap (render . disp) $ d
 
 -- | Type check the given file
 goFilename :: String -> IO ()
@@ -88,7 +89,7 @@ goFilename pathToMainFile = do
   putStrLn "elaborating..."
   e <- runTcStateMonad @BasicConstraintsF emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
   (elabs, s) <- e `exitWith` putElabError
-  putStateDump . constraints $ s
+  putStateDump . Set.toList . constraints $ s
   putStrLn "type checking..."
   d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError

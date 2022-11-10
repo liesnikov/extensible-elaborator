@@ -9,7 +9,8 @@ module TypeCheck.State ( SourceLocation(..)
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
--- import           Data.Set (Set)
+import           Data.Set (Set)
+import           Data.Set as Set
 
 import SurfaceSyntax as S
 import InternalSyntax as I
@@ -64,8 +65,7 @@ data TcState c = TcS {
   -- but that can't be matched without ImpredicativeTypes
     metas :: Map MetaVarId (Meta I.Term)
   , metaSolutions :: Map MetaVarId I.Term
-  -- constraints :: Set (ConstraintF c)
-  , constraints :: [ConstraintF c]
+  , constraints :: Set (ConstraintF c)
   , vars :: NameMap
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
@@ -74,7 +74,7 @@ data TcState c = TcS {
 emptyCoreState :: TcState c
 emptyCoreState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
-                     , constraints = []
+                     , constraints = Set.empty
                      , vars = Map.empty
                      , decls = []
                      , udecls = []}
@@ -82,7 +82,7 @@ emptyCoreState = TcS { metas = Map.empty
 emptyElabState :: TcState c
 emptyElabState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
-                     , constraints = []
+                     , constraints = Set.empty
                      , vars = Map.empty
                      , decls = I.preludeDataDecls
                      , udecls = []}

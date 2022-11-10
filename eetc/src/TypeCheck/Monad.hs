@@ -17,7 +17,7 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        ) where
 
 import qualified Data.Map.Strict as Map
--- import qualified Data.Set as Set
+import qualified Data.Set as Set
 
 import           Control.Monad (join, MonadPlus(..))
 import           Control.Applicative (Alternative(..))
@@ -215,8 +215,7 @@ raiseConstraintTc :: (c :<: cs) => c (ConstraintF cs) -> TcMonad cs ()
 raiseConstraintTc cons = do
   f <- Unbound.fresh (Unbound.string2Name "constraint")
   let fn = Unbound.name2Integer f
-  modifyTc (\s -> s {constraints = inject fn cons : constraints s})
---  modifyTc (\s -> s {constraints = Set.insert (inject fn cons) (constraints s)})
+  modifyTc (\s -> s {constraints = Set.insert (inject fn cons) (constraints s)})
 
 instance MonadConstraints c (TcMonad c) where
   createMetaVar   = createMetaVarFresh
