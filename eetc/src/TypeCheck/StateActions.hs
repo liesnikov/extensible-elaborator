@@ -14,12 +14,12 @@ import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
 import           Data.Maybe ( listToMaybe )
 
+import           Syntax.ModuleStub ( TCName, DCName )
 import           Syntax.Internal   ( Term
                                    , TName, Epsilon, Sig (..)
                                    , ConstructorDef(..)
                                    , Telescope
                                    , Decl(..), Module
-                                   , TCName, DCName
                                    )
 import           PrettyPrint ( D(..) )
 

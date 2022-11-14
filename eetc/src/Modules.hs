@@ -2,8 +2,9 @@
 -- | Tools for working with multiple source files
 module Modules (getModules, ModuleInfo(..)) where
 
-import Syntax.Surface (Module)
-import Parser (parseModuleFile, parseModuleImports)
+import Syntax.Surface as S
+import Syntax.ModuleStub
+import Parser(parseModuleFile, parseModuleImports)
 
 import Text.ParserCombinators.Parsec.Error ( ParseError )
 
