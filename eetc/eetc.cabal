@@ -69,15 +69,16 @@ library
   hs-source-dirs: src
   exposed-modules:
     LayoutToken
-    Modules
-    ModuleStub
     Parser
+    Modules
     PrettyPrint
-    PrettyPrintInternal
-    PrettyPrintSurface
-    InternalSyntax
-    SurfaceSyntax
-    Arbitrary
+    Syntax.ModuleStub
+    Syntax.PrettyPrintInternal
+    Syntax.PrettyPrintSurface
+    Syntax.InternalSyntax
+    Syntax.Internal
+    Syntax.SurfaceSyntax
+    Syntax.Surface
     TypeCheck.Elaborator
     TypeCheck.Environment
     TypeCheck.Equal
@@ -86,6 +87,7 @@ library
     TypeCheck.State
     TypeCheck.StateActions
     TypeCheck.Constraints
+    Arbitrary
 
 
 executable eetc

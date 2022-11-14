@@ -1,4 +1,4 @@
-module ModuleStub where
+module Syntax.ModuleStub where
 
 import           Data.Set (Set)
 import qualified Data.Set as Set

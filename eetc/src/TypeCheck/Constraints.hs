@@ -11,11 +11,10 @@ module TypeCheck.Constraints ( ConstraintF
                              , SourceLocation(..)
                              ) where
 
-import qualified InternalSyntax as Syntax
+import qualified Syntax.Internal as Syntax
 import           Text.PrettyPrint ( (<+>) )
 import qualified Text.PrettyPrint as PP
 import PrettyPrint (Disp, Disp1(..), disp, SourcePos)
-import PrettyPrintInternal ()
 
 -- following data types a-la carte approach
 

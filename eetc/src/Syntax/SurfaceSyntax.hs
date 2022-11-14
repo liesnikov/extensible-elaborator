@@ -1,7 +1,7 @@
 {- pi-forall language -}
 -- | The abstract syntax of the simple dependently typed language
 -- See comment at the top of 'Parser' for the concrete syntax of this language
-module SurfaceSyntax where
+module Syntax.SurfaceSyntax where
 
 import           Data.Function (on)
 import           Data.Maybe (fromMaybe)
@@ -10,7 +10,7 @@ import           GHC.Generics (Generic,from)
 import           Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import           ModuleStub as M
+import           Syntax.ModuleStub as MM
 
 -----------------------------------------
 
@@ -131,7 +131,7 @@ data Pattern
 
 -----------------------------------------
 
-type Module = M.MModule Decl
+type Module = MM.MModule Decl
 
 -- | A type declaration (or type signature)
 data Sig = Sig {sigName :: TName , sigEp :: Epsilon  , sigType :: Type}

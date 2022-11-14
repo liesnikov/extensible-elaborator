@@ -37,10 +37,10 @@ import           Control.Monad.Trans.Control ( MonadTransControl(..), liftThroug
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import qualified InternalSyntax as I
-import           InternalSyntax ( Meta(..)
-                                , MetaTag(..)
-                                , MetaVarId )
+import qualified Syntax.Internal as I
+import           Syntax.Internal ( Meta(..)
+                                 , MetaTag(..)
+                                 , MetaVarId )
 import           TypeCheck.Constraints ( ConstraintF
                                        , BasicConstraintsF
                                        , (:<:)

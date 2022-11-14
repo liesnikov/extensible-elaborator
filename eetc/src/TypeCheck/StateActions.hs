@@ -14,15 +14,14 @@ import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
 import           Data.Maybe ( listToMaybe )
 
-import           ModuleStub ( TCName, DCName )
-import           InternalSyntax ( Term
-                                , TName, Epsilon, Sig (..)
-                                , ConstructorDef(..)
-                                , Telescope
-                                , Decl(..), Module
-                                )
+import           Syntax.ModuleStub ( TCName, DCName )
+import           Syntax.Internal   ( Term
+                                   , TName, Epsilon, Sig (..)
+                                   , ConstructorDef(..)
+                                   , Telescope
+                                   , Decl(..), Module
+                                   )
 import           PrettyPrint ( D(..) )
-import           PrettyPrintInternal ()
 
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad ( MonadTcReader(..)

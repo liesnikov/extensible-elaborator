@@ -6,8 +6,8 @@ module TypeCheck.Equal (whnf, equate, ensurePi,
 
 import Control.Monad.Except (MonadError(..), MonadPlus, unless, catchError, zipWithM, zipWithM_)
 
-import InternalSyntax
-import ModuleStub
+import Syntax.Internal
+import Syntax.ModuleStub
 import TypeCheck.Environment ( D(DS, DD))
 import qualified TypeCheck.Environment as Env
 import TypeCheck.State (Err)

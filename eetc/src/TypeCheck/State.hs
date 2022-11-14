@@ -12,10 +12,9 @@ import qualified Data.Map.Strict as Map
 import           Data.Set (Set)
 import           Data.Set as Set
 
-import SurfaceSyntax as S
-import InternalSyntax as I
+import Syntax.Surface as S
+import Syntax.Internal as I
 import PrettyPrint ( Disp(..), Doc )
-import PrettyPrintInternal ()
 import Text.PrettyPrint.HughesPJ ( ($$), nest, text, vcat )
 import TypeCheck.Constraints ( ConstraintF
                              , SourceLocation(..)

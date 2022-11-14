@@ -12,10 +12,9 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 import Text.Parsec.Error ( ParseError )
 
 
-import ModuleStub
-import SurfaceSyntax
+import Syntax.ModuleStub
+import Syntax.Surface
 import PrettyPrint ( render, Disp(disp) )
-import PrettyPrintSurface ()
 import Parser ( testParser, expr )
 
 -- | Round trip property: a given term prints then parses to the same term.

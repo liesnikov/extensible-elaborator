@@ -15,7 +15,7 @@ import System.FilePath (splitFileName)
 import Parser ( parseExpr )
 import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
 import PrettyPrint ( render, Disp(..) )
-import PrettyPrintSurface ()
+import Syntax.Surface ()
 
 import Modules (getModules)
 

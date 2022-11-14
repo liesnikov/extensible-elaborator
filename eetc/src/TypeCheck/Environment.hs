@@ -36,10 +36,9 @@ import Control.Monad.Except
 import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
-import PrettyPrintInternal ()
 
-import InternalSyntax
-import ModuleStub
+import Syntax.Internal
+import Syntax.ModuleStub
 import TypeCheck.State
 import TypeCheck.Monad (MonadTcReaderEnv(..), localEnv, asksEnv)
 import Text.PrettyPrint.HughesPJ ( ($$), sep)

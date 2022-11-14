@@ -9,17 +9,15 @@ import           Data.List ( nub )
 import           Data.Maybe ( catMaybes )
 import qualified Data.Map.Strict as Map
 import           PrettyPrint ( D(..), Disp(..))
-import           PrettyPrintInternal ()
-import           PrettyPrintSurface ()
 import           Text.PrettyPrint.HughesPJ ( ($$) )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
 import qualified Unbound.Generics.LocallyNameless.Unsafe as Unbound.Unsafe
 
-import           ModuleStub
-import qualified SurfaceSyntax as S
-import qualified InternalSyntax as I
+import           Syntax.ModuleStub
+import qualified Syntax.Surface as S
+import qualified Syntax.Internal as I
 import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import           TypeCheck.Monad ( MonadElab
