@@ -11,7 +11,6 @@ import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.Equal as Equal
 import PrettyPrint (Disp (disp))
 import Syntax.Internal
-import Syntax.ModuleStub
 -- import Debug.Trace
 
 import Text.PrettyPrint.HughesPJ (($$))

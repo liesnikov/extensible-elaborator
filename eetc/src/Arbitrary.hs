@@ -12,7 +12,6 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 import Text.Parsec.Error ( ParseError )
 
 
-import Syntax.ModuleStub
 import Syntax.Surface
 import PrettyPrint ( render, Disp(disp) )
 import Parser ( testParser, expr )
