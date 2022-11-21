@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 module TypeCheck.Constraints ( ConstraintF
+                             , ConstraintId
                              , EmptyConstraint(..)
                              , EqualityConstraint(..)
                              , TypeConstructorConstraint(..)

@@ -9,11 +9,12 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , MonadTcState(..)
                        , getsTc, modifyTcNames
 
-                       , MonadConstraints
-                       , createMetaVar, lookupMetaVar, raiseConstraint
+                       , MonadConstraints (..)
+                       , raiseConstraint
 
                        , MonadTcCore, MonadElab
                        , TcMonad, runTcStateMonad, runTcMonad
+                       , TcState
                        ) where
 
 import qualified Data.Map.Strict as Map
@@ -48,8 +49,9 @@ import           TypeCheck.Constraints ( ConstraintF
 
 import           TypeCheck.State ( Env(..)
                                  , Err(..)
-                                 , NameMap
-                                 , TcState(..))
+                                 , NameMap)
+import qualified TypeCheck.State as State
+                                 (TcState(..))
 
 -- Monad with read access to TcState
 
@@ -69,10 +71,10 @@ asksTc :: (MonadTcReader c m) => (TcState c -> a) -> m a
 asksTc f = f <$> askTc
 
 asksTcNames :: (MonadTcReader c m) => (NameMap -> a) -> m a
-asksTcNames f = f <$> vars <$> askTc
+asksTcNames f = f <$> State.vars <$> askTc
 
 localTcNames :: (MonadTcReader c m) => (NameMap -> NameMap) -> m a -> m a
-localTcNames f = localTc (\s -> s {vars = f $ vars s})
+localTcNames f = localTc (\s -> s {State.vars = f $ State.vars s})
 
 class Monad m => MonadTcReaderEnv m where
   askEnv :: m Env
@@ -112,7 +114,7 @@ getsTc f = do
   return $ f s
 
 modifyTcNames :: (MonadTcState c m) => (NameMap -> NameMap) ->  m ()
-modifyTcNames f = modifyTc (\s -> s {vars = f $ vars s})
+modifyTcNames f = modifyTc (\s -> s {State.vars = f $ State.vars s})
 
 instance (Monad m, MonadTcState c m) => MonadTcReader c m where
   askTc = getTc
@@ -128,7 +130,11 @@ instance (Monad m, MonadTcState c m) => MonadTcReader c m where
 class MonadConstraints cs m | m -> cs where
   createMetaVar :: MetaTag -> m MetaVarId
   lookupMetaVar :: MetaVarId -> m (Maybe (Meta I.Term))
-  raiseConstraint :: (c :<: cs) => c (ConstraintF cs) -> m ()
+  raiseConstraintAndFreeze :: (c :<: cs) => c (ConstraintF cs) -> Maybe (m ()) -> m ()
+
+raiseConstraint :: (MonadConstraints cs m, c :<: cs)
+                => c (ConstraintF cs) -> m ()
+raiseConstraint c = raiseConstraintAndFreeze c Nothing
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
@@ -151,6 +157,8 @@ newtype TcMonad c a = TcM { unTcM :: Unbound.FreshMT
                                           (ExceptT Err
                                             IO)))
                                        a }
+
+type TcState c = State.TcState (TcMonad c ()) c
 
 instance Functor (TcMonad c) where
   fmap = \f (TcM m) -> TcM $ fmap f m
@@ -197,30 +205,41 @@ instance MonadTcState c (TcMonad c) where
 
 createMetaVarFresh :: (Unbound.Fresh m, MonadTcState c m) => MetaTag -> m MetaVarId
 createMetaVarFresh (MetaTermTag tel) = do
-  dict <- metas <$> getTc
+  dict <- State.metas <$> getTc
   newMetaVarId <- Unbound.fresh $ Unbound.string2Name "?"
   let newMeta = MetaTerm tel newMetaVarId
-  modifyTc (\s -> s {metas = Map.insert newMetaVarId newMeta (metas s)})
+  modifyTc (\s -> s {State.metas = Map.insert newMetaVarId newMeta (State.metas s)})
   return $ newMetaVarId
 createMetaVarFresh (MetaTag) = undefined
 
 lookupMetaVarTc :: MetaVarId -> TcMonad c (Maybe (Meta I.Term))
 lookupMetaVarTc mid = do
-  dict <- metas <$> getTc
+  dict <- State.metas <$> getTc
   return $ Map.lookup mid dict
 
 --FIXME
---handle different constraints in different ways
-raiseConstraintTc :: (c :<: cs) => c (ConstraintF cs) -> TcMonad cs ()
-raiseConstraintTc cons = do
+-- dispatch simplifier before storing the constraints
+raiseConstraintAndFreezeTc :: (c :<: cs)
+                           => c (ConstraintF cs)
+                           -> Maybe (TcMonad cs ())
+                           -> TcMonad cs ()
+raiseConstraintAndFreezeTc cons freeze = do
   f <- Unbound.fresh (Unbound.string2Name "constraint")
-  let fn = Unbound.name2Integer f
-  modifyTc (\s -> s {constraints = Set.insert (inject fn cons) (constraints s)})
+  let constraintId = Unbound.name2Integer f
+  modifyTc (\s -> s { State.constraints =
+                        Set.insert (inject constraintId cons) (State.constraints s)
+                    })
+  case freeze of
+    Nothing -> return ()
+    Just frozenproblem -> do
+      modifyTc (\s -> s { State.frozen =
+                            Map.insert constraintId frozenproblem (State.frozen s)})
+
 
 instance MonadConstraints c (TcMonad c) where
   createMetaVar   = createMetaVarFresh
   lookupMetaVar   = lookupMetaVarTc
-  raiseConstraint = raiseConstraintTc
+  raiseConstraintAndFreeze = raiseConstraintAndFreezeTc
 
 
 type MonadTcCore m = (MonadTcReaderEnv m,

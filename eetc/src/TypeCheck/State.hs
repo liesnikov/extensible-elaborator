@@ -17,6 +17,7 @@ import Syntax.Internal as I
 import PrettyPrint ( Disp(..), Doc )
 import Text.PrettyPrint.HughesPJ ( ($$), nest, text, vcat )
 import TypeCheck.Constraints ( ConstraintF
+                             , ConstraintId
                              , SourceLocation(..)
                              )
 
@@ -58,33 +59,38 @@ emptyElabEnv = Env { ctx = []
 
 type NameMap = Map S.TName I.TName
 
-data TcState c = TcS {
+data TcState tcaction c = TcS {
   -- FIXME
   -- previously was an existential forall a. Map .. (Meta a)
   -- but that can't be matched without ImpredicativeTypes
     metas :: Map MetaVarId (Meta I.Term)
   , metaSolutions :: Map MetaVarId I.Term
-  , constraints :: Set (ConstraintF c)
+  , constraints :: Set.Set (ConstraintF c)
   , vars :: NameMap
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
+  , frozen :: Map ConstraintId tcaction
   }
 
-emptyCoreState :: TcState c
+emptyCoreState :: TcState tca c
 emptyCoreState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
                      , constraints = Set.empty
                      , vars = Map.empty
                      , decls = []
-                     , udecls = []}
+                     , udecls = []
+                     , frozen = Map.empty
+                     }
 
-emptyElabState :: TcState c
+emptyElabState :: TcState tca c
 emptyElabState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
                      , constraints = Set.empty
                      , vars = Map.empty
                      , decls = I.preludeDataDecls
-                     , udecls = []}
+                     , udecls = []
+                     , frozen = Map.empty
+                     }
 
 
 -- | An error that should be reported to the user
