@@ -22,13 +22,13 @@ import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import           TypeCheck.Monad ( MonadElab
                                  , createMetaVar
-                                 , raiseConstraint, raiseConstraintAndFreeze
+                                 , raiseConstraintAndFreeze
                                  , asksTcNames
                                  , modifyTcNames )
-import           TypeCheck.Constraints ( EqualityConstraint(..)
-                                       , TypeConstructorConstraint(..)
+import           TypeCheck.Constraints ( TypeConstructorConstraint(..)
                                        , inj
                                        , BasicConstraintsF)
+import           TypeCheck.ConstraintsActions (constrainEquality)
 
 transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
@@ -96,8 +96,7 @@ inferType (S.App t1 t2) = do
   let metaPi = I.Pi epx tyA bnd
   s <- fmap head $ Env.getSourceLocation
 
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint nty1 metaPi I.Type s
+  constrainEquality nty1 metaPi I.Type s
 
   unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected",
@@ -274,8 +273,7 @@ checkType (S.Lam ep1 lam) ty = do
   let metaPi = I.Pi mep mtyA mbnd
   s <- fmap head $ Env.getSourceLocation
 
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint ty metaPi I.Type s
+  constrainEquality ty metaPi I.Type s
 
   (x, body) <- Unbound.unbind lam
   (_, tyB) <- Unbound.unbind mbnd
@@ -384,8 +382,7 @@ checkType (S.LetPair p bnd) typ = do
   let tybnd = Unbound.bind tx mtyB
   let sigmaPi = I.Sigma tyA tybnd
   s <- fmap head $ Env.getSourceLocation
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint pty sigmaPi I.Type s
+  constrainEquality pty sigmaPi I.Type s
 
 
   let tyB = Unbound.instantiate tybnd [I.Var tx]
@@ -405,8 +402,7 @@ checkType (S.Refl) typ@(I.TyEq a b) = do
   -- Is creating a meta term the right thing to do here?
   unknownType <- createMetaTerm
   s <- fmap head $ Env.getSourceLocation
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint a b unknownType s
+  constrainEquality a b unknownType s
   return $ I.Refl
 checkType (S.Refl) typ =
   Env.err [DS "Refl annotated with ", DD typ]
@@ -419,8 +415,7 @@ checkType (S.Subst a b) typ = do
   n <- createMetaTerm
   let metaeq = I.TyEq m n
   s <- fmap head $ Env.getSourceLocation
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint tp metaeq I.Type s
+  constrainEquality tp metaeq I.Type s
 
 
   --FIXME
@@ -438,8 +433,7 @@ checkType (S.Contra p) typ = do
   b <- createMetaTerm
   s <- fmap head $ Env.getSourceLocation
   let metaEq = I.TyEq a b
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint typ metaEq I.Type s
+  constrainEquality typ metaEq I.Type s
 
   -- FIXME
   -- This relies on a and b being in whnf
@@ -493,8 +487,7 @@ checkType t@(S.DCon c args) ty = do
         newTele <- substTele delta params deltai
         eargs <- elabArgTele args newTele
         s <- fmap head $ Env.getSourceLocation
-        raiseConstraint $ inj @_ @BasicConstraintsF
-          $ EqualityConstraint elabpromise (I.DCon c eargs) ty s
+        constrainEquality elabpromise (I.DCon c eargs) ty s
       _ ->
         Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
   return elabpromise
@@ -538,16 +531,14 @@ checkType (S.Case scrut alts) ty = do
     -- exhaustivityCheck is currently non-functional in terms of empty cases
     exhaustivityCheck escrut' sty epats
     s <- fmap head $ Env.getSourceLocation
-    raiseConstraint $ inj @_ @BasicConstraintsF
-      $ EqualityConstraint elabpromise (I.Case escrut ealts) ty s
+    constrainEquality elabpromise (I.Case escrut ealts) ty s
   return elabpromise
 
 -- c-infer
 checkType tm ty = do
   (etm, ty') <- inferType tm
   s <- fmap head $ Env.getSourceLocation
-  raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint ty' ty I.Type s
+  constrainEquality ty' ty I.Type s
   return $ etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')

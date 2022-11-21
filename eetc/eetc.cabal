@@ -87,6 +87,7 @@ library
     TypeCheck.State
     TypeCheck.StateActions
     TypeCheck.Constraints
+    TypeCheck.ConstraintsActions
     Arbitrary
 
 
