@@ -6,25 +6,7 @@ let
     # Hash obtained using `nix-prefetch-url --unpack <url>`
     sha256 = "0g8vwni83zn6kgkczrm5vwmyhl473rrs9d4k4hn5gfbgfsyv7ls8";
   };
-  config = compiler: {
-    packageOverrides = pkgs: rec {
-      haskell = pkgs.haskell // {
-        packages = pkgs.haskell.packages // {
-          "${compiler}" = pkgs.haskell.packages."${compiler}".override {
-            overrides = haskellPackagesNew: haskellPackagesOld: rec {
-              unbound-generics =
-                let unbound-src =
-                      pkgs.fetchzip {
-                        url = "https://github.com/lambdageek/unbound-generics/archive/a2a558058012b09bb313b3eb03cddb734fcf4a98.zip";
-                        sha256 = "af4592a93d0d280591b3bcff3ebe244956cc3637bf20ed2315fb6b2e070caef4";
-  };
-                in haskellPackagesNew.callCabal2nix "unbound-generics" unbound-src {};
-            };
-          };
-        };
-      };
-    };
-  };
+  config = compiler: (import ./nix/compilerconfig.nix compiler);
 in
 { compiler ? "ghc922",
   nixpkgs ? import defpkgs {config = (config compiler);} }:
