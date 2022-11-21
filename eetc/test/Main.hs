@@ -4,12 +4,13 @@ module Main where
 import Test.QuickCheck
 import Test.HUnit
 import PrettyPrint
-import TypeCheck.Monad (runTcMonad)
+import TypeCheck.Monad (runTcMonad, runTcStateMonad)
 import TypeCheck.Elaborator ( elabModules, elabTerm )
-import TypeCheck.Environment ( emptyEnv)
+import TypeCheck.State ( emptyElabEnv, emptyElabState,
+                         emptyCoreEnv, emptyCoreState)
 import TypeCheck.TypeCheck ( tcModules, inferType )
 import TypeCheck.Constraints (BasicConstraintsF)
-import SurfaceSyntax
+import Syntax.Surface
 import Control.Monad.Except
 import Modules
 import Text.PrettyPrint.HughesPJ (render)
@@ -30,8 +31,8 @@ testFile :: String -> Test
 testFile name = name ~: TestCase $ do
   v <- runExceptT (getModules ["pi"] name)
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))
-  ev <- runTcMonad emptyEnv (elabModules @BasicConstraintsF val)
-  eval <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
-  d <- runTcMonad emptyEnv (tcModules eval)
+  ev <- runTcStateMonad emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  (eval, constraints) <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
+  d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules eval)
   defs <- d `exitWith` (\s -> assertFailure $ "Type error:" ++ render (disp s))
   putStrLn $ render $ disp (last defs)
