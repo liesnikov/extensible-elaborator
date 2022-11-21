@@ -9,8 +9,8 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , MonadTcState(..)
                        , getsTc, modifyTcNames
 
-                       , MonadConstraints (..)
-                       , raiseConstraint
+                       , MonadConstraints(..)
+                       , raiseConstraint, raiseConstraintAndFreeze
 
                        , MonadTcCore, MonadElab
                        , TcMonad, runTcStateMonad, runTcMonad
@@ -130,11 +130,15 @@ instance (Monad m, MonadTcState c m) => MonadTcReader c m where
 class MonadConstraints cs m | m -> cs where
   createMetaVar :: MetaTag -> m MetaVarId
   lookupMetaVar :: MetaVarId -> m (Maybe (Meta I.Term))
-  raiseConstraintAndFreeze :: (c :<: cs) => c (ConstraintF cs) -> Maybe (m ()) -> m ()
+  raiseConstraintMaybeFreeze :: (c :<: cs) => c (ConstraintF cs) -> Maybe (m ()) -> m ()
 
 raiseConstraint :: (MonadConstraints cs m, c :<: cs)
                 => c (ConstraintF cs) -> m ()
-raiseConstraint c = raiseConstraintAndFreeze c Nothing
+raiseConstraint c = raiseConstraintMaybeFreeze c Nothing
+
+raiseConstraintAndFreeze :: (MonadConstraints cs m, c :<: cs)
+                         => c (ConstraintF cs) -> m () -> m ()
+raiseConstraintAndFreeze c f = raiseConstraintMaybeFreeze c (Just f)
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
@@ -219,11 +223,11 @@ lookupMetaVarTc mid = do
 
 --FIXME
 -- dispatch simplifier before storing the constraints
-raiseConstraintAndFreezeTc :: (c :<: cs)
+raiseConstraintMaybeFreezeTc :: (c :<: cs)
                            => c (ConstraintF cs)
                            -> Maybe (TcMonad cs ())
                            -> TcMonad cs ()
-raiseConstraintAndFreezeTc cons freeze = do
+raiseConstraintMaybeFreezeTc cons freeze = do
   f <- Unbound.fresh (Unbound.string2Name "constraint")
   let constraintId = Unbound.name2Integer f
   modifyTc (\s -> s { State.constraints =
@@ -239,7 +243,7 @@ raiseConstraintAndFreezeTc cons freeze = do
 instance MonadConstraints c (TcMonad c) where
   createMetaVar   = createMetaVarFresh
   lookupMetaVar   = lookupMetaVarTc
-  raiseConstraintAndFreeze = raiseConstraintAndFreezeTc
+  raiseConstraintMaybeFreeze = raiseConstraintMaybeFreezeTc
 
 
 type MonadTcCore m = (MonadTcReaderEnv m,

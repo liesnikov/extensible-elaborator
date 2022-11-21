@@ -22,7 +22,7 @@ import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import           TypeCheck.Monad ( MonadElab
                                  , createMetaVar
-                                 , raiseConstraint
+                                 , raiseConstraint, raiseConstraintAndFreeze
                                  , asksTcNames
                                  , modifyTcNames )
 import           TypeCheck.Constraints ( EqualityConstraint(..)
@@ -467,33 +467,39 @@ checkType (S.Contra p) typ = do
 --           ]
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
-  raiseConstraint $ inj @_ @BasicConstraintsF $ TConConstraint ty
-  -- FIXME
-  -- take whnf here?
-  case ty of
-    (I.TCon tname params) -> do
-      (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
-      let isTypeSig :: I.Decl -> Bool
-          isTypeSig (I.TypeSig _) = True
-          isTypeSig _ = False
-      let numArgs = length (filter isTypeSig deltai)
-      unless (length args == numArgs) $
-        Env.err
-          [ DS "Constructor",
-            DS c,
-            DS "should have",
-            DD numArgs,
-            DS "data arguments, but was given",
-            DD (length args),
-            DS "arguments."
-          ]
-      newTele <- substTele delta params deltai
-      eargs <- elabArgTele args newTele
-      return $ I.DCon c eargs
-    _ ->
-      Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
--- | case analysis  `case a of matches`
+  elabpromise <- createMetaTerm
 
+  raiseConstraintAndFreeze
+    (inj @_ @BasicConstraintsF $ TConConstraint ty)
+    $ case ty of
+    -- FIXME
+    -- take whnf here ^^?
+      (I.TCon tname params) -> do
+        (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
+        let isTypeSig :: I.Decl -> Bool
+            isTypeSig (I.TypeSig _) = True
+            isTypeSig _ = False
+        let numArgs = length (filter isTypeSig deltai)
+        unless (length args == numArgs) $
+          Env.err
+            [ DS "Constructor",
+              DS c,
+              DS "should have",
+              DD numArgs,
+              DS "data arguments, but was given",
+              DD (length args),
+              DS "arguments."
+            ]
+        newTele <- substTele delta params deltai
+        eargs <- elabArgTele args newTele
+        s <- fmap head $ Env.getSourceLocation
+        raiseConstraint $ inj @_ @BasicConstraintsF
+          $ EqualityConstraint elabpromise (I.DCon c eargs) ty s
+      _ ->
+        Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
+  return elabpromise
+
+-- | case analysis  `case a of matches`
 checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
   -- FIXME
@@ -504,31 +510,37 @@ checkType (S.Case scrut alts) ty = do
       ensureTCon term = Env.err $ [DS "can't verify that",
                                    DD term,
                                    DS "has TCon as head-symbol"]
-  raiseConstraint $ inj @_ @BasicConstraintsF $ TConConstraint sty
-  (c, args) <- ensureTCon sty
-  let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
-      checkAlt (S.Match bnd) = do
-        (pat, body) <- Unbound.unbind bnd
-        epat <- transPattern pat
-        -- add variables from pattern to context
-        -- could fail if branch is in-accessible
-        decls <- declarePat epat I.Rel (I.TCon c args)
-        -- add defs to the contents from scrut = pat
-        -- could fail if branch is in-accessible
-        --FIXME
-        let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
-            unify = undefined
-        decls' <- unify [] escrut' (pat2Term epat)
-        ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
-        let ebnd = Unbound.bind epat ebody
-        return $ I.Match ebnd
+  elabpromise <- createMetaTerm
+  raiseConstraintAndFreeze
+    (inj @_ @BasicConstraintsF $ TConConstraint sty)
+    $ do
+    (c, args) <- ensureTCon sty
+    let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
+        checkAlt (S.Match bnd) = do
+          (pat, body) <- Unbound.unbind bnd
+          epat <- transPattern pat
+          -- add variables from pattern to context
+          -- could fail if branch is in-accessible
+          decls <- declarePat epat I.Rel (I.TCon c args)
+          -- add defs to the contents from scrut = pat
+          -- could fail if branch is in-accessible
+          --FIXME
+          let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
+              unify = undefined
+          decls' <- unify [] escrut' (pat2Term epat)
+          ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
+          let ebnd = Unbound.bind epat ebody
+          return $ I.Match ebnd
 
-  ealts <- traverse checkAlt alts
-  let epats = map (\(I.Match bnd) -> fst (Unbound.Unsafe.unsafeUnbind bnd)) ealts
-  -- FIXME
-  -- exhaustivityCheck is currently non-functional in terms of empty cases
-  exhaustivityCheck escrut' sty epats
-  return $ I.Case escrut ealts
+    ealts <- traverse checkAlt alts
+    let epats = map (\(I.Match bnd) -> fst (Unbound.Unsafe.unsafeUnbind bnd)) ealts
+    -- FIXME
+    -- exhaustivityCheck is currently non-functional in terms of empty cases
+    exhaustivityCheck escrut' sty epats
+    s <- fmap head $ Env.getSourceLocation
+    raiseConstraint $ inj @_ @BasicConstraintsF
+      $ EqualityConstraint elabpromise (I.Case escrut ealts) ty s
+  return elabpromise
 
 -- c-infer
 checkType tm ty = do
