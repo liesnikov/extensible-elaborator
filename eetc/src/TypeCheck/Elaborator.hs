@@ -81,14 +81,9 @@ inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred"
 inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
 
-  -- needs conversion checker
   -- FIXME
-  let whnf :: (MonadElab c m) => I.Term -> m I.Term
-      whnf t = do
-        Env.warn [DS "supposed to reduce",
-                  DD t,
-                  DS "for now returning it without reduction"]
-        return t
+  -- needs a conversion checker
+  -- or does it? I think we can run the conversion checker in the solver
   nty1 <- whnf ty1
 
   -- FIXME
@@ -501,13 +496,7 @@ checkType t@(S.DCon c args) ty = do
 
 checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
-  let whnf :: (MonadElab c m) => I.Term -> m I.Term
-      -- FIXME
-      whnf t = do
-        Env.warn [DS "supposed to reduce",
-                  DD t,
-                  DS "for now returning it without reduction"]
-        return t
+  -- FIXME
   escrut' <- whnf escrut
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
       -- FIXME
@@ -585,13 +574,7 @@ elabTypeTele tele =
 -- | Create a Def if either side normalizes to a single variable
 def :: (MonadElab c m) => I.Term -> I.Term -> m [I.Decl]
 def t1 t2 = do
-  let whnf :: (MonadElab c m) => I.Term -> m I.Term
-      -- FIXME
-      whnf t = do
-        Env.warn [DS "supposed to reduce",
-                  DD t,
-                  DS "for now returning it without reduction"]
-        return t
+  --FIXME
   nf1 <- whnf t1
   nf2 <- whnf t2
   case (nf1, nf2) of
@@ -672,12 +655,6 @@ doSubst ss (I.Def x ty : tele') = do
   return $ decls1 ++ decls2
 doSubst ss (I.TypeSig sig : tele') = do
   --FIXME
-  let whnf :: (MonadElab c m) => I.Term -> m I.Term
-      whnf t = do
-        Env.warn [DS "supposed to reduce",
-                  DD t,
-                  DS "for now returning it without reduction"]
-        return t
   tynf <- whnf (Unbound.substs ss (I.sigType sig))
   let sig' = sig{I.sigType = tynf}
   tele'' <- doSubst ss tele'
@@ -985,3 +962,13 @@ checkSubPats dc (I.TypeSig _ : tele) patss
       _ -> Env.err [DS "All subpatterns must be variables in this version."]
 checkSubPats dc t ps =
   Env.err [DS "Internal error in checkSubPats", DD dc, DS (show ps)]
+
+
+-- FIXME
+-- this is a plug for the time being that we don't have a conversion checker
+whnf :: (MonadElab c m) => I.Term -> m I.Term
+whnf t = do
+  Env.warn [DS "supposed to reduce",
+            DD t,
+            DS "for now returning it without reduction"]
+  return t
