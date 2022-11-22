@@ -56,6 +56,7 @@ instance Disp1 EqualityConstraint where
 
 
 -- the term passed to the constraint should be a type cosntructor
+-- FIXME include SourceLocation
 data TypeConstructorConstraint e = TConConstraint Syntax.Term
   deriving Functor
 

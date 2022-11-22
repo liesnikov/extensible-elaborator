@@ -15,14 +15,15 @@ import           TypeCheck.Constraints ( BasicConstraintsF
                                        , SourceLocation)
 
 constrainEquality :: (MonadConstraints cs m, BasicConstraintsF :<: cs)
-                  => Syntax.Term -> Syntax.Term -> Syntax.Type -> SourceLocation -> m ()
+                  => Syntax.Term -> Syntax.Term -> Syntax.Type
+                  -> SourceLocation -> m ()
 constrainEquality t1 t2 ty s =
   raiseConstraint $ inj @_ @BasicConstraintsF
                   $ EqualityConstraint t1 t2 ty s
 
 
 constrainTConAndFreeze :: (MonadConstraints cs m, BasicConstraintsF :<: cs)
-                  => Syntax.Type -> m () -> m ()
+                       => Syntax.Type -> m () -> m ()
 constrainTConAndFreeze ty frozen =
   raiseConstraintAndFreeze
     (inj @_ @BasicConstraintsF $ TConConstraint ty)
