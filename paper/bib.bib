@@ -200,6 +200,24 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Christiansen_Brady/2016/Christiansen_Brady_2016_Elaborator reflection.pdf}
 }
 
+@article{cockxElaboratingDependentCo2020a,
+  title = {Elaborating Dependent (Co)Pattern Matching: {{No}} Pattern Left Behind},
+  shorttitle = {Elaborating Dependent (Co)Pattern Matching},
+  author = {Cockx, Jesper and Abel, Andreas},
+  year = {2020/ed},
+  journaltitle = {Journal of Functional Programming},
+  volume = {30},
+  pages = {e2},
+  publisher = {{Cambridge University Press}},
+  issn = {0956-7968, 1469-7653},
+  doi = {10.1017/S0956796819000182},
+  url = {http://www.cambridge.org/core/journals/journal-of-functional-programming/article/elaborating-dependent-copattern-matching-no-pattern-left-behind/F13CECDAB2B6200135D45452CA44A8B3},
+  urldate = {2022-11-02},
+  abstract = {In a dependently typed language, we can guarantee correctness of our programmes by providing formal proofs. To check them, the typechecker elaborates these programs and proofs into a low-level core language. However, this core language is by nature hard to understand by mere humans, so how can we know we proved the right thing? This question occurs in particular for dependent copattern matching, a powerful language construct for writing programmes and proofs by dependent case analysis and mixed induction/coinduction. A definition by copattern matching consists of a list of clauses that are elaborated to a case tree, which can be further translated to primitive eliminators. In previous work this second step has received a lot of attention, but the first step has been mostly ignored so far. We present an algorithm elaborating definitions by dependent copattern matching to a core language with inductive data types, coinductive record types, an identity type, and constants defined by well-typed case trees. To ensure correctness, we prove that elaboration preserves the first-match semantics of the user clauses. Based on this theoretical work, we reimplement the algorithm used by Agda to check left-hand sides of definitions by pattern matching. The new implementation is at the same time more general and less complex, and fixes a number of bugs and usability issues with the old version. Thus, we take another step towards the formally verified implementation of a practical dependently typed language.},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching2.pdf}
+}
+
 @online{coqdevelopmentteamHowWritePlugins,
   title = {How to Write Plugins in {{Coq}}},
   author = {{Coq development team}},
@@ -408,13 +426,18 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Nanevski et al/2008/Nanevski et al_2008_Contextual modal type theory.pdf}
 }
 
-@article{norellPracticalProgrammingLanguage,
+@thesis{norellPracticalProgrammingLanguage2007,
+  type = {phdthesis},
   title = {Towards a Practical Programming Language Based on Dependent Type Theory},
   author = {Norell, Ulf},
-  pages = {166},
+  date = {2007},
+  institution = {{Chalmers University of Technology and Göteborg University}},
+  location = {{Göteborg, Sweden}},
+  url = {https://www.cse.chalmers.se/~ulfn/papers/thesis.pdf},
   abstract = {Dependent type theories [ML72] have a long history of being used for theorem proving. One aspect of type theory which makes it very powerful as a proof language is that it mixes deduction with computation. This also makes type theory a good candidate for programming—the strength of the type system allows properties of programs to be stated and established, and the computational properties provide semantics for the programs.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Norell/undefined/Norell_Towards a practical programming language based on dependent type theory.pdf}
+  pagetotal = {166},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Norell/2007/Norell_2007_Towards a practical programming language based on dependent type theory.pdf}
 }
 
 @inproceedings{pangPluggingHaskell2004,
