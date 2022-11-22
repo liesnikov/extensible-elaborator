@@ -43,6 +43,13 @@ Core extensibility, on the other hand, appears to be a problem with too many deg
 Andromeda [@bauerDesignImplementationAndromeda2018a; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
 Agda's philosophy allows developers to experiment with the core, but also results in a larger amount of unexpected behaviors.
 
+# Constraint-based elaboration and design choices #
+
+\todo{what do we do differently}
+
+We intend to avoid problems described in [@henryModularizingGHC] by using a solution described in [@swierstraDataTypesCarte2008] and [@najdTreesThatGrow2017].
+
+
 # Dependently-typed calculus and bidirectional typing #
 
 In this section we describe the core for type system we implement as well as the core typing rules.
@@ -52,19 +59,13 @@ We leave the core rules intact and therefore, the core calculus too.
 This is dependently-typed calculus that includes Pi, Sigma and indexed inductive types.
 Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
 
-# Constraint-based elaboration and design choices#
-
-\todo{what do we do differently}
-
-We intend to avoid problems described in [@henryModularizingGHC] by using a solution described in [@swierstraDataTypesCarte2008] and [@najdTreesThatGrow2017].
-
-
 
 # Case-studies #
 
 ## Implicit arguments ##
 
 ## Type classes ##
+
 # Limitations #
 
 ## Handling of meta-variables outside of definition sites ##
