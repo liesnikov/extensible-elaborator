@@ -1,3 +1,7 @@
+# taken from haskell-nix-plugin
+# which is broken as of nix 22.05, even for their own example.nix
+# https://github.com/mpickering/haskell-nix-plugin/issues/1
+# so the below doesn't work either
 let
   defpkgs = builtins.fetchTarball {
     # Descriptive name to make the store path easier to identify
