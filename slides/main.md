@@ -115,7 +115,7 @@ f k _¹ (C _² _³) (succ zero)
 
 * replace `_¹` with `?¹`
 * we know that `?¹ : F k`
-* looking up `t` yields type `T ?² ?³`
+* elaborating `(C _² _³)` yields type `T ?² ?³`
 * produce a constraint `?¹ ~ T ?² ?³`
 
 ## How do constraints work
@@ -215,6 +215,10 @@ Bottom line: this is a design study
 * each constraint raised gets an opportunity to be solved/simplified immediately by the user-supplied solver
 * if it doesn't - we can freeze the problem and return a meta in place of the typechecked solution
 
+## Design overview
+
+![](./architecture-diagram.pdf)
+
 ## Open questions
 
 ::: incremental
@@ -236,17 +240,22 @@ Current idea:
 
 * there is machinery in Haskell to declare interfaces [@pangPluggingHaskell2004]
 * what should the interface look like?
-* ```
+```
   data SolverTag = ...
   
-  type Solver = ConstraintF c -> (Set (ConstraintF c), Map MetaId Term)
+  type Solver = ConstraintF c -> ( Set (ConstraintF c)
+                                 , Map MetaId Term )
   
   data PluginInterface = Plugin {
     solvers :: Map SolverTag Solver,
     solverTags :: [SolverTag],
     priorities :: [(SolverTag, SolverTag)]
   }
-  
+```
+
+## how does dynamic linking interfere with what we can do
+
+```
   instance ConstraintMap constraintTag ConstraintType where
   ...
   
@@ -269,7 +278,7 @@ Current idea:
 * Lean
   * uses macros to redefine symbols
   * uses reflection and typechecking monads to define custom elaboration procedures
-* TypeOS
+* TypOS
   * you have to buy into a whole new discipline
   * we hope to keep things a bit more conventional engineering-wise
 
