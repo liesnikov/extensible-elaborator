@@ -42,7 +42,7 @@
   abstract = {Support for programming with names and binders using GHC Generics}
 }
 
-@inproceedings{allaisTypOSOperatingSystem2022b,
+@inproceedings{allaisTypOSOperatingSystem2022a,
   title = {{{TypOS}}: {{An Operating System}} for {{Typechecking Actors}}},
   author = {Allais, Guillaume and Altenmuller, Malin and McBride, Conor and Nakov, Georgi and Forsberg, Nordvall and Roy, Craig},
   date = {2022-06-22},
@@ -109,21 +109,24 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Asperti et al/2007/Asperti et al_2007_User Interaction with the Matita Proof Assistant.pdf}
 }
 
-@article{bauerDesignImplementationAndromeda2018a,
+@unpublished{bauerDesignImplementationAndromeda2018,
   title = {Design and {{Implementation}} of the {{Andromeda Proof Assistant}}},
   author = {Bauer, Andrej and Gilbert, Gaëtan and Haselwarter, Philipp G. and Pretnar, Matija and Stone, Christopher A.},
   date = {2018},
+  eprint = {1802.06217},
+  eprinttype = {arxiv},
   pages = {31 pages},
   publisher = {{Schloss Dagstuhl - Leibniz-Zentrum fuer Informatik GmbH, Wadern/Saarbruecken, Germany}},
   doi = {10.4230/LIPICS.TYPES.2016.5},
   url = {http://drops.dagstuhl.de/opus/volltexte/2018/9857/},
   urldate = {2022-07-22},
   abstract = {Andromeda is an LCF-style proof assistant where the user builds derivable judgments by writing code in a meta-level programming language AML. The only trusted component of Andromeda is a minimalist nucleus (an implementation of the inference rules of an object-level type theory), which controls construction and decomposition of type-theoretic judgments. Since the nucleus does not perform complex tasks like equality checking beyond syntactic equality, this responsibility is delegated to the user, who implements one or more equality checking procedures in the meta-language. The AML interpreter requests witnesses of equality from user code using the mechanism of algebraic operations and handlers. Dynamic checks in the nucleus guarantee that no invalid object-level derivations can be constructed.},
+  archiveprefix = {arXiv},
   editora = {Wagner, Michael},
   editoratype = {collaborator},
   langid = {english},
-  keywords = {andromeda},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
+  keywords = {03B15,andromeda,Computer Science - Logic in Computer Science},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
 }
 
 @inproceedings{bauerEqualityCheckingGeneral2020,
@@ -201,6 +204,7 @@
 }
 
 @article{cockxElaboratingDependentCo2020a,
+  ids = {cockxElaboratingDependentCo2020},
   title = {Elaborating Dependent (Co)Pattern Matching: {{No}} Pattern Left Behind},
   shorttitle = {Elaborating Dependent (Co)Pattern Matching},
   author = {Cockx, Jesper and Abel, Andreas},
@@ -215,7 +219,7 @@
   urldate = {2022-11-02},
   abstract = {In a dependently typed language, we can guarantee correctness of our programmes by providing formal proofs. To check them, the typechecker elaborates these programs and proofs into a low-level core language. However, this core language is by nature hard to understand by mere humans, so how can we know we proved the right thing? This question occurs in particular for dependent copattern matching, a powerful language construct for writing programmes and proofs by dependent case analysis and mixed induction/coinduction. A definition by copattern matching consists of a list of clauses that are elaborated to a case tree, which can be further translated to primitive eliminators. In previous work this second step has received a lot of attention, but the first step has been mostly ignored so far. We present an algorithm elaborating definitions by dependent copattern matching to a core language with inductive data types, coinductive record types, an identity type, and constants defined by well-typed case trees. To ensure correctness, we prove that elaboration preserves the first-match semantics of the user clauses. Based on this theoretical work, we reimplement the algorithm used by Agda to check left-hand sides of definitions by pattern matching. The new implementation is at the same time more general and less complex, and fixes a number of bugs and usability issues with the old version. Thus, we take another step towards the formally verified implementation of a practical dependently typed language.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching2.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching2.pdf;/home/bohdan/Zotero/storage/QG7VDBAT/F13CECDAB2B6200135D45452CA44A8B3.html}
 }
 
 @online{coqdevelopmentteamHowWritePlugins,
@@ -228,7 +232,7 @@
   organization = {{GitHub}}
 }
 
-@article{ebnerMetaprogrammingFrameworkFormal2017a,
+@article{ebnerMetaprogrammingFrameworkFormal2017,
   title = {A Metaprogramming Framework for Formal Verification},
   author = {Ebner, Gabriel and Ullrich, Sebastian and Roesch, Jared and Avigad, Jeremy and de Moura, Leonardo},
   options = {useprefix=true},
@@ -238,12 +242,12 @@
   volume = {1},
   pages = {34:1--34:29},
   doi = {10.1145/3110278},
-  url = {https://doi.org/10.1145/3110278},
-  urldate = {2022-07-21},
+  url = {http://doi.org/10.1145/3110278},
+  urldate = {2021-06-29},
   abstract = {We describe the metaprogramming framework currently used in Lean, an interactive theorem prover based on dependent type theory. This framework extends Lean's object language with an API to some of Lean's internal structures and procedures, and provides ways of reflecting object-level expressions into the metalanguage. We provide evidence to show that our implementation is performant, and that it provides a convenient and flexible way of writing not only small-scale interactive tactics, but also more substantial kinds of automation.},
   issue = {ICFP},
   keywords = {dependent type theory,metaprogramming,tactic language,theorem proving},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ebner et al/2017/Ebner et al_2017_A metaprogramming framework for formal verification2.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ebner et al/2017/Ebner et al_2017_A metaprogramming framework for formal verification.pdf}
 }
 
 @thesis{eisenbergDependentTypesHaskell2017,
@@ -489,6 +493,28 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pientka_Pfenning/2003/Pientka_Pfenning_2003_Optimizing Higher-Order Pattern Unification.pdf}
 }
 
+@article{ringerQEDLargeSurvey2019,
+  title = {{{QED}} at {{Large}}: {{A Survey}} of {{Engineering}} of {{Formally Verified Software}}},
+  shorttitle = {{{QED}} at {{Large}}},
+  author = {Ringer, Talia and Palmskog, Karl and Sergey, Ilya and Gligoric, Milos and Tatlock, Zachary},
+  date = {2019},
+  journaltitle = {Foundations and Trends® in Programming Languages},
+  shortjournal = {FNT in Programming Languages},
+  volume = {5},
+  number = {2-3},
+  eprint = {2003.06458},
+  eprinttype = {arxiv},
+  pages = {102--281},
+  issn = {2325-1107, 2325-1131},
+  doi = {10.1561/2500000045},
+  url = {http://arxiv.org/abs/2003.06458},
+  urldate = {2020-11-12},
+  abstract = {Development of formal proofs of correctness of programs can increase actual and perceived reliability and facilitate better understanding of program specifications and their underlying assumptions. Tools supporting such development have been available for over 40 years, but have only recently seen wide practical use. Projects based on construction of machine-checked formal proofs are now reaching an unprecedented scale, comparable to large software projects, which leads to new challenges in proof development and maintenance. Despite its increasing importance, the field of proof engineering is seldom considered in its own right; related theories, techniques, and tools span many fields and venues. This survey of the literature presents a holistic understanding of proof engineering for program correctness, covering impact in practice, foundations, proof automation, proof organization, and practical proof development.},
+  archiveprefix = {arXiv},
+  keywords = {Computer Science - Logic in Computer Science,Computer Science - Programming Languages,D.2.4,F.3.1,I.2.3},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ringer et al/2019/Ringer et al_2019_QED at Large.pdf;/home/bohdan/Zotero/storage/8URS22FC/2003.html}
+}
+
 @unpublished{selsamTabledTypeclassResolution2020,
   title = {Tabled {{Typeclass Resolution}}},
   author = {Selsam, Daniel and Ullrich, Sebastian and de Moura, Leonardo},
@@ -525,7 +551,7 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Serrano et al/2020/Serrano et al_2020_A quick look at impredicativity.pdf}
 }
 
-@thesis{spiwackVerifiedComputingHomological2011a,
+@thesis{spiwackVerifiedComputingHomological2011,
   type = {phdthesis},
   title = {Verified {{Computing}} in {{Homological Algebra}}},
   author = {Spiwack, Arnaud},
@@ -535,7 +561,7 @@
   urldate = {2022-10-20},
   abstract = {The object of this thesis is the study of the ability of the Coq system to mix proofs and programs in practice. Our approach consists in implementing part of the program Kenzo, a computer algebra tool for homological algebra under some constraint. We want to be able to read the program as a proof with a computational content, these proofs much compute efficiently, and we try to avoid duplication of proofs or part thereof. We show, first, how the requirement of efficiency leads to revise some aspects of traditional mathematics. We propose a suitable categorical abstraction, both for clarity and to avoid duplications. This abstraction, though different from what is customary in mathematics, allow to formulate the constructs of homological algebra in a style much like that of Kenzo. We propose, then, modifications to the Coq programm. A first one to make proofs more convenient, by allowing the use of more fine grain tactics which are often necessary when dependent types are common. The second modification to leverage the arithmetical abilities of the processor to compute more efficiently on integers. Finally, we propose some leads to improve both sharing and clarity of the proofs. Unfortunately, they push the system beyond its limits. Hence, we show that Coq is not always up to its promises and that theoretical works will be necessary to understand how these limits can be relaxed.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Spiwack/2011/Spiwack_2011_Verified Computing in Homological Algebra.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Spiwack/2011/Spiwack_2011_Verified Computing in Homological Algebra.pdf;/home/bohdan/Zotero/storage/LRK3PI2G/Spiwack - Verified Computing in Homological Algebra.pdf}
 }
 
 @thesis{stewartDynamicExtensionTyped2010,
@@ -650,7 +676,8 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/The Idris Team/2021/The Idris Team_2021_The Idris tutorial.pdf}
 }
 
-@inproceedings{ullrichNotationsHygienicMacro2020a,
+@inproceedings{ullrichNotationsHygienicMacro2020,
+  ids = {ullrichNotationsHygienicMacro2020a},
   title = {Beyond {{Notations}}: {{Hygienic Macro Expansion}} for {{Theorem Proving Languages}}},
   shorttitle = {Beyond {{Notations}}},
   booktitle = {Automated {{Reasoning}}},
@@ -666,7 +693,7 @@
   abstract = {In interactive theorem provers (ITPs), extensible syntax is not only crucial to lower the cognitive burden of manipulating complex mathematical objects, but plays a critical role in developing reusable abstractions in libraries. Most ITPs support such extensions in the form of restrictive “syntax sugar” substitutions and other ad hoc mechanisms, which are too rudimentary to support many desirable abstractions. As a result, libraries are littered with unnecessary redundancy. Tactic languages in these systems are plagued by a seemingly unrelated issue: accidental name capture, which often produces unexpected and counterintuitive behavior. We take ideas from the Scheme family of programming languages and solve these two problems simultaneously by proposing a novel hygienic macro system custom-built for ITPs. We further describe how our approach can be extended to cover type-directed macro expansion resulting in a single, uniform system offering multiple abstraction levels that range from supporting simplest syntax sugars to elaboration of formerly baked-in syntax. We have implemented our new macro system and integrated it into the upcoming version (v4) of the Lean theorem prover. Despite its expressivity, the macro system is simple enough that it can easily be integrated into other systems.},
   isbn = {978-3-030-51054-1},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ullrich_de Moura/2020/Ullrich_de Moura_2020_Beyond Notations2.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ullrich_de Moura/2020/Ullrich_de Moura_2020_Beyond Notations.pdf}
 }
 
 @article{ullrichUnchainedEmbracingLocal2021,
@@ -683,7 +710,8 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ullrich_Moura/2021/Ullrich_Moura_2021_`do' Unchained.pdf}
 }
 
-@article{vytiniotisOutsideInModularType2011a,
+@article{vytiniotisOutsideInModularType2011,
+  ids = {vytiniotisOutsideInModularType2011a},
   title = {{{OutsideIn}}({{X}}) {{Modular}} Type Inference with Local Assumptions},
   author = {Vytiniotis, Dimitrios and Jones, Simon Peyton and Schrijvers, Tom and Sulzmann, Martin},
   date = {2011-09},
@@ -694,11 +722,11 @@
   publisher = {{Cambridge University Press}},
   issn = {1469-7653, 0956-7968},
   doi = {10.1017/S0956796811000098},
-  url = {https://www.cambridge.org/core/journals/journal-of-functional-programming/article/outsideinx-modular-type-inference-with-local-assumptions/65110D74CF75563F91F9C68010604329},
-  urldate = {2022-06-09},
+  url = {http://www.cambridge.org/core/journals/journal-of-functional-programming/article/outsideinx-modular-type-inference-with-local-assumptions/65110D74CF75563F91F9C68010604329},
+  urldate = {2021-06-15},
   abstract = {Advanced type system features, such as GADTs, type classes and type families, have proven to be invaluable language extensions for ensuring data invariants and program correctness. Unfortunately, they pose a tough problem for type inference when they are used as local type assumptions. Local type assumptions often result in the lack of principal types and cast the generalisation of local let-bindings prohibitively difficult to implement and specify. User-declared axioms only make this situation worse. In this paper, we explain the problems and – perhaps controversially – argue for abandoning local let-binding generalisation. We give empirical results that local let generalisation is only sporadically used by Haskell programmers. Moving on, we present a novel constraint-based type inference approach for local type assumptions. Our system, called OutsideIn(X), is parameterised over the particular underlying constraint domain X, in the same way as HM(X). This stratification allows us to use a common metatheory and inference algorithm. OutsideIn(X) extends the constraints of X by introducing implication constraints on top. We describe the strategy for solving these implication constraints, which, in turn, relies on a constraint solver for X. We characterise the properties of the constraint solver for X so that the resulting algorithm only accepts programs with principal types, even when the type system specification accepts programs that do not enjoy principal types. Going beyond the general framework, we give a particular constraint solver for X = type classes + GADTs + type families, a non-trivial challenge in its own right. This constraint solver has been implemented and distributed as part of GHC 7.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions2.pdf;/home/bohdan/Zotero/storage/JUWGNJ8V/65110D74CF75563F91F9C68010604329.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions2.pdf;/home/bohdan/Zotero/storage/SJYLB9DF/65110D74CF75563F91F9C68010604329.html}
 }
 
 @unpublished{weirichImplementingDependentTypes2022,
@@ -713,3 +741,17 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Weirich/2022/Weirich_2022_Implementing Dependent Types in pi-forall.pdf}
 }
 
+@article{zilianiComprehensibleGuideNew2017,
+  title = {A Comprehensible Guide to a New Unifier for {{CIC}} Including Universe Polymorphism and Overloading},
+  author = {Ziliani, Beta and Sozeau, Matthieu},
+  date = {2017},
+  journaltitle = {Journal of Functional Programming},
+  volume = {27},
+  issn = {0956-7968, 1469-7653},
+  doi = {10.1017/S0956796817000028},
+  url = {https://www.cambridge.org/core/product/identifier/S0956796817000028/type/journal_article},
+  urldate = {2020-08-01},
+  abstract = {Unification is a core component of every proof assistant or programming language featuring dependent types. In many cases, it must deal with higher-order problems up to conversion. Since unification in such conditions is undecidable, unification algorithms may include several heuristics to solve common problems. However, when the stack of heuristics grows large, the result and complexity of the algorithm can become unpredictable.},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ziliani_Sozeau/2017/Ziliani_Sozeau_2017_A comprehensible guide to a new unifier for CIC including universe polymorphism.pdf}
+}

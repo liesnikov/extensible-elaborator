@@ -32,18 +32,31 @@ The same ideas made their way into functional languages, such as Haskell [@ghcde
 
 In dependently-typed land last decade brought a lot maturity for the language implementations.
 Some of the bigger proof assistants like Coq [@teamCoqProofAssistant2022] invested a lot of effort into user-facing features while having a relatively stable core.
-Some like Agda [@norellPracticalProgrammingLanguage] experimented more with features baked into the core of the type system.
+Some like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system.
 Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
 We set out for a similar cause, aiming to find a design blueprint for a dependently-typed language.
 
 Dependently-typed language implementations usually consist of at least four parts:
-parser, elaborator, core typechecker, and backend.
-Macros are an answer for the parser extensibility, included in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022].
+parser, elaborator, core typechecker, and proper backend. The latter happens after typechecking and is not of a particular interest to us today.
+
+We see parser or syntax extensibility as a necessary part of an extensible language.
+However, this being an old problem means that there are existing solutions.
+Macros are one of them and are utilized heavily in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020a] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+
 Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
-Andromeda [@bauerDesignImplementationAndromeda2018a; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
+Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
 Agda's philosophy allows developers to experiment with the core, but also results in a larger amount of unexpected behaviors.
+In general, modification of core rules will result in fundamental changes in the type theory, which can break plenty important properties like soundness or subject reduction.
+
+This leaves us with the question of what can be achieved with the extensibility of an elaborator and why one would need it.
+Elaborator is the part of the typechecker that performs all the desugaring to translate from the surface to the core language.
+This includes type inference, implicit arguments inference, type classes, tactics, SMT integration.
+Elaborator is often
 
 # Constraint-based elaboration and design choices #
+
+
+
 
 \todo{what do we do differently}
 
@@ -82,7 +95,7 @@ Tejiščák [@tejiscakDependentlyTypedCalculus2020], we would have to create met
 
 # Related work #
 
-Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants gained a lot of pace in development from investing effort into user-facing efforts: work on tactics like new tactic engine [@spiwackVerifiedComputingHomological2011a] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
+Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants gained a lot of pace in development from investing effort into user-facing efforts: work on tactics like new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
 
 Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change.
 
@@ -93,7 +106,7 @@ In a way, this is an imperative view on extensibility.
 
 \todo{this is a repetition of what was said previously}
 Lean [@mouraLeanTheoremProver2021] set out to become a default language for mathematics formalization, all the while bootstrapping the compiler.
-Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second. Andromeda [@bauerDesignImplementationAndromeda2018a; @bauerEqualityCheckingGeneral2020] appeared as an experiment in providing a specification for
+Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second. Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] appeared as an experiment in providing a specification for
 
 # Future work #
 
