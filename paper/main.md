@@ -53,7 +53,35 @@ In general, modification of core rules will result in fundamental changes in the
 This leaves us with the question of what can be achieved with the extensibility of an elaborator and why one would need it.
 Elaborator is the part of the typechecker that performs all the desugaring to translate from the surface to the core language.
 This includes type inference, implicit arguments inference, type classes, tactics, SMT integration.
-Elaborator is often
+Elaborators are often structured similarly to the core typechecker, i.e. following a bidirectional discipline of some sort. One can see that in Agda [@norellPracticalProgrammingLanguage2007], Matita [@tassiBiDirectionalRefinementAlgorithm2012], or in a paper by @ferreiraBidirectionalElaborationDependently2014.
+
+An example of that is Agda's typechecking of a [lambda function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Rules/Term.hs#L460-L578):
+
+
+```haskell
+checkLambda'
+  :: Comparison          -- ^ @cmp@
+  -> A.TypedBinding      -- ^ @TBind _ _ xps typ@
+  -> List1 (NamedArg Binder)   -- ^ @xps@
+  -> A.Expr              -- ^ @typ@
+  -> A.Expr              -- ^ @body@
+  -> Type                -- ^ @target@
+  -> TCM Term
+checkLambda' cmp b xps typ body target = do
+  reportSDoc "tc.term.lambda" 30 $ vcat
+    [ "checkLambda xs =" <+> prettyA xps
+    , "possiblePath   =" <+> prettyTCM possiblePath
+    , "numbinds       =" <+> prettyTCM numbinds
+    , "typ            =" <+> prettyA   (unScope typ)
+    ]
+  reportSDoc "tc.term.lambda" 60 $ vcat
+    [ "info           =" <+> (text . show) info
+    ]
+  TelV tel btyp <- telViewUpTo numbinds target
+  if size tel < numbinds || numbinds /= 1
+    then (if possiblePath then trySeeingIfPath else dontUseTargetType)
+    else useTargetType tel btyp
+```
 
 # Constraint-based elaboration and design choices #
 
