@@ -203,8 +203,7 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Christiansen_Brady/2016/Christiansen_Brady_2016_Elaborator reflection.pdf}
 }
 
-@article{cockxElaboratingDependentCo2020a,
-  ids = {cockxElaboratingDependentCo2020},
+@article{cockxElaboratingDependentCo2020,
   title = {Elaborating Dependent (Co)Pattern Matching: {{No}} Pattern Left Behind},
   shorttitle = {Elaborating Dependent (Co)Pattern Matching},
   author = {Cockx, Jesper and Abel, Andreas},
@@ -369,6 +368,24 @@
   abstract = {The Haskell compiler GHC includes a type inference engine for a rather sophisticated type system.~ You might worry that a complicated type system leads to a very complicated type inference engine. ~ You’d be right, but we have learned a lot about how to structure type inference so that the complexity does not get out […]},
   langid = {american},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf;/home/bohdan/Zotero/storage/7PNMILIF/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works.html}
+}
+
+@thesis{kuperLatticebasedDataStructures2015,
+  type = {phdthesis},
+  title = {Lattice-Based Data Structures for Deterministic Parallel and Distributed Programming},
+  author = {Kuper, Lindsey},
+  date = {2015},
+  journaltitle = {ProQuest Dissertations and Theses},
+  institution = {{Indiana University}},
+  location = {{United States -- Indiana}},
+  url = {https://www.proquest.com/docview/1723378413/abstract/C592471EAAE94DBFPQ/1},
+  urldate = {2022-11-28},
+  abstract = {Deterministic-by-construction parallel programming models guarantee that programs have the same observable behavior on every run, promising freedom from bugs caused by schedule nondeterminism. To make that guarantee, though, they must sharply restrict sharing of state between parallel tasks, usually either by disallowing sharing entirely or by restricting it to one type of data structure, such as single-assignment locations. I show that lattice-based data structures, or LVars, are the foundation for a guaranteed-deterministic parallel programming model that allows a more general form of sharing. LVars allow multiple assignments that are inflationary with respect to a given lattice. They ensure determinism by allowing only inflationary writes and "threshold" reads that block until a lower bound is reached. After presenting the basic LVars model, I extend it to support event handlers, which enable an event-driven programming style, and non-blocking "freezing" reads, resulting in a quasi-deterministic model in which programs behave deterministically modulo exceptions. I demonstrate the viability of the LVars model with LVish, a Haskell library that provides a collection of lattice-based data structures, a work-stealing scheduler, and a monad in which LVar computations run. LVish leverages Haskell's type system to index such computations with effect levels to ensure that only certain LVar effects can occur, hence statically enforcing determinism or quasi-determinism. I present two case studies of parallelizing existing programs using LVish: a k-CFA control flow analysis, and a bioinformatics application for comparing phylogenetic trees. Finally, I show how LVar-style threshold reads apply to the setting of convergent replicated data types (CvRDTs), which specify the behavior of eventually consistent replicated objects in a distributed system. I extend the CvRDT model to support deterministic, strongly consistent threshold queries. The technique generalizes to any lattice, and hence any CvRDT, and allows deterministic observations to be made of replicated objects before the replicas' states converge.},
+  isbn = {9781339111544},
+  langid = {english},
+  pagetotal = {253},
+  keywords = {Applied sciences,Data structures,Distributed programming,Lattice-based},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Kuper/2015/Kuper_2015_Lattice-based data structures for deterministic parallel and distributed.pdf}
 }
 
 @unpublished{leonardodemouraLeanMetaprogramming2021,
