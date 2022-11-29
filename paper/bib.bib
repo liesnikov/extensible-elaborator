@@ -126,7 +126,7 @@
   editoratype = {collaborator},
   langid = {english},
   keywords = {03B15,andromeda,Computer Science - Logic in Computer Science},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
 }
 
 @inproceedings{bauerEqualityCheckingGeneral2020,
@@ -218,7 +218,7 @@
   urldate = {2022-11-02},
   abstract = {In a dependently typed language, we can guarantee correctness of our programmes by providing formal proofs. To check them, the typechecker elaborates these programs and proofs into a low-level core language. However, this core language is by nature hard to understand by mere humans, so how can we know we proved the right thing? This question occurs in particular for dependent copattern matching, a powerful language construct for writing programmes and proofs by dependent case analysis and mixed induction/coinduction. A definition by copattern matching consists of a list of clauses that are elaborated to a case tree, which can be further translated to primitive eliminators. In previous work this second step has received a lot of attention, but the first step has been mostly ignored so far. We present an algorithm elaborating definitions by dependent copattern matching to a core language with inductive data types, coinductive record types, an identity type, and constants defined by well-typed case trees. To ensure correctness, we prove that elaboration preserves the first-match semantics of the user clauses. Based on this theoretical work, we reimplement the algorithm used by Agda to check left-hand sides of definitions by pattern matching. The new implementation is at the same time more general and less complex, and fixes a number of bugs and usability issues with the old version. Thus, we take another step towards the formally verified implementation of a practical dependently typed language.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching2.pdf;/home/bohdan/Zotero/storage/QG7VDBAT/F13CECDAB2B6200135D45452CA44A8B3.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching.pdf;/home/bohdan/Zotero/storage/QG7VDBAT/F13CECDAB2B6200135D45452CA44A8B3.html}
 }
 
 @online{coqdevelopmentteamHowWritePlugins,
@@ -264,6 +264,24 @@
   archiveprefix = {arXiv},
   keywords = {Computer Science - Programming Languages},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Eisenberg/2017/Eisenberg_2017_Dependent Types in Haskell.pdf}
+}
+
+@inproceedings{ferreiraBidirectionalElaborationDependently2014,
+  title = {Bidirectional {{Elaboration}} of {{Dependently Typed Programs}}},
+  booktitle = {Proceedings of the 16th {{International Symposium}} on {{Principles}} and {{Practice}} of {{Declarative Programming}}},
+  author = {Ferreira, Francisco and Pientka, Brigitte},
+  date = {2014-09-08},
+  series = {{{PPDP}} '14},
+  pages = {161--174},
+  publisher = {{Association for Computing Machinery}},
+  location = {{New York, NY, USA}},
+  doi = {10.1145/2643135.2643153},
+  url = {http://doi.org/10.1145/2643135.2643153},
+  urldate = {2021-02-15},
+  abstract = {Dependently typed programming languages allow programmers to express a rich set of invariants and verify them statically via type checking. To make programming with dependent types practical, dependently typed systems provide a compact language for programmers where one can omit some arguments, called implicit, which can be inferred. This source language is then usually elaborated into a core language where type checking and fundamental properties such as normalization are well understood. Unfortunately, this elaboration is rarely specified and in general is ill-understood. This makes it not only difficult for programmers to understand why a given program fails to type check, but also is one of the reasons that implementing dependently typed programming systems remains a black art known only to a few. In this paper, we specify the design of a source language for a dependently typed programming language where we separate the language of programs from the language of types and terms occurring in types. Total functions in our language correspond directly to first-order inductive proofs over a specific index domain. We then give a bi-directional elaboration algorithm to translate source terms where implicit arguments can be omitted to a fully explicit core language and prove soundness of our elaboration. Our framework provides post-hoc explanation for elaboration found in the programming and proof environment, Beluga.},
+  isbn = {978-1-4503-2947-7},
+  keywords = {dependent types,type reconstruction},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ferreira_Pientka/2014/Ferreira_Pientka_2014_Bidirectional Elaboration of Dependently Typed Programs.pdf}
 }
 
 @online{ghcdevelopmentteamGlasgowHaskellCompiler,
@@ -578,7 +596,7 @@
   urldate = {2022-10-20},
   abstract = {The object of this thesis is the study of the ability of the Coq system to mix proofs and programs in practice. Our approach consists in implementing part of the program Kenzo, a computer algebra tool for homological algebra under some constraint. We want to be able to read the program as a proof with a computational content, these proofs much compute efficiently, and we try to avoid duplication of proofs or part thereof. We show, first, how the requirement of efficiency leads to revise some aspects of traditional mathematics. We propose a suitable categorical abstraction, both for clarity and to avoid duplications. This abstraction, though different from what is customary in mathematics, allow to formulate the constructs of homological algebra in a style much like that of Kenzo. We propose, then, modifications to the Coq programm. A first one to make proofs more convenient, by allowing the use of more fine grain tactics which are often necessary when dependent types are common. The second modification to leverage the arithmetical abilities of the processor to compute more efficiently on integers. Finally, we propose some leads to improve both sharing and clarity of the proofs. Unfortunately, they push the system beyond its limits. Hence, we show that Coq is not always up to its promises and that theoretical works will be necessary to understand how these limits can be relaxed.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Spiwack/2011/Spiwack_2011_Verified Computing in Homological Algebra.pdf;/home/bohdan/Zotero/storage/LRK3PI2G/Spiwack - Verified Computing in Homological Algebra.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Spiwack/2011/Spiwack_2011_Verified Computing in Homological Algebra.pdf}
 }
 
 @thesis{stewartDynamicExtensionTyped2010,
@@ -743,7 +761,7 @@
   urldate = {2021-06-15},
   abstract = {Advanced type system features, such as GADTs, type classes and type families, have proven to be invaluable language extensions for ensuring data invariants and program correctness. Unfortunately, they pose a tough problem for type inference when they are used as local type assumptions. Local type assumptions often result in the lack of principal types and cast the generalisation of local let-bindings prohibitively difficult to implement and specify. User-declared axioms only make this situation worse. In this paper, we explain the problems and – perhaps controversially – argue for abandoning local let-binding generalisation. We give empirical results that local let generalisation is only sporadically used by Haskell programmers. Moving on, we present a novel constraint-based type inference approach for local type assumptions. Our system, called OutsideIn(X), is parameterised over the particular underlying constraint domain X, in the same way as HM(X). This stratification allows us to use a common metatheory and inference algorithm. OutsideIn(X) extends the constraints of X by introducing implication constraints on top. We describe the strategy for solving these implication constraints, which, in turn, relies on a constraint solver for X. We characterise the properties of the constraint solver for X so that the resulting algorithm only accepts programs with principal types, even when the type system specification accepts programs that do not enjoy principal types. Going beyond the general framework, we give a particular constraint solver for X = type classes + GADTs + type families, a non-trivial challenge in its own right. This constraint solver has been implemented and distributed as part of GHC 7.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions2.pdf;/home/bohdan/Zotero/storage/SJYLB9DF/65110D74CF75563F91F9C68010604329.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions.pdf;/home/bohdan/Zotero/storage/SJYLB9DF/65110D74CF75563F91F9C68010604329.html}
 }
 
 @unpublished{weirichImplementingDependentTypes2022,
@@ -770,5 +788,5 @@
   urldate = {2020-08-01},
   abstract = {Unification is a core component of every proof assistant or programming language featuring dependent types. In many cases, it must deal with higher-order problems up to conversion. Since unification in such conditions is undecidable, unification algorithms may include several heuristics to solve common problems. However, when the stack of heuristics grows large, the result and complexity of the algorithm can become unpredictable.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ziliani_Sozeau/2017/Ziliani_Sozeau_2017_A comprehensible guide to a new unifier for CIC including universe polymorphism.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ziliani_Sozeau/2017/Ziliani_Sozeau_2017_A comprehensible guide to a new unifier for CIC including universe polymorphism.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Ziliani_Sozeau/2017/Ziliani_Sozeau_2017_A comprehensible guide to a new unifier for CIC including universe polymorphism2.pdf}
 }
