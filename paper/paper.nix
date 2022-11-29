@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 { stdenv, lib, pandoc, texlive, biber,
-  makeFontsConf, source-serif-pro, source-sans-pro, source-code-pro}:
+  makeFontsConf, source-serif, source-sans, source-code-pro}:
 let texlive-combined = texlive.combine { inherit (texlive) scheme-basic xetex latexmk fontspec koma-script unicode-math xcolor todonotes etoolbox biblatex hyperref; };
     extraTexInputs = [ ];
     extraBuildInputs = [ ];
@@ -17,8 +17,6 @@ in stdenv.mkDerivation ({
   nativeBuildInputs =
     [ pandoc texlive-combined biber ] ++  extraBuildInputs;
 
-  patches = [./fonts.patch];
-
   buildPhase = ''
     make main.pdf
   '';
@@ -28,7 +26,7 @@ in stdenv.mkDerivation ({
     mv main.pdf $out/main.pdf
   '';
 
-  FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-sans-pro source-code-pro source-serif-pro]; };
+  FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-serif source-sans source-code-pro]; };
 
   TEXINPUTS =
     builtins.concatStringsSep ":" ([ "." ] ++ extraTexInputs ++ [ "" ]);
