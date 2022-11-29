@@ -4,18 +4,20 @@ subtitle: draft
 author: Bohdan Liesnikov, Jesper Cockx
 date: \today
 
-link-citations: true
-
 output: pdf_document
-
-mainfont: 'Source Serif 4'
-sansfont: 'Source Sans 3'
-monofont: 'Source Code Pro'
 
 documentclass: scrartcl
 geometry: "left=2cm,right=2cm,top=1cm,bottom=2cm"
+colorlinks: true
+link-citations: true
 parindent: 1cm
+
 fontsize: 12pt
+mainfont: 'Source Serif 4'
+seriffont: 'Source Serif 4'
+sansfont: 'Source Sans 3'
+monofont: 'Source Code Pro'
+
 header-includes: |
     \usepackage{todonotes}
 ---
