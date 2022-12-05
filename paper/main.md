@@ -68,15 +68,6 @@ checkLambda'
   -> Type                -- ^ @target@
   -> TCM Term
 checkLambda' cmp b xps typ body target = do
-  reportSDoc "tc.term.lambda" 30 $ vcat
-    [ "checkLambda xs =" <+> prettyA xps
-    , "possiblePath   =" <+> prettyTCM possiblePath
-    , "numbinds       =" <+> prettyTCM numbinds
-    , "typ            =" <+> prettyA   (unScope typ)
-    ]
-  reportSDoc "tc.term.lambda" 60 $ vcat
-    [ "info           =" <+> (text . show) info
-    ]
   TelV tel btyp <- telViewUpTo numbinds target
   if size tel < numbinds || numbinds /= 1
     then (if possiblePath then trySeeingIfPath else dontUseTargetType)
@@ -86,11 +77,12 @@ checkLambda' cmp b xps typ body target = do
 # Constraint-based elaboration and design choices #
 
 
+* Provide an example of a complex function to typecheck in Agda
+* Break down features in terms of different plugins in our system
+* Mention "Data-types a-la carte" [@swierstraDataTypesCarte2008]?
+* Do we tackle anything mentioned in [@henryModularizingGHC]?
+* There's a potential for [@najdTreesThatGrow2017], make a decision whether we're implementing it or not.
 
-
-\todo{what do we do differently}
-
-We intend to avoid problems described in [@henryModularizingGHC] by using a solution described in [@swierstraDataTypesCarte2008] and [@najdTreesThatGrow2017].
 
 
 # Dependently-typed calculus and bidirectional typing #
@@ -123,6 +115,28 @@ In particular, second option allows us to incorporate more involved inference al
 For example, if we were to implement an erasure inference algorithm as described by
 Tejiščák [@tejiscakDependentlyTypedCalculus2020], we would have to create metavariable annotations (described as "evars" in the paper) that can be instantiated beyond definition site.
 
+
+## The language is only as extensible, as core is ##
+
+Extensibility via constraints allows for a flexible user-specified control flow as soon as we step into the constraints world.
+But control flow of the main body of the basic language elaborator is fixed by the basic language developer.
+For example, consider the following simplified [lambda-function typechecking function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Rules/Term.hs#L460-L578) from Agda: \todo{refer to the previous usage of such a function}
+
+``` haskell
+checkLambda' cmp b xps typ body target = do
+  TelV tel btyp <- telViewUpTo numbinds target
+  if size tel < numbinds || numbinds /= 1
+    then dontUseTargetType
+    else useTargetType tel btyp
+```
+
+Here Agda steps away from the bidirectional discipline and infers a (lambda) function if the target type isn't fully known.
+If in our design the developer chooses to go only with pure bi-directional style of type-checking inferred lambda-functions would be impossible to emulate.
+That is, unless one essentially renders macros and writes their own typechecking case for an inferrable lambda.
+
+In order to gain this extra bit of flexibility we provide `inferType` case for lambdas, even though our base language doesn't use it. \todo{actually write this case}
+
+
 # Related work #
 
 Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants gained a lot of pace in development from investing effort into user-facing efforts: work on tactics like new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
@@ -141,8 +155,11 @@ Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflecti
 # Future work #
 
 There are some things we leave for future work.
-For example, coercive subtyping as implemented in Matita [@tassiBiDirectionalRefinementAlgorithm2012].
-Or erasure inference [@tejiscakDependentlyTypedCalculus2020].
+
+* Coercive subtyping as implemented in Matita [@tassiBiDirectionalRefinementAlgorithm2012]
+* Erasure inference [@tejiscakDependentlyTypedCalculus2020]
+* Rendering of macros as constraints
+* Mapping constraint solving onto a concurrent execution model. Use LVars here [@kuperLatticebasedDataStructures2015] here, similar to what TypOS [@allaisTypOSOperatingSystem2022a] is doing?
 
 # References #
 
