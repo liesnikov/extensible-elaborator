@@ -63,6 +63,7 @@ We hope this goes towards understanding the art and science of implementing depe
 Making the implementations of different features of the language more independent.
 This design separates the what the solvers are doing from the when.
 Making it explicit what are the interaction points between them where the developer has to pay attention.
+This might provide an inspiration for a library or a DSL for implementing dependently-typed languages.
 
 # Constraint-based elaboration and design choices #
 
@@ -84,6 +85,15 @@ checkLambda' cmp b xps typ body target = do
     then (if possiblePath then trySeeingIfPath else dontUseTargetType)
     else useTargetType tel btyp
 ```
+
+Jesper's idea of an example is for implicits - `implicitNamedArgs` [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Implicit.hs#L99-L127).
+
+Logic for the meta creation is in `newMetaArg`. [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Implicit.hs#L147-L150).
+
+Constraint solving logic `solveConstraint_`. [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Constraints.hs#L244-L295).
+
+Another idea from Jesper: conversion checker as an example of a big solver that has to be broken down. [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Conversion.hs#L430). "`blockOnError` is code smell" says Jesper.
+`compareAtom` part what you want to write is (almost) [this](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Conversion.hs#L521-L594)
 
 
 * Provide an example of a complex function to typecheck in Agda
