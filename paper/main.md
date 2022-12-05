@@ -28,32 +28,43 @@ header-includes: |
 
 # Introduction #
 
-Extensibility of a language has always been a lucrative target for compiler writers.
-Macros, compiler plugins in different languages tap into this desire.
-The same ideas made their way into functional languages, such as Haskell [@ghcdevelopmentteamGlasgowHaskellCompiler].
+Staticly-typed languages allow us to specify behavior of our programs more precisely.
+This comes with a benefit of more static guarantees but with an increased toll on the user to supply more precise information.
+Since the type of our program is part of the specification but we can use of the information in the type we can make use of the type to infer parts of our program.
+This can phrased in words of Connor McBride "programs not written type written"
+The examples of these include overloaded functions in Java, implicits in Scala, type classes in Haskell.
 
-In dependently-typed land last decade brought a lot maturity for the language implementations.
-Some of the bigger proof assistants like Coq [@teamCoqProofAssistant2022] invested a lot of effort into user-facing features while having a relatively stable core.
-Some like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system.
+In dependently-typed langauges our types can be much more precise.
+This gives us an even bigger opportunity to infer larger parts of our programs from the type.
+This includes higher-order unification for implicit arguments in Agda, implicit coercions in Coq, tactic arguments in Idris. \todo{something about Lean?}
+The solving can be not only automatic but also interactive.
+For example, holes in Agda, proof obligations and canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq, holes in Haskell [@koppelSearchingEntangledProgram2022]. \todo{look into program synthesis?}
+All of these mechanisms use different solvers and have various degrees of extensiblity.
+They are usually not isolated from each other and can therefore produce unexpected intractions (for example, in this case between implicits and instances [@PerformanceRegressionIssue]).
+
+In all of these examples the solvers evolved organically over time together with the language.
+Some like Coq [@teamCoqProofAssistant2022] invested a lot of effort into user-facing features while having a relatively stable core in the last decade but historically struggling with similar issues in the elaboration.
+For example, Canonical Structures which didn't even get to be properly documented for 15 years.
+Others like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system, like sized types which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
-We set out for a similar cause, aiming to find a design blueprint for a dependently-typed language.
 
-Dependently-typed language implementations usually consist of at least four parts:
-parser, elaborator, core typechecker, and proper backend. The latter happens after typechecking and is not of a particular interest to us today.
+All of the languages above make use of the notion of metavariables (also known as "existential variables" [@teamCoqProofAssistant2022, ch. 2.2.1]) to represent an as of yet unknown part of the term.
+Solving of metavariables is part of a process called elaboration, which turns user-friendly syntax into principled core syntax.
+We propose a new architecture for an extensible elaborator for dependently-typed languages.
+The idea is to provide an API that allows users to tap into the elaboration procedure with their own custom solvers that can manipulate metavariables and constraints placed on them.
 
-We see parser or syntax extensibility as a necessary part of an extensible language.
-However, this being an old problem means that there are existing solutions.
-Macros are one of them and are utilized heavily in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020a] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+Contributions:
+* We propose a new design blueprint for an extensible language. It supports type classes, implicit arguments, implicit coercions, and tactic arguments.
+* We provide a suite of solvers in lieu of common solvers like conversion checker in Agda.
+* We suggest a new view on metavariables as communication channels for the solvers.
+* We implement a prototype of a dependently-typed langauge with implicit arguments, type classes, etc. \todo{be honest about implementation}
 
-Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
-Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
-Agda's philosophy allows developers to experiment with the core, but also results in a larger amount of unexpected behaviors.
-In general, modification of core rules will result in fundamental changes in the type theory, which can break plenty important properties like soundness or subject reduction.
+We hope this goes towards understanding the art and science of implementing dependently-typed languages.
+Making the implementations of different features of the language more independent.
+This design separates the what the solvers are doing from the when.
+Making it explicit what are the interaction points between them where the developer has to pay attention.
 
-This leaves us with the question of what can be achieved with the extensibility of an elaborator and why one would need it.
-Elaborator is the part of the typechecker that performs all the desugaring to translate from the surface to the core language.
-This includes type inference, implicit arguments inference, type classes, tactics, SMT integration.
-Elaborators are often structured similarly to the core typechecker, i.e. following a bidirectional discipline of some sort. One can see that in Agda [@norellPracticalProgrammingLanguage2007], Matita [@tassiBiDirectionalRefinementAlgorithm2012], or in a paper by @ferreiraBidirectionalElaborationDependently2014.
+# Constraint-based elaboration and design choices #
 
 An example of that is Agda's typechecking of a [lambda function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Rules/Term.hs#L460-L578):
 
@@ -73,8 +84,6 @@ checkLambda' cmp b xps typ body target = do
     then (if possiblePath then trySeeingIfPath else dontUseTargetType)
     else useTargetType tel btyp
 ```
-
-# Constraint-based elaboration and design choices #
 
 
 * Provide an example of a complex function to typecheck in Agda
@@ -151,6 +160,24 @@ In a way, this is an imperative view on extensibility.
 \todo{this is a repetition of what was said previously}
 Lean [@mouraLeanTheoremProver2021] set out to become a default language for mathematics formalization, all the while bootstrapping the compiler.
 Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second. Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] appeared as an experiment in providing a specification for
+
+\todo{dump from introduction}
+Dependently-typed language implementations usually consist of at least four parts:
+parser, elaborator, core typechecker, and proper backend. The latter happens after typechecking and is not of a particular interest to us today.
+
+We see parser or syntax extensibility as a necessary part of an extensible language.
+However, this being an old problem means that there are existing solutions.
+Macros are one of them and are utilized heavily in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020a] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+
+Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
+Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
+Agda's philosophy allows developers to experiment with the core, but also results in a larger amount of unexpected behaviors.
+In general, modification of core rules will result in fundamental changes in the type theory, which can break plenty important properties like soundness or subject reduction.
+
+This leaves us with the question of what can be achieved with the extensibility of an elaborator and why one would need it.
+Elaborator is the part of the typechecker that performs all the desugaring to translate from the surface to the core language.
+This includes type inference, implicit arguments inference, type classes, tactics, SMT integration.
+Elaborators are often structured similarly to the core typechecker, i.e. following a bidirectional discipline of some sort. One can see that in Agda [@norellPracticalProgrammingLanguage2007], Matita [@tassiBiDirectionalRefinementAlgorithm2012], or in a paper by @ferreiraBidirectionalElaborationDependently2014.
 
 # Future work #
 

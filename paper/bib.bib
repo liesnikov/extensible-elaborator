@@ -1,3 +1,15 @@
+@inproceedings{abelExtensionMartinLofType2016,
+  title = {An {{Extension}} of {{Martin-Löf Type Theory}} with {{Sized Types}}},
+  author = {Abel, Andreas and Winterhalter, Théo},
+  date = {2016-05-23/2016-05-26},
+  pages = {2},
+  location = {{Novi Sad, Serbia}},
+  abstract = {We present a dependent type theory for which termination checking is entirely type-based, through the use of sized types. Sizes are absent from terms to ensure they are irrelevant for computation and reasoning. The novelty of our approach is the combination of first class size quantification ∀ i → T and dependent types, justified by a predicative semantics.},
+  eventtitle = {{{TYPES}}'16},
+  langid = {english},
+  file = {/home/bohdan/Zotero/storage/PTD4ER88/Abel and Winterhalter - An Extension of Martin-Löf Type Theory with Sized .pdf}
+}
+
 @inproceedings{abelHigherOrderDynamicPattern2011,
   title = {Higher-{{Order Dynamic Pattern Unification}} for {{Dependent Types}} and {{Records}}},
   booktitle = {Typed {{Lambda Calculi}} and {{Applications}}},
@@ -388,6 +400,24 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf;/home/bohdan/Zotero/storage/7PNMILIF/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works.html}
 }
 
+@article{koppelSearchingEntangledProgram2022,
+  title = {Searching Entangled Program Spaces},
+  author = {Koppel, James and Guo, Zheng and de Vries, Edsko and Solar-Lezama, Armando and Polikarpova, Nadia},
+  options = {useprefix=true},
+  date = {2022-08-31},
+  journaltitle = {Proceedings of the ACM on Programming Languages},
+  shortjournal = {Proc. ACM Program. Lang.},
+  volume = {6},
+  pages = {91:23--91:51},
+  doi = {10.1145/3547622},
+  url = {https://doi.org/10.1145/3547622},
+  urldate = {2022-12-05},
+  abstract = {Many problem domains, including program synthesis and rewrite-based optimization, require searching astronomically large spaces of programs. Existing approaches often rely on building specialized data structures—version-space algebras, finite tree automata, or e-graphs—to compactly represent such spaces. At their core, all these data structures exploit independence of subterms; as a result, they cannot efficiently represent more complex program spaces, where the choices of subterms are entangled. We introduce equality-constrained tree automata (ECTAs), a new data structure, designed to compactly represent large spaces of programs with entangled subterms. We present efficient algorithms for extracting programs from ECTAs, implemented in a performant Haskell library, ecta. Using the ecta library, we construct Hectare, a type-driven program synthesizer for Haskell. Hectare significantly outperforms a state-of-the-art synthesizer Hoogle+—providing an average speedup of 8×—despite its implementation being an order of magnitude smaller.},
+  issue = {ICFP},
+  keywords = {e-graphs,Haskell,program synthesis,type systems},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Koppel et al/2022/Koppel et al_2022_Searching entangled program spaces.pdf}
+}
+
 @thesis{kuperLatticebasedDataStructures2015,
   type = {phdthesis},
   title = {Lattice-Based Data Structures for Deterministic Parallel and Distributed Programming},
@@ -414,6 +444,28 @@
   urldate = {2022-07-11},
   eventtitle = {Lean Together 2021},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Leonardo de Moura_Sebastian Ullrich/2021/Leonardo de Moura_Sebastian Ullrich_2021_Lean 4 - metaprogramming.pdf;/home/bohdan/Downloads/Dropbox/stuff/papers/Leonardo de Moura_Sebastian Ullrich/2021/Leonardo de Moura_Sebastian Ullrich_2021_Lean 4 - metaprogramming2.pdf}
+}
+
+@inproceedings{mahboubiCanonicalStructuresWorking2013,
+  ids = {mahboubiCanonicalStructuresWorking2013a},
+  title = {Canonical {{Structures}} for the {{Working Coq User}}},
+  booktitle = {Interactive {{Theorem Proving}}},
+  author = {Mahboubi, Assia and Tassi, Enrico},
+  editor = {Blazy, Sandrine and Paulin-Mohring, Christine and Pichardie, David},
+  date = {2013},
+  volume = {7998},
+  pages = {19--34},
+  publisher = {{Springer Berlin Heidelberg}},
+  location = {{Berlin, Heidelberg}},
+  doi = {10.1007/978-3-642-39634-2_5},
+  url = {http://link.springer.com/10.1007/978-3-642-39634-2_5},
+  urldate = {2020-05-22},
+  abstract = {This paper provides a gentle introduction to the art of programming type inference with the mechanism of Canonical Structures. Programmable type inference has been one of the key ingredients for the successful formalization of the Odd Order Theorem using the Coq proof assistant. The paper concludes comparing the language of Canonical Structures to the one of Type Classes and Unification Hints.},
+  editorb = {Hutchison, David and Kanade, Takeo and Kittler, Josef and Kleinberg, Jon M. and Mattern, Friedemann and Mitchell, John C. and Naor, Moni and Nierstrasz, Oscar and Pandu Rangan, C. and Steffen, Bernhard and Sudan, Madhu and Terzopoulos, Demetri and Tygar, Doug and Vardi, Moshe Y. and Weikum, Gerhard},
+  editorbtype = {redactor},
+  isbn = {978-3-642-39633-5 978-3-642-39634-2},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Mahboubi_Tassi/2013/Mahboubi_Tassi_2013_Canonical Structures for the Working Coq User.pdf}
 }
 
 @inproceedings{mouraLeanTheoremProver2021,
@@ -508,6 +560,15 @@
   eventtitle = {The {{Fifth International Workshop}} on {{Coq}} for {{Programming Languages}} /},
   langid = {english},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pédrot/2019/Pédrot_2019_Ltac2.pdf}
+}
+
+@online{PerformanceRegressionIssue,
+  title = {Performance Regression · {{Issue}} \#3435 · Agda/Agda},
+  url = {https://github.com/agda/agda/issues/3435},
+  urldate = {2022-12-05},
+  abstract = {I have some code that type-checks about ten times slower using Agda 2.6.0-4a5e1dc, compared to Agda 2.5.4.2: git clone http://www.cse.chalmers.se/\textasciitilde nad/repos/equality/ (cd equality \&amp;\&amp; git ch...},
+  langid = {english},
+  organization = {{GitHub}}
 }
 
 @inproceedings{pientkaOptimizingHigherOrderPattern2003,
