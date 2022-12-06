@@ -31,7 +31,8 @@ header-includes: |
 Staticly-typed languages allow us to specify behavior of our programs more precisely.
 This comes with a benefit of more static guarantees but with an increased toll on the user to supply more precise information.
 Since the type of our program is part of the specification but we can use of the information in the type we can make use of the type to infer parts of our program.
-This can phrased in words of Connor McBride "programs not written type written"
+This follows the idea of Connor McBride to "Write more types and fewer programs." [@ptoopTypeInferenceThought2022, @mcbrideEpigramPracticalProgramming2005 ch. 2.1]
+
 The examples of these include overloaded functions in Java, implicits in Scala, type classes in Haskell.
 
 In dependently-typed langauges our types can be much more precise.
