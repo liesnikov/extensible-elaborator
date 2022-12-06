@@ -206,6 +206,6 @@ There are some things we leave for future work.
 <!---
 Local Variables:
 eval: (progn (olivetti-mode 't) (flyspell-mode 't) (flyspell-buffer)) ;; because it looks better this way!
-reftex-default-bibliography: ("/home/bohdan/delft/extended-elab/paper/bib.bib") ;; add reftex support
+reftex-default-bibliography: ("/home/bohdan/delft/extended-elab/extended-elab/paper/bib.bib") ;; add reftex support
 End:
 -->
