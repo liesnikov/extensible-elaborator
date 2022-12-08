@@ -221,25 +221,15 @@ In order to gain this extra bit of flexibility we provide `inferType` case for l
 
 # Related work #
 
-Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants gained a lot of pace in development from investing effort into user-facing efforts: work on tactics like new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
-
-Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change.
-
-Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020a].
-They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
-In a way, this is an imperative view on extensibility.
-
-
-\todo{this is a repetition of what was said previously}
-Lean [@mouraLeanTheoremProver2021] set out to become a default language for mathematics formalization, all the while bootstrapping the compiler.
-Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second. Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] appeared as an experiment in providing a specification for
-
-\todo{dump from introduction}
+We are certainly not the first ones to try to tackle extensibility of a language implementation.
+This section is structured according to the part of the compiler pipeline that allows for the extensibility.
 Dependently-typed language implementations usually consist of at least four parts:
-parser, elaborator, core typechecker, and proper backend. The latter happens after typechecking and is not of a particular interest to us today.
+parser, elaborator, core typechecker, and proper backend.
+The back-end part is currently irrelevant to our interests, since for a language to be specified usually means for specification of the core, anything that happens beyond after core doesn't extend the language, but rather tries to preserve its semantics in some form.
+Therefore we're left with three parts: parser, elaborator and core typechecker.
 
 We see parser or syntax extensibility as a necessary part of an extensible language.
-However, this being an old problem means that there are existing solutions.
+This problem has been studied extensively in the past and has a multitude of existing solutions.
 Macros are one of them and are utilized heavily in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020a] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
 
 Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
@@ -248,9 +238,20 @@ Agda's philosophy allows developers to experiment with the core, but also result
 In general, modification of core rules will result in fundamental changes in the type theory, which can break plenty important properties like soundness or subject reduction.
 
 This leaves us with the question of what can be achieved with the extensibility of an elaborator and why one would need it.
-Elaborator is the part of the typechecker that performs all the desugaring to translate from the surface to the core language.
+Elaborator is the part of the typechecker that performs said desugaring to translate from the surface to the core language.
 This includes type inference, implicit arguments inference, type classes, tactics, SMT integration.
 Elaborators are often structured similarly to the core typechecker, i.e. following a bidirectional discipline of some sort. One can see that in Agda [@norellPracticalProgrammingLanguage2007], Matita [@tassiBiDirectionalRefinementAlgorithm2012], or in a paper by @ferreiraBidirectionalElaborationDependently2014.
+
+Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants gained a lot of pace in development from investing effort into user-facing efforts: work on tactics like new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
+
+Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change.
+
+Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020a].
+They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
+In a way, this is an imperative view on extensibility.
+
+Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second.
+
 
 # Future work #
 
