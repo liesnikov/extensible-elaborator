@@ -262,8 +262,6 @@ There are some things we leave for future work.
 * Rendering of macros as constraints
 * Mapping constraint solving onto a concurrent execution model. Use LVars here [@kuperLatticebasedDataStructures2015] here, similar to what TypOS [@allaisTypOSOperatingSystem2022a] is doing?
 
-# References #
-
 ::: {#refs}
 :::
 
