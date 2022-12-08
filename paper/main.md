@@ -7,7 +7,7 @@ date: \today
 output: pdf_document
 
 documentclass: scrartcl
-geometry: "left=2cm,right=2cm,top=1cm,bottom=2cm"
+geometry: "left=2.5cm,right=2.5cm,top=1cm,bottom=2.2cm"
 colorlinks: true
 link-citations: true
 parindent: 1cm
