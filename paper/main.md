@@ -35,13 +35,13 @@ This follows the idea of Connor McBride to "Write more types and fewer programs.
 
 The examples of these include overloaded functions in Java, implicits in Scala, type classes in Haskell.
 
-In dependently-typed langauges our types can be much more precise.
+In dependently-typed languages our types can be much more precise.
 This gives us an even bigger opportunity to infer larger parts of our programs from the type.
 This includes higher-order unification for implicit arguments in Agda, implicit coercions in Coq, tactic arguments in Idris. \todo{something about Lean?}
 The solving can be not only automatic but also interactive.
 For example, holes in Agda, proof obligations and canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq, holes in Haskell [@koppelSearchingEntangledProgram2022]. \todo{look into program synthesis?}
 All of these mechanisms use different solvers and have various degrees of extensiblity.
-They are usually not isolated from each other and can therefore produce unexpected intractions (for example, in this case between implicits and instances [@PerformanceRegressionIssue]).
+They are usually not isolated from each other and can therefore produce unexpected interactions (for example, in this case between implicits and instances [@PerformanceRegressionIssue]).
 
 In all of these examples the solvers evolved organically over time together with the language.
 Some like Coq [@teamCoqProofAssistant2022] invested a lot of effort into user-facing features while having a relatively stable core in the last decade but historically struggling with similar issues in the elaboration.
@@ -49,16 +49,17 @@ For example, Canonical Structures which didn't even get to be properly documente
 Others like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system, like sized types which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
 
-All of the languages above make use of the notion of metavariables (also known as "existential variables" [@teamCoqProofAssistant2022, ch. 2.2.1]) to represent an as of yet unknown part of the term.
+All of the languages above make use of the notion of metavariables (also known as "existential variables" [@teamCoqProofAssistant2022, chap. 2.2.1]) to represent an as of yet unknown part of the term.
 Solving of metavariables is part of a process called elaboration, which turns user-friendly syntax into principled core syntax.
 We propose a new architecture for an extensible elaborator for dependently-typed languages.
 The idea is to provide an API that allows users to tap into the elaboration procedure with their own custom solvers that can manipulate metavariables and constraints placed on them.
 
 Contributions:
+
 * We propose a new design blueprint for an extensible language. It supports type classes, implicit arguments, implicit coercions, and tactic arguments.
 * We provide a suite of solvers in lieu of common solvers like conversion checker in Agda.
 * We suggest a new view on metavariables as communication channels for the solvers.
-* We implement a prototype of a dependently-typed langauge with implicit arguments, type classes, etc. \todo{be honest about implementation}
+* We implement a prototype of a dependently-typed language with implicit arguments, type classes, etc.\todo{be honest about implementation}
 
 We hope this goes towards understanding the art and science of implementing dependently-typed languages.
 Making the implementations of different features of the language more independent.
