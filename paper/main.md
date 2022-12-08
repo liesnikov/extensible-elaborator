@@ -68,42 +68,103 @@ This might provide an inspiration for a library or a DSL for implementing depend
 
 # Constraint-based elaboration and design choices #
 
-An example of that is Agda's typechecking of a [lambda function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Rules/Term.hs#L460-L578):
+In this section we provide a few examples of problems solved by our approach and sketch the design of the system.
 
+## Type-checking function application in the presence of implicit arguments ##
 
-```haskell
-checkLambda'
-  :: Comparison          -- ^ @cmp@
-  -> A.TypedBinding      -- ^ @TBind _ _ xps typ@
-  -> List1 (NamedArg Binder)   -- ^ @xps@
-  -> A.Expr              -- ^ @typ@
-  -> A.Expr              -- ^ @body@
-  -> Type                -- ^ @target@
-  -> TCM Term
-checkLambda' cmp b xps typ body target = do
-  TelV tel btyp <- telViewUpTo numbinds target
-  if size tel < numbinds || numbinds /= 1
-    then (if possiblePath then trySeeingIfPath else dontUseTargetType)
-    else useTargetType tel btyp
+During function application typechecking there may be different kinds of arguments to process, for example instance arguments, implicit arguments, or tactic arguments.
+If we start from a simple case of typechecking an application of a function symbol to regular arguments, every next extension requires to be handled in a special case.
+
+Take Agda as an example: when checking an application during the [insertion of implicit arguments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L99-L127) we already have to carry the information on how the argument will be resolved and then create a [new kind of meta variable](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150) for each of those cases.
+With our design one can treat all of those arguments uniformly.
+The compiler writer only has to write a function
+
+```
+inferType (S.App t1 t2) = do
+  (et1, ty1) <- inferType t1
+
+  # bookkeeping to ensure et1 is a Pi-type
+  tyA <- createMetaTerm
+  tx <- createUnknownVar
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx tyA)) (createMetaTerm)
+  let bnd = Unbound.bind tx tyB
+  let metaPi = I.Pi tyA bnd
+  CA.constrainEquality nty1 metaPi I.Type
+
+  tt2 <-  checkType (S.unArg t2) tyA
+  return (I.App et1 (I.Arg tt2),
+          Unbound.instantiate bnd [tt2])
 ```
 
-Jesper's idea of an example is for implicits - `implicitNamedArgs` [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Implicit.hs#L99-L127).
+The implicit arguments will be handled during the elaboration of the term `t2`.
+One doesn't have to care about the kind of implicit argument: when we encounter a placeholder for an implicit term we create a metavariable with all available information attached to it.
 
-Logic for the meta creation is in `newMetaArg`. [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Implicit.hs#L147-L150).
+This metavariable in its own turn gets instantiated by a fitting solver.
+The solvers match on the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, unification for implicit variables, tactic execution for a tactic argument.
 
-Constraint solving logic `solveConstraint_`. [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Constraints.hs#L244-L295).
+Idris 1 unified instance implicit arguments [@bradyIdrisGeneralpurposeDependently2013, chap. 3.7.1], however they rely on a stronger all-encompassing unification procedure, while we allow for the features to be added gradually and independently.
 
-Another idea from Jesper: conversion checker as an example of a big solver that has to be broken down. [source](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Conversion.hs#L430). "`blockOnError` is code smell" says Jesper.
-`compareAtom` part what you want to write is (almost) [this](https://github.com/agda/agda/blob/master/src/full/Agda/TypeChecking/Conversion.hs#L521-L594)
+## Conversion checking in the presence of a meta-variables ##
 
+Conversion checkers are notoriously hard to write.
+In our approach one doesn't have to fit together an always-growing one conversion checker but can instead write different cases separately.
+We again rely on the constraint solver machinery to distribute the problems to the fitting solvers.
 
-* Provide an example of a complex function to typecheck in Agda
-* Break down features in terms of different plugins in our system
+An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) that provides type-driven conversion checking.
+The function is almost 90 lines long, and yet the vast majority of it are special cases of metavariables.
+The "business logic" of it however is still in the call to `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
+Which itself is almost 200 lines of code and has to do even more bookkeeping for blocked metavariables, blocks problem on errors and in general is very unintuitive and full on intricacies and indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
+
+All the while the gist of it can be compressed down to less than [30 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of code
+
+``` haskell
+case (m, n) of
+  (Pi{}, Pi{}) -> equalFun m n
+
+  (Sort s1, Sort s2) ->
+    ifM (optCumulativity <$> pragmaOptions)
+      (compareSort cmp s1 s2)
+      (equalSort s1 s2)
+
+  (Lit l1, Lit l2) | l1 == l2 -> return ()
+  (Var i es, Var i' es') | i == i' -> do
+      a <- typeOfBV i
+      compareElims [] [] a (var i) es es'
+
+  -- The case of definition application:
+  (Def f es, Def f' es') -> do
+      unlessM (bothAbsurd f f') $ do
+      if f /= f' then trySizeUniv cmp t m n f es f' es' else do
+      unless (null es && null es') $ do
+      unlessM (compareEtaPrims f es es') $ do
+       a <- computeElimHeadType f es es'
+       pol <- getPolarity' cmp f
+       compareElims pol [] a (Def f []) es es'
+
+  -- Due to eta-expansion, these constructors are fully applied.
+  (Con x ci xArgs, Con y _ yArgs)
+      | x == y -> do
+          a' <- case t of
+            AsTermsOf a -> conType x a
+            AsSizes   -> __IMPOSSIBLE__
+            AsTypes   -> __IMPOSSIBLE__
+          forcedArgs <- getForcedArgs $ conName x
+          compareElims (repeat $ polFromCmp cmp) forcedArgs a' (Con x ci []) xArgs yArgs
+  _ -> notEqual
+```
+
+This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
+
+## How is this achieved ##
+
+Traditionally the constraint-solving is viewed as a gadget to postpone problems that can't be solved at the moment, and not the center piece of the elaboration procedure.
+This can be primarily observed in the design of the [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301), where the code around it relies on the typechecker to call it at the point where it is needed.
+
+Our core idea to build the new design is to put the constraint solving at the very heart of the elaborator.
+
 * Mention "Data-types a-la carte" [@swierstraDataTypesCarte2008]?
 * Do we tackle anything mentioned in [@henryModularizingGHC]?
 * There's a potential for [@najdTreesThatGrow2017], make a decision whether we're implementing it or not.
-
-
 
 # Dependently-typed calculus and bidirectional typing #
 
