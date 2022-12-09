@@ -69,7 +69,12 @@ This might provide an inspiration for a library or a DSL for implementing depend
 
 # Constraint-based elaboration and design choices #
 
-In this section we provide a few examples of problems solved by our approach and sketch the design of the system.
+In this section we present some typical design challenges that come up while building a dependently typed compiler, the way they are usually solved and what does the design blueprint we're suggesting bring to the picture.
+
+## Current design space ##
+
+Constraints have been an integral part of compiler for strongly-typed languages for a while.
+The examples include both Haskell and Agda.
 
 ## Type-checking function application in the presence of implicit arguments ##
 
