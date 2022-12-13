@@ -8,6 +8,7 @@ output: pdf_document
 
 documentclass: scrartcl
 geometry: "left=2.5cm,right=2.5cm,top=1cm,bottom=2.2cm"
+numbersections: true
 colorlinks: true
 link-citations: true
 parindent: 1cm
@@ -22,8 +23,13 @@ header-includes: |
     \usepackage{todonotes}
 ---
 
-# Abstract #
+\begin{abstract}
 
+We present a new design for compilers for dependently-typed languages based on the idea of open datatype for constraints.
+This allows for more compact base elaborator implementation while enabling extensions to the type system.
+We don't require modifications to the core of type-checker, therefore preserving safety of the language.
+
+\end{abstract}
 
 
 # Introduction #
@@ -31,7 +37,7 @@ header-includes: |
 Staticly-typed languages allow us to specify behavior of our programs more precisely.
 This comes with a benefit of more static guarantees but with an increased toll on the user to supply more precise information.
 Since the type of our program is part of the specification but we can use of the information in the type we can make use of the type to infer parts of our program.
-This follows the idea of Connor McBride to "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005, chap. 2.1]
+This follows the idea of Connor McBride to "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
 
 The examples of these include overloaded functions in Java, implicits in Scala, type classes in Haskell.
 
@@ -49,7 +55,7 @@ For example, Canonical Structures which didn't even get to be properly documente
 Others like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system, like sized types which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
 
-All of the languages above make use of the notion of metavariables (also known as "existential variables" [@teamCoqProofAssistant2022, chap. 2.2.1]) to represent an as of yet unknown part of the term.
+All of the languages above make use of the notion of metavariables (also known as "existential variables" [@teamCoqProofAssistant2022 chap. 2.2.1]) to represent an as of yet unknown part of the term.
 Solving of metavariables is part of a process called elaboration, which turns user-friendly syntax into principled core syntax.
 We propose a new architecture for an extensible elaborator for dependently-typed languages.
 The idea is to provide an API that allows users to tap into the elaboration procedure with their own custom solvers that can manipulate metavariables and constraints placed on them.
@@ -74,7 +80,13 @@ In this section we present some typical design challenges that come up while bui
 ## Current design space ##
 
 Constraints have been an integral part of compiler for strongly-typed languages for a while.
-The examples include both Haskell and Agda.
+For example, both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
+In the former case they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a; @ghcdevelopmentteamGHCUserGuide chap. 6.10.3].
+This has proved to be a profitable design decision for GHC, as is indicated, for example in the following talk by @jonesTypeInferenceConstraint2019 as well as in a few published sources [@vytiniotisOutsideInModularType2011; @jonesPracticalTypeInference2007].
+
+However, in the land of dependently-typed languages constraints are much less principled.
+Agda has a lot of constraints.
+Idris technically [has constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors are equality constraints of sequence of terms. We discuss this further in [Related Work section](#related_work)
 
 ## Type-checking function application in the presence of implicit arguments ##
 
@@ -108,7 +120,7 @@ One doesn't have to care about the kind of implicit argument: when we encounter 
 This metavariable in its own turn gets instantiated by a fitting solver.
 The solvers match on the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, unification for implicit variables, tactic execution for a tactic argument.
 
-Idris 1 unified instance implicit arguments [@bradyIdrisGeneralpurposeDependently2013, chap. 3.7.1], however they rely on a stronger all-encompassing unification procedure, while we allow for the features to be added gradually and independently.
+Idris 1 unified instance implicit arguments [@bradyIdrisGeneralpurposeDependently2013 chap. 3.7.1], however they rely on a stronger all-encompassing unification procedure, while we allow for the features to be added gradually and independently.
 
 ## Conversion checking in the presence of a meta-variables ##
 
@@ -224,7 +236,7 @@ That is, unless one essentially renders macros and writes their own typechecking
 In order to gain this extra bit of flexibility we provide `inferType` case for lambdas, even though our base language doesn't use it. \todo{actually write this case}
 
 
-# Related work #
+# Related work # {#related_work}
 
 We are certainly not the first ones to try to tackle extensibility of a language implementation.
 This section is structured according to the part of the compiler pipeline that allows for the extensibility.
