@@ -32,7 +32,7 @@ We don't require modifications to the core of type-checker, therefore preserving
 \end{abstract}
 
 
-# Introduction #
+# Introduction #  {#section_introduction}
 
 Staticly-typed languages allow us to specify behavior of our programs more precisely.
 This comes with a benefit of more static guarantees but with an increased toll on the user to supply more precise information.
@@ -73,7 +73,7 @@ This design separates the what the solvers are doing from the when.
 Making it explicit what are the interaction points between them where the developer has to pay attention.
 This might provide an inspiration for a library or a DSL for implementing dependently-typed languages.
 
-# Constraint-based elaboration and design choices #
+# Constraint-based elaboration and design choices # {#section_constraint_elaboration}
 
 In this section we present some typical design challenges that come up while building a dependently typed compiler, the way they are usually solved and what does the design blueprint we're suggesting bring to the picture.
 
@@ -85,8 +85,8 @@ In the former case they are even reflected and can be manipulated by the user [@
 This has proved to be a profitable design decision for GHC, as is indicated, for example in the following talk by @jonesTypeInferenceConstraint2019 as well as in a few published sources [@vytiniotisOutsideInModularType2011; @jonesPracticalTypeInference2007].
 
 However, in the land of dependently-typed languages constraints are much less principled.
-Agda has a lot of constraints.
-Idris technically [has constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors are equality constraints of sequence of terms. We discuss this further in [Related Work section](#related_work)
+Agda has [a family of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically, currently that's 17 constructors.
+Idris technically [has constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors are equality constraints of sequence of terms. We discuss this further in [Related Work section](#section_related_work)
 
 ## Type-checking function application in the presence of implicit arguments ##
 
@@ -184,7 +184,7 @@ Our core idea to build the new design is to put the constraint solving at the ve
 * Do we tackle anything mentioned in [@henryModularizingGHC]?
 * There's a potential for [@najdTreesThatGrow2017], make a decision whether we're implementing it or not.
 
-# Dependently-typed calculus and bidirectional typing #
+# Dependently-typed calculus and bidirectional typing # {#section_bidirectional}
 
 In this section we describe the core for type system we implement as well as the core typing rules.
 This work is based off pi-forall [@weirichImplementingDependentTypes2022] implementation.
@@ -194,13 +194,13 @@ This is dependently-typed calculus that includes Pi, Sigma and indexed inductive
 Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
 
 
-# Case-studies #
+# Case-studies # {#section_casestudies}
 
 ## Implicit arguments ##
 
 ## Type classes ##
 
-# Limitations #
+# Limitations # {#section_limitations}
 
 ## Handling of meta-variables outside of definition sites ##
 
@@ -235,8 +235,17 @@ That is, unless one essentially renders macros and writes their own typechecking
 
 In order to gain this extra bit of flexibility we provide `inferType` case for lambdas, even though our base language doesn't use it. \todo{actually write this case}
 
+## Reliance of the pre-processor ##
 
-# Related work # {#related_work}
+This work crucially relies on a pre-processor of some kind, be it macro expansion or some other way to extend the parser with custom desugaring rules.
+In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity.
+For coercions we need to substitute every term `t` in the coercible position for `coerce _ t`.
+This can impact performance.
+
+Alternatively, one can imagine a system where constraint solvers are latching onto non-reduced types and terms in constraints.
+In that case we can get around with a trick borrowed from Coq, where `coerce _ t` computes to `_ t`, but since we typechecked an unreduced application the search will still be launched on the right form.
+
+# Related work # {#section_related_work}
 
 We are certainly not the first ones to try to tackle extensibility of a language implementation.
 This section is structured according to the part of the compiler pipeline that allows for the extensibility.
