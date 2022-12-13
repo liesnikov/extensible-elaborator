@@ -94,33 +94,71 @@ During function application typechecking there may be different kinds of argumen
 If we start from a simple case of typechecking an application of a function symbol to regular arguments, every next extension requires to be handled in a special case.
 
 Take Agda as an example: when checking an application during the [insertion of implicit arguments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L99-L127) we already have to carry the information on how the argument will be resolved and then create a [new kind of meta variable](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150) for each of those cases.
-With our design one can treat all of those arguments uniformly.
-The compiler writer only has to write a function
 
-```
-inferType (S.App t1 t2) = do
-  (et1, ty1) <- inferType t1
+Instead of handling every kind of metavarible in a distinct way we uniformly dispatch a search for the solution, which is then handled by the constraint solvers (in contrast with Idris [@bradyIdrisGeneralpurposeDependently2013 chap. ?], see more in the [Related work section](#section_related_work)).
+We achieve this by creating metavariables for the unknown terms and then raising a constraint for the meta containing the type of the meta.
+This constraint can be latched on by the right solver based on this type. 
 
-  # bookkeeping to ensure et1 is a Pi-type
-  tyA <- createMetaTerm
-  tx <- createUnknownVar
-  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx tyA)) (createMetaTerm)
-  let bnd = Unbound.bind tx tyB
-  let metaPi = I.Pi tyA bnd
-  CA.constrainEquality nty1 metaPi I.Type
+In this view the elaborator for the application of a function doesn't have to know anything about the implicits at all.
+The only thing we require is that the elaboration of the argument is called with the type infromation available.
+This corresponds to how in bidrectional typing function application is done in the inference mode but the arguments are processed in checking mode.
 
-  tt2 <-  checkType (S.unArg t2) tyA
-  return (I.App et1 (I.Arg tt2),
-          Unbound.instantiate bnd [tt2])
+``` haskell
+inferType (App t1 t2) = do
+  (et1, Pi tyA tyB) <- inferType t1
+  et2 <- checkType t2 tyA
+  return (App et1 et2, subst tyB et2)
 ```
 
-The implicit arguments will be handled during the elaboration of the term `t2`.
-One doesn't have to care about the kind of implicit argument: when we encounter a placeholder for an implicit term we create a metavariable with all available information attached to it.
+```haskell
+checkType (Implicit) ty = do
+  m <- createMeta
+  raiseConstraint $ FillInTheImplicit m ty
+  return m
+```
 
 This metavariable in its own turn gets instantiated by a fitting solver.
-The solvers match on the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, unification for implicit variables, tactic execution for a tactic argument.
+The solvers match on the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
+If it is a regular implicit, however, the only solver that's needed is a trivial one that checks that the metavariable has been instantiated indeed.
+This is because a regualr implicit should be instantiated by a unification problem encountered at some point later.
+This servers as a guarantree that all implicits have been filled in.
 
-Idris 1 unified instance implicit arguments [@bradyIdrisGeneralpurposeDependently2013 chap. 3.7.1], however they rely on a stronger all-encompassing unification procedure, while we allow for the features to be added gradually and independently.
+Let us go through an example of the elaboration process for a simple term:
+
+```
+plus : {A : Type} -> {{PlusOperation A}} -> (a : A) -> (b : A) -> A
+
+instance PlusNat : PlusOperation Nat where
+  plus = plusNat
+
+two = plus 1 1
+```
+
+We will step through elaboration of the term `two`.
+1. First the pre-processor eliminates the implicits and typeclass arguments.
+  We end with the following declarations:
+  ```
+  plus : (impA : Implicit Type) -> TypeClass PlusOperation (deImp impA) -> (a : deImp impA) -> (b :  deImp impA) ->  deImp impA
+
+  PlusNat = Instance { class = PlusOperation Nat
+                  , body = {plus = plusNat}}
+  
+  two = plus _ _ 1 1
+  ```
+2. We go into the elaboration of `two` now. The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders. The output of the elaborator is 
+  ```
+  two = plus ?_1 ?_2 1 1
+  ``` 
+  And the state of the elaborator contains four more constraints:  
+  C1: `FillInTheImplicit ?_1 (Implicit Type)`  
+  C2: `FillInTheImplicit ?2 (TypeClass PlusOperation (deImp ?_1))`  
+  C3: `EqualityConstraint ?_1 Nat Type`  
+  C4: `EqualityConstraint ?_1 Nat Type`.  
+  The first two correspond to implicit arguments. The latter two are unification problems rendered into constraints.
+3. Now we step into the constraint-solving world. First the unifier solves the latter two, instantitating `?_1` to `Nat`.
+   Next the typeclass resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
+   Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
+
 
 ## Conversion checking in the presence of a meta-variables ##
 
