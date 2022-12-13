@@ -135,27 +135,40 @@ two = plus 1 1
 ```
 
 We will step through elaboration of the term `two`.
-1. First the pre-processor eliminates the implicits and typeclass arguments.
-  We end with the following declarations:
-  ```
-  plus : (impA : Implicit Type) -> TypeClass PlusOperation (deImp impA) -> (a : deImp impA) -> (b :  deImp impA) ->  deImp impA
 
-  PlusNat = Instance { class = PlusOperation Nat
-                  , body = {plus = plusNat}}
-  
-  two = plus _ _ 1 1
-  ```
-2. We go into the elaboration of `two` now. The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders. The output of the elaborator is 
-  ```
-  two = plus ?_1 ?_2 1 1
-  ``` 
-  And the state of the elaborator contains four more constraints:  
-  C1: `FillInTheImplicit ?_1 (Implicit Type)`  
-  C2: `FillInTheImplicit ?2 (TypeClass PlusOperation (deImp ?_1))`  
-  C3: `EqualityConstraint ?_1 Nat Type`  
-  C4: `EqualityConstraint ?_1 Nat Type`.  
-  The first two correspond to implicit arguments. The latter two are unification problems rendered into constraints.
-3. Now we step into the constraint-solving world. First the unifier solves the latter two, instantitating `?_1` to `Nat`.
+1. First the pre-processor eliminates the implicits and typeclass arguments.
+   We end with the following declarations:
+   ```
+   plus : (impA : Implicit Type)
+       -> TypeClass PlusOperation (deImp impA)
+       -> (a : deImp impA) -> (b :  deImp impA)
+       ->  deImp impA
+   
+   PlusNat = Instance {
+       class = PlusOperation Nat,
+       body = {plus = plusNat}}
+   
+   two = plus _ _ 1 1
+   ```
+2. We go into the elaboration of `two` now.
+   The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders.
+   The output of the elaborator is
+   ```
+   two = plus ?_1 ?_2 1 1
+   ```
+   And the state of the elaborator contains four more constraints:
+   ```
+   C1: FillInTheImplicit ?_1 (Implicit Type)
+   C2: FillInTheImplicit ?_2 (TypeClass PlusOperation (deImp ?_1))`
+   C3: EqualityConstraint ?_1 Nat Type`
+   C4: EqualityConstraint ?_1 Nat Type`
+   ```
+   
+   The first two correspond to implicit arguments.
+   The latter two are unification problems rendered into constraints.
+
+3. Now we step into the constraint-solving world.
+   First the unifier solves the latter two, instantitating `?_1` to `Nat`.
    Next the typeclass resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
    Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
 
@@ -164,8 +177,8 @@ We will step through elaboration of the term `two`.
 
 Higher-order unification is notoriously hard to implement because it is undecidable in general.
 The complexity stems from the desire of compiler writers to implemenmt the most powerful unifier.
-This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath} 
-Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components. 
+This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath}
+Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components.
 In practice this means thast one doesn't have to fit together an always-growing one conversion checker but can instead write different cases separately.
 We again rely on the constraint solver machinery to distribute the problems to the fitting solvers.
 
