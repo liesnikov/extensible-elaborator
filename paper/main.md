@@ -162,52 +162,52 @@ We will step through elaboration of the term `two`.
 
 ## Conversion checking in the presence of a meta-variables ##
 
-Conversion checkers are notoriously hard to write.
-In our approach one doesn't have to fit together an always-growing one conversion checker but can instead write different cases separately.
+Higher-order unification is notoriously hard to implement because it is undecidable in general.
+The complexity stems from the desire of compiler writers to implemenmt the most powerful unifier.
+This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath} 
+Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components. 
+In practice this means thast one doesn't have to fit together an always-growing one conversion checker but can instead write different cases separately.
 We again rely on the constraint solver machinery to distribute the problems to the fitting solvers.
 
 An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) that provides type-driven conversion checking.
 The function is almost 90 lines long, and yet the vast majority of it are special cases of metavariables.
-The "business logic" of it however is still in the call to `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
-Which itself is almost 200 lines of code and has to do even more bookkeeping for blocked metavariables, blocks problem on errors and in general is very unintuitive and full on intricacies and indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
+This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386), which itself is 130 lines.
+`compareTerm'` calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
+Which itself is almost 200 lines of code.
+Each of the above functions implements part of the "business logic" of the conversion checker.
+But each of them containts a lot of code dealing for bookkeeping realted to metavariables and constraints:
+1. They has to throw and catch exceptions, driving the control flow of the unification.
+2. They has to compute blocking tags that determine when a postponed constraint is retried.
+3. They has to deal with cases where either or both of the sides of the equation or its type are either metavariables or terms whose evaluation is blocked on some metavariable.
 
-All the while the gist of it can be compressed down to less than [30 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of code
+This code is unintuitive and full on intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
+
+Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code. \todo{stripping out size checks, cumulativity, polarity, and forcing}
 
 ``` haskell
 case (m, n) of
   (Pi{}, Pi{}) -> equalFun m n
 
-  (Sort s1, Sort s2) ->
-    ifM (optCumulativity <$> pragmaOptions)
-      (compareSort cmp s1 s2)
-      (equalSort s1 s2)
+  (Sort s1, Sort s2) -> equalSort s1 s2
 
   (Lit l1, Lit l2) | l1 == l2 -> return ()
+
   (Var i es, Var i' es') | i == i' -> do
       a <- typeOfBV i
       compareElims [] [] a (var i) es es'
 
-  -- The case of definition application:
   (Def f es, Def f' es') -> do
-      unlessM (bothAbsurd f f') $ do
-      if f /= f' then trySizeUniv cmp t m n f es f' es' else do
-      unless (null es && null es') $ do
-      unlessM (compareEtaPrims f es es') $ do
-       a <- computeElimHeadType f es es'
-       pol <- getPolarity' cmp f
-       compareElims pol [] a (Def f []) es es'
+      a <- computeElimHeadType f es es'
+      compareElims [] a (Def f []) es es'
 
-  -- Due to eta-expansion, these constructors are fully applied.
-  (Con x ci xArgs, Con y _ yArgs)
-      | x == y -> do
-          a' <- case t of
-            AsTermsOf a -> conType x a
-            AsSizes   -> __IMPOSSIBLE__
-            AsTypes   -> __IMPOSSIBLE__
-          forcedArgs <- getForcedArgs $ conName x
-          compareElims (repeat $ polFromCmp cmp) forcedArgs a' (Con x ci []) xArgs yArgs
+  (Con x ci xArgs, Con y _ yArgs) | x == y -> do
+      t' <- conType x t
+      compareElims t' (Con x ci []) xArgs yArgs
+
   _ -> notEqual
 ```
+
+\todo{look at Idris two too}
 
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
