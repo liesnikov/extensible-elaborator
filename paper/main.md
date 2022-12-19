@@ -62,7 +62,7 @@ The idea is to provide an API that allows users to tap into the elaboration proc
 
 Contributions:
 
-* We propose a new design blueprint for an extensible language. It supports type classes, implicit arguments, implicit coercions, and tactic arguments.
+* We propose a new design blueprint for an extensible language. It supports type classes, implicit arguments, implicit coercions, context arguments a-la Scala and tactic arguments.
 * We provide a suite of solvers in lieu of common solvers like conversion checker in Agda.
 * We suggest a new view on metavariables as communication channels for the solvers.
 * We implement a prototype of a dependently-typed language with implicit arguments, type classes, etc.\todo{be honest about implementation}
@@ -75,18 +75,21 @@ This might provide an inspiration for a library or a DSL for implementing depend
 
 # Constraint-based elaboration and design choices # {#section_constraint_elaboration}
 
-In this section we present some typical design challenges that come up while building a dependently typed compiler, the way they are usually solved and what does the design blueprint we're suggesting bring to the picture.
-
-## Current design space ##
-
-Constraints have been an integral part of compiler for strongly-typed languages for a while.
+Constraints have been an integral part of compiler for strongly-typed languages for a while [@oderskyTypeInferenceConstrained1999].
 For example, both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
 In the former case they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a; @ghcdevelopmentteamGHCUserGuide chap. 6.10.3].
 This has proved to be a profitable design decision for GHC, as is indicated, for example in the following talk by @jonesTypeInferenceConstraint2019 as well as in a few published sources [@vytiniotisOutsideInModularType2011; @jonesPracticalTypeInference2007].
 
 However, in the land of dependently-typed languages constraints are much less principled.
 Agda has [a family of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically, currently that's 17 constructors.
-Idris technically [has constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors are equality constraints of sequence of terms. We discuss this further in [Related Work section](#section_related_work)
+Idris technically [has constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors are equality constraints of sequence of terms.
+Same holds for Lean.[^lean-source-constraints] \todo{citations}
+You'll find further discussion of present work in the [Related Work section](#section_related_work).
+
+In this section we present some typical design challenges that come up while building a dependently typed compiler, the way they are usually solved and what does the design blueprint we're suggesting bring to the picture.
+
+
+[^lean-source-constraints]: [github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161]( https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161)
 
 ## Type-checking function application in the presence of implicit arguments ##
 
@@ -113,7 +116,7 @@ inferType (App t1 t2) = do
 ```haskell
 checkType (Implicit) ty = do
   m <- createMeta
-  raiseConstraint $ FillInTheImplicit m ty
+  raiseConstraint $ FillInTheTerm m ty
   return m
 ```
 
@@ -158,8 +161,8 @@ We will step through elaboration of the term `two`.
    ```
    And the state of the elaborator contains four more constraints:
    ```
-   C1: FillInTheImplicit ?_1 (Implicit Type)
-   C2: FillInTheImplicit ?_2 (TypeClass PlusOperation (deImp ?_1))`
+   C1: FillInTheTerm ?_1 (Implicit Type)
+   C2: FillInTheTerm ?_2 (TypeClass PlusOperation (deImp ?_1))`
    C3: EqualityConstraint ?_1 Nat Type`
    C4: EqualityConstraint ?_1 Nat Type`
    ```
@@ -220,20 +223,124 @@ case (m, n) of
   _ -> notEqual
 ```
 
-\todo{look at Idris two too}
+\todo{get an example from Idris 2?}
 
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
-## How is this achieved ##
+## What is our design bringing into the picture ##
 
-Traditionally the constraint-solving is viewed as a gadget to postpone problems that can't be solved at the moment, and not the center piece of the elaboration procedure.
-This can be primarily observed in the design of the [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301), where the code around it relies on the typechecker to call it at the point where it is needed.
+The examples above show that when building a dependently-typed language while the core might be perfectly elegant and simple, the features that appear on top of it complicate the design.
+And while metavariables and unification constraints solve some of them, in the end it is not a satisfactory resolution.
 
-Our core idea to build the new design is to put the constraint solving at the very heart of the elaborator.
+One can also observe that the while the code above might rely constraints the design at large doesn't put at the center of the picture and instead is primarily seen as a gadget.
+To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the typechecker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
 
-* Mention "Data-types a-la carte" [@swierstraDataTypesCarte2008]?
-* Do we tackle anything mentioned in [@henryModularizingGHC]?
-* There's a potential for [@najdTreesThatGrow2017], make a decision whether we're implementing it or not.
+Our idea for a new design is to:
+
+1. Give a stable API for raising constraints so that instead of the typechecker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.
+
+2. Make constraints an exntesible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define a new solvers with the ability to specify what they match on.
+
+In the examples in this paper we follow the bidirectional style of the type-checking, but in practice the design decisions are agnostic of the underlying system, as long as it adheres to the principle of asking for anything it needs by raising a constraint.
+
+For the purposes of this presentation, we write a typechecker for a dependently-typed language with support for metavariables and show how to extend it to include implicit arguments, typeclasses and potentially other features.
+We show more complex features in the [Case Studies section](#section_casestudies) and some basic examples of how the system works below:
+
+For the purposes of the base language it suffices to have the following two classes:
+
+``` haskell
+-- two terms given should be equal
+data EqualityConstraint e =
+     EqualityConstraint Syntax.Term Syntax.Term
+                        Syntax.Type
+
+-- this terms has to be filled in
+data FillInTheTerm e =
+     FillInTheTerm Syntax.Term Syntax.Type
+```
+
+We also provide an additional constraint that is resolved to the equality one: \todo{hash it out in the implementation}
+
+``` haskell
+-- the term passed to the constraint should be a type cosntructor
+data TypeConstructorConstraint e = TConConstraint Syntax.Term
+```
+
+The typechecker raises them supplying the information necessary, but agnostic of how they'll be solved.
+
+On the solver side we provide a suite of unification solvers that handle different cases of the problem: \todo{this is mock code, go over it once all is implemented}
+
+Let's take a look at the simplest example -- syntactically equal terms.
+
+``` haskell
+-- solves syntactically equal terms
+syntacticSolverHandler :: (EqualityConstraint :<: c)
+                       => Constraint c -> MonadElab Bool
+syntacticSolver :: (EqualityConstraint :<: c)
+                => Constraint c -> MonadElab Bool
+syntactic :: Plugin
+syntactic  = Plugin { solver  = syntacticSolver
+                    , handler = syntacticSolverHandler
+                    ...
+                    }
+```
+
+We first define the class of constraints that can will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
+In this case this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
+Then we define the solver itself.
+Which in this case doesn't have to do anything except to mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
+Finally, we register the solver by declaring it using a plugin interface.
+This plugin symbol will be picked up by the linker and registered at the runtime.
+
+In a similar fashion, we can define solvers that only work on problems where one of the sides is a metavariable:
+
+``` haskell
+-- solve cases when one side is a metavariable
+unifySolverL :: (EqualityConstraint :<: c)
+             => Constraint c -> MonadElab Bool
+unifySolverR :: (EqualityConstraint :<: c)
+             => Constraint c -> MonadElab Bool
+unifySolverLHandler :: (EqualityConstraint :<: c)
+                    => Constraint c -> MonadElab Bool
+unifySolverRHandler :: (EqualityConstraint :<: c)
+                    => Constraint c -> MonadElab Bool
+...
+```
+
+Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
+If both of those steps are successful we can return `True` and the constraint will be marked as solved.
+
+In the cases above we don't have to worry about order, since the problems they match on don't overlap.
+In the case they don't we can provide priority preferences:
+
+``` haskell
+complexSolver1 :: Constraint c -> MonadElab Bool
+complexHandler1 :: Constraint c -> MonadElab Bool
+complexSymbol1 = "complexSolver1"
+complex1 = Plugin { ...
+                  , symbol   = complexSymbol1
+                  , precedes = [unifySolverLS, unifySolverRS]
+                  , succedes = []
+                  }
+
+complexSolver2 :: Constraint c -> MonadElab Bool
+complexHandler2 :: Constraint c -> MonadElab Bool
+complexSymbol2 = "complexSolver2"
+complex2 = Plugin { ...
+                  , symbol   = complexSymbol2
+                  , precedes = [complexSymbol1]
+                  , succedes = []
+                  }
+```
+
+At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
+
+From birds-eye view the architecture looks as depicted in the [Figure 1](#architecture-figure) \todo{redraw the diagram in tikz and figure out numbering}
+
+![Architecture diagram](architecture-diagram.svg){#architecture-figure width=75%}
+
+Here the Solver Director is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
+
 
 # Dependently-typed calculus and bidirectional typing # {#section_bidirectional}
 
@@ -307,7 +414,7 @@ Therefore we're left with three parts: parser, elaborator and core typechecker.
 
 We see parser or syntax extensibility as a necessary part of an extensible language.
 This problem has been studied extensively in the past and has a multitude of existing solutions.
-Macros are one of them and are utilized heavily in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020a] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+Macros are one of them and are utilized heavily in various forms in almost all established languages [@teamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
 
 Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
 Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality, but is quite far from a usable dependently-typed language.
@@ -323,7 +430,7 @@ Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants
 
 Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change.
 
-Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020a].
+Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020].
 They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
 In a way, this is an imperative view on extensibility.
 

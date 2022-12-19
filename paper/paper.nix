@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-{ stdenv, lib, pandoc, texlive, biber,
+{ stdenv, pandoc, texlive,
+  librsvg, biber,
   makeFontsConf, source-serif, source-sans, source-code-pro}:
 let texlive-combined = texlive.combine { inherit (texlive)
       scheme-basic xetex latexmk
@@ -16,7 +17,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       fancyvrb # fancy verbatim text
       ; };
     extraTexInputs = [ ];
-    extraBuildInputs = [ ];
+    extraBuildInputs = [ librsvg biber];
 in stdenv.mkDerivation ({
 
   name = "extensible-elaborator-paper";
@@ -25,7 +26,7 @@ in stdenv.mkDerivation ({
     ./.;
 
   nativeBuildInputs =
-    [ pandoc texlive-combined biber ] ++  extraBuildInputs;
+    [ pandoc texlive-combined ] ++  extraBuildInputs;
 
   buildPhase = ''
     make main.pdf
