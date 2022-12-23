@@ -339,7 +339,11 @@ From birds-eye view the architecture looks as depicted in the [Figure 1](#archit
 
 ![Architecture diagram](architecture-diagram.svg){#architecture-figure width=75%}
 
-Here the Solver Director is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
+
+In the diagram typechecker is precisely the part that implements syntax-driven traversal of the term.
+It can raise a constraint that gets registered by the Solver Director.
+Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
+All of the components have some read access to the state, including Solver that might e.g. verify that there are no additional constraints on the meta.
 
 
 # Dependently-typed calculus and bidirectional typing # {#section_bidirectional}
