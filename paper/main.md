@@ -355,14 +355,53 @@ We leave the core rules intact and therefore, the core calculus too.
 This is dependently-typed calculus that includes Pi, Sigma and indexed inductive types.
 Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
 
+**Plan**:
+
+* Describe core rules, give a big figure with all of them
+* Describe the addition of basic implicits, that are solved by the unifier
+* Can we say anything about this calculus? Is type-checking decidable?
 
 # Case-studies # {#section_casestudies}
 
+**Plan**: in this section we start gradually building up some features while introducing the features gradually while showing parts of the system
+
+## Conversion relation ##
+
+**Plan**:
+
+* show the actual implementation of simple syntactic solver
+* list all the solvers we have for conversion/unification
+* describe their interactions with priorities
+* memoization of results?
+
 ## Implicit arguments ##
+
+**Plan**:
+
+* showcase how exactly simplest implicits are solved with unification
+* show what we need the pre-processor to produce
+  * one option here is what's described in section 1, to translate
+    ```
+    def f : {a : A} -> B a -> C
+    
+    def f : (A : Implicit Type) -> (a : Implicit (deImp A)) -> (b : B (deIpm a)) -> C
+    ```
+  * the other option is to make `Implcit A` compute to `A` and make solvers not eager to reduce.
+    In that case `deImp` is unnecessary.
+* implement tactic arguments with a custom solver for each tactic, like one that just exhaustively searches constructors
 
 ## Type classes ##
 
+**Plan**:
+
+* show what we have to desugar instance and typeclass declarations to similar to section 1, but more general
+* show the implementation of the solvers
+* showcase two alternative definitions of the typeclass resolution?
+* can we extend this to canonical structures here?
+
 # Limitations # {#section_limitations}
+
+**Plan**: this section is about limitations of this approach and what doesn't easily fit in this framework
 
 ## Handling of meta-variables outside of definition sites ##
 
