@@ -431,6 +431,10 @@ This includes type inference, implicit arguments inference, type classes, tactic
 Elaborators are often structured similarly to the core typechecker, i.e. following a bidirectional discipline of some sort. One can see that in Agda [@norellPracticalProgrammingLanguage2007], Matita [@tassiBiDirectionalRefinementAlgorithm2012], or in a paper by @ferreiraBidirectionalElaborationDependently2014.
 
 Coq [@teamCoqProofAssistant2022] being one of the most popular proof asssistants gained a lot of pace in development from investing effort into user-facing efforts: work on tactics like new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
+However, the implementation is quite hard to extend.
+One either has to modify the source code, which is mostly limited to the core development team, as seen from the [graph](https://github.com/coq/coq/graphs/contributors).
+Or one has to use Coq plugins system.
+Which is notoriously hard to get right \todo{this needs a citation} and in the end gave rise to TemplateCoq [@malechaExtensibleProofEngineering2014].
 
 Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change.
 
