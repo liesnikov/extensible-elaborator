@@ -349,9 +349,8 @@ All of the components have some read access to the state, including Solver that 
 # Dependently-typed calculus and bidirectional typing # {#section_bidirectional}
 
 In this section we describe the core for type system we implement as well as the core typing rules.
-This work is based off pi-forall [@weirichImplementingDependentTypes2022] implementation.
-
-We leave the core rules intact and therefore, the core calculus too.
+We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and add metavariables and implicits to it.
+However, for all other purposes we leave the core rules intact and therefore, the core calculus too.
 This is dependently-typed calculus that includes Pi, Sigma and indexed inductive types.
 Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
 
@@ -436,7 +435,7 @@ That is, unless one essentially renders macros and writes their own typechecking
 
 In order to gain this extra bit of flexibility we provide `inferType` case for lambdas, even though our base language doesn't use it. \todo{actually write this case}
 
-## Reliance of the pre-processor ##
+## Eager reduction and reliance on the pre-processor ##
 
 This work crucially relies on a pre-processor of some kind, be it macro expansion or some other way to extend the parser with custom desugaring rules.
 In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity.
@@ -445,6 +444,8 @@ This can impact performance.
 
 Alternatively, one can imagine a system where constraint solvers are latching onto non-reduced types and terms in constraints.
 In that case we can get around with a trick borrowed from Coq, where `coerce _ t` computes to `_ t`, but since we typechecked an unreduced application the search will still be launched on the right form.
+
+This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`
 
 # Related work # {#section_related_work}
 
@@ -475,23 +476,26 @@ One either has to modify the source code, which is mostly limited to the core de
 Or one has to use Coq plugins system.
 Which is notoriously hard to get right \todo{this needs a citation} and in the end gave rise to TemplateCoq [@malechaExtensibleProofEngineering2014].
 
-Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change.
+Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change. \todo{there's a better argument to be made here}
 
 Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020].
 They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
 In a way, this is an imperative view on extensibility.
 
-Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second.
-
+Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second and doesn't provide either a plugin, or hook system at all \todo{citation}.
 
 # Future work #
 
 There are some things we leave for future work.
 
-* Coercive subtyping as implemented in Matita [@tassiBiDirectionalRefinementAlgorithm2012]
-* Erasure inference [@tejiscakDependentlyTypedCalculus2020]
-* Rendering of macros as constraints
-* Mapping constraint solving onto a concurrent execution model. Use LVars here [@kuperLatticebasedDataStructures2015] here, similar to what TypOS [@allaisTypOSOperatingSystem2022a] is doing?
+* Implement erasure inference [@tejiscakDependentlyTypedCalculus2020]?
+* Implement Canonical structures [@mahboubiCanonicalStructuresWorking2013]?
+* Rendering of macros as constraints?
+  Map a macro to an implicit term with the right kind of annotation in the type, to get the right expander as elaboration procedure?
+* Mapping constraint solving onto a concurrent execution model.
+  Use LVars here [@kuperLatticebasedDataStructures2015] here, similar to what TypOS [@allaisTypOSOperatingSystem2022a] is doing?
+
+# References #
 
 ::: {#refs}
 :::
