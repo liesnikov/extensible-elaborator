@@ -25,8 +25,8 @@ header-includes: |
 
 \begin{abstract}
 
-We present a new design for compilers for dependently-typed languages based on the idea of open datatype for constraints.
-This allows for more compact base elaborator implementation while enabling extensions to the type system.
+We present a new design for compilers for dependently-typed languages based on the idea of an open datatype for constraints.
+This allows for a more compact base elaborator implementation while enabling extensions to the type system.
 We don't require modifications to the core of type-checker, therefore preserving safety of the language.
 
 \end{abstract}
@@ -36,7 +36,7 @@ We don't require modifications to the core of type-checker, therefore preserving
 
 Staticly-typed languages allow us to specify the behaviour of our programs more precisely.
 This comes with the benefit of more static guarantees but with an increased toll on the user to supply more precise information.
-Since the type of our program is part of the specification but we can make use of the information in the type we can make use of the type to infer parts of our program.
+Since the type of our program is part of the specification we can make use of this information to infer parts of our program.
 This follows the idea of Connor McBride to "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
 
 Examples of these include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
@@ -71,7 +71,7 @@ We hope this goes towards understanding the art and science of implementing depe
 Making the implementations of different features of the language more independent.
 This design separates the what the solvers are doing from the when.
 Making it explicit what are the interaction points between them where the developer has to pay attention.
-This might inspire a library or a DSL for implementing dependently-typed languages.
+We hope this inspires a library or a DSL for implementing dependently-typed languages.
 
 # Constraint-based elaboration and design choices # {#section_constraint_elaboration}
 
@@ -94,15 +94,16 @@ In this section, we present some typical design challenges that come up while bu
 During function application type-checking there may be different kinds of arguments to process, for example, instance arguments, implicit arguments, or tactic arguments.
 If we start from a simple case of type-checking an application of a function symbol to regular arguments, every next extension requires to be handled in a special case.
 
-Take Agda as an example: when checking an application during the [insertion of implicit arguments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L99-L127) we already have to carry the information on how the argument will be resolved and then create a [new kind of meta variable](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150) for each of those cases.
+Take Agda as an example: when checking an application during the [insertion of implicit arguments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L99-L127) we already have to carry the information on how the argument will be resolved and then create a [specific kind of placeholder terms ](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150) for each of those cases.
+This kind of placeholder is commonly referred to as _metavariable_ [@norellPracticalProgrammingLanguage2007 chap. 3].
 
 Instead of handling every kind of metavariable in a distinct way we uniformly dispatch a search for the solution, which is then handled by the constraint solvers (in contrast with Idris [@bradyIdrisGeneralpurposeDependently2013 chap. ?], see more in the [Related work section](#section_related_work)).
 We achieve this by creating metavariables for the unknown terms and then raising a constraint for the meta containing the type of the meta.
-This constraint can be latched on by the right solver based on this type. 
+This constraint can be latched on by the right solver based on this type.
 
 In this view, the elaborator for the application of a function doesn't have to know anything about the implicits at all.
 The only thing we require is that the elaboration of the argument is called with the type information available.
-This corresponds to how in bidrectional typing function application is done in the inference mode but the arguments are processed in checking mode.
+This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
 
 ``` haskell
 inferType (App t1 t2) = do
@@ -239,7 +240,7 @@ Our idea for a new design is to:
 
 2. Make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
 
-In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of asking for anything it needs by raising a constraint.
+In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
 For the purposes of this presentation, we write a type-checker for a dependently-typed language with support for metavariables and show how to extend it to include implicit arguments, type-classes and potentially other features.
 We show more complex features in the [Case Studies section](#section_casestudies) and some basic examples of how the system works below:
@@ -287,6 +288,7 @@ We first define the class of constraints that will be handled by the solver via 
 In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself.
 Which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
+The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state. \todo{make the types adhere to this paradigm}
 Finally, we register the solver by declaring it using a plugin interface.
 This plugin symbol will be picked up by the linker and registered at the runtime.
 
