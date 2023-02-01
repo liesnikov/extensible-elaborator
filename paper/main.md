@@ -476,7 +476,7 @@ One either has to modify the source code, which is mostly limited to the core de
 Or one has to use Coq plugins system.
 Which is notoriously hard to get right \todo{this needs a citation} and in the end gave rise to TemplateCoq [@malechaExtensibleProofEngineering2014].
 
-Agda introduced a lot of experimental features, but isn't very modular [@HeavyCouplingHaskell], which hinders further change. \todo{there's a better argument to be made here}
+Agda introduced a lot of experimental features, but isn't very modular [@robertestelleHeavyCouplingHaskell2019], which hinders further change. \todo{there's a better argument to be made here}
 
 Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020].
 They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
