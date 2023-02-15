@@ -211,9 +211,11 @@ inferType (S.DCon c args) = do
   matches <- SA.lookupDConAll c
   case matches of
     [(tname, (I.Telescope [], I.ConstructorDef _ _ (I.Telescope deltai)))] -> do
-      -- insert a call to checkType (S.DCon c args) (I.TCon tname ...)?
-      -- can't do that because we don't know the intended parameters of the type
+      -- Can we just insert a call to checkType (S.DCon c args) (I.TCon tname ...)?
+      -- No, can't do that because we don't know the intended parameters of the type
       -- that's why we only match on I.Telescope [], i.e. when there are no parameters
+      -- but in discussion with @Jesper it seems possible to infer some of them
+      -- have to check with my notes
       let numArgs = length deltai
       unless (length args == numArgs) $
         Env.err
