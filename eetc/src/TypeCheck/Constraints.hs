@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators, TypeApplications #-}
 module TypeCheck.Constraints ( ConstraintF
                              , ConstraintId
                              , EmptyConstraint(..)
@@ -115,15 +115,21 @@ instance (Disp1 f, Disp1 g) => Disp1 (f :+: g) where
 
 class (Functor sub, Functor sup) => (El sub sup) where
    injel :: sub a -> sup a
+   prjel :: sup a -> Maybe (sub a)
 
 instance (Functor e) => El e e where
   injel = id
+  prjel = Just
 
 instance (Functor e, Functor h, Functor t, El e t) => (El e (h :+: t)) where
   injel = Inr . injel
+  prjel (Inr tl) = prjel tl
+  prjel _        = Nothing
 
 instance {-# OVERLAPPING #-} (Functor e, Functor t) => (El e (e :+: t)) where
   injel = Inl
+  prjel (Inl el) = Just el
+  prjel _ = Nothing
 
 
 {- Here the reasoning for pragmas is similar:
@@ -137,17 +143,27 @@ instance {-# OVERLAPPING #-} (Functor e, Functor t) => (El e (e :+: t)) where
 
 class (Functor sub, Functor sup) => (sub :<: sup) where
   inj :: sub a -> sup a
+  prj :: sup a -> Maybe (sub a)
 
 instance (Functor el, Functor list, El el list) => el :<: list where
   inj = injel
+  prj = prjel
 
-instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl, El hl rl, ll :<: rl) => (hl :+: ll) :<: rl where
+instance {-# OVERLAPPING #-} (Functor hl, Functor ll, Functor rl,
+                              El hl rl, ll :<: rl) => (hl :+: ll) :<: rl where
   inj (Inl a) = injel a
   inj (Inr b) = inj b
+  prj r = case prjel r of
+    Just h -> Just . Inl $ h
+    Nothing -> case prj @ll @rl r of
+      Just l -> Just . Inr $ l
+      Nothing -> Nothing
 
 inject :: (g :<: f) => ConstraintId -> g (ConstraintF f ) -> ConstraintF f
 inject cid = In cid . inj
 
+match :: (g :<: f) => ConstraintF f -> Maybe (g (ConstraintF f ))
+match (In _ t) = prj t
 
 -- Pretty-printing boilerplate
 
