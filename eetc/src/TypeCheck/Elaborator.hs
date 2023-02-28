@@ -24,7 +24,9 @@ import qualified TypeCheck.ConstraintsActions as CA
 import           TypeCheck.Monad ( MonadElab
                                  , createMetaVar
                                  , asksTcNames
-                                 , modifyTcNames )
+                                 , modifyTcNames
+                                 , solveAllConstraints
+                                 )
 
 transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
@@ -513,10 +515,12 @@ checkType (S.Case scrut alts) ty = do
           -- could fail if branch is in-accessible
           --FIXME
           let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
-              unify ln at bt = Env.warn [DS "supposed to unify",
-                                         DD at,
-                                         DD bt,
-                                         DS "for now pretending that they are the same"]
+              unify ln at bt = do
+                Env.warn [DS "supposed to unify",
+                           DD at,
+                           DD bt,
+                           DS "for now pretending that they are the same"]
+                return []
           decls' <- unify [] escrut' (pat2Term epat)
           ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
           let ebnd = Unbound.bind epat ebody
@@ -646,10 +650,12 @@ doSubst ss (I.Def x ty : tele') = do
   let ty' = Unbound.substs ss ty
   --FIXME
   let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
-      unify ln at bt = Env.warn [DS "supposed to unify",
-                                 DD at,
-                                 DD bt,
-                                 DS "for now pretending that they are the same"]
+      unify ln at bt = do
+        Env.warn [DS "supposed to unify",
+                  DD at,
+                  DD bt,
+                  DS "for now pretending that they are the same"]
+        return []
   -- relying on a behaviour of unify to produce a Def when tx is a variable
   -- which it is here, so essentially the only thing this does is whnf-reduces the ty'
   -- and then adds (I.Dex tx whnfty') to the decls1
@@ -783,6 +789,7 @@ elabEntry (S.Def n term) = do
            in do
                 elabterm <- Env.extendCtx (I.TypeSig sig) $
                   checkType term (I.sigType sig) `catchError` handler
+                solveAllConstraints
                 return $ if en `elem` Unbound.toListOf Unbound.fv elabterm
                          -- FIXME
                          -- this would be a RecDef, but currently core is erroring out

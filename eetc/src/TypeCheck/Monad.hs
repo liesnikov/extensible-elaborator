@@ -131,6 +131,7 @@ class MonadConstraints cs m | m -> cs where
   createMetaVar :: MetaTag -> m MetaVarId
   lookupMetaVar :: MetaVarId -> m (Maybe (Meta I.Term))
   raiseConstraintMaybeFreeze :: (c :<: cs) => c (ConstraintF cs) -> Maybe (m ()) -> m ()
+  solveAllConstraints :: m ()
 
 raiseConstraint :: (MonadConstraints cs m, c :<: cs)
                 => c (ConstraintF cs) -> m ()
@@ -239,11 +240,19 @@ raiseConstraintMaybeFreezeTc cons freeze = do
       modifyTc (\s -> s { State.frozen =
                             Map.insert constraintId frozenproblem (State.frozen s)})
 
+solveAllConstraintsTc :: TcMonad cs ()
+solveAllConstraintsTc = do
+  cons <- fmap State.constraints getTc
+--  error [DS "After checking an entry there are unsolved constraints",
+--         DD cons
+--        ]
+  return ()
 
 instance MonadConstraints c (TcMonad c) where
   createMetaVar   = createMetaVarFresh
   lookupMetaVar   = lookupMetaVarTc
   raiseConstraintMaybeFreeze = raiseConstraintMaybeFreezeTc
+  solveAllConstraints = solveAllConstraintsTc
 
 
 type MonadTcCore m = (MonadTcReaderEnv m,
