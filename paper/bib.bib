@@ -7,7 +7,7 @@
   abstract = {We present a dependent type theory for which termination checking is entirely type-based, through the use of sized types. Sizes are absent from terms to ensure they are irrelevant for computation and reasoning. The novelty of our approach is the combination of first class size quantification ∀ i → T and dependent types, justified by a predicative semantics.},
   eventtitle = {{{TYPES}}'16},
   langid = {english},
-  file = {/home/bohdan/Zotero/storage/PTD4ER88/Abel and Winterhalter - An Extension of Martin-Löf Type Theory with Sized .pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Abel_Winterhalter/2016/Abel_Winterhalter_2016_An Extension of Martin-Löf Type Theory with Sized Types.pdf}
 }
 
 @inproceedings{abelHigherOrderDynamicPattern2011,
@@ -176,7 +176,7 @@
   urldate = {2021-06-02},
   abstract = {Many components of a dependently typed programming language are by now well understood, for example, the underlying type theory, type checking, unification and evaluation. How to combine these components into a realistic and usable high-level language is, however, folklore, discovered anew by successive language implementors. In this paper, I describe the implementation of Idris, a new dependently typed functional programming language. Idris is intended to be a general-purpose programming language and as such provides high-level concepts such as implicit syntax, type classes and do notation. I describe the high-level language and the underlying type theory, and present a tactic-based method for elaborating concrete high-level syntax with implicit arguments and type classes into a fully explicit type theory. Furthermore, I show how this method facilitates the implementation of new high-level language constructs.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Brady/2013/Brady_2013_Idris, a general-purpose dependently typed programming language.pdf;/home/bohdan/Zotero/storage/6VMYT24X/418409138B4452969AC0736DB0A2C238.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Brady/2013/Brady_2013_Idris, a general-purpose dependently typed programming language.pdf}
 }
 
 @article{changDependentTypeSystems2019,
@@ -230,7 +230,7 @@
   urldate = {2022-11-02},
   abstract = {In a dependently typed language, we can guarantee correctness of our programmes by providing formal proofs. To check them, the typechecker elaborates these programs and proofs into a low-level core language. However, this core language is by nature hard to understand by mere humans, so how can we know we proved the right thing? This question occurs in particular for dependent copattern matching, a powerful language construct for writing programmes and proofs by dependent case analysis and mixed induction/coinduction. A definition by copattern matching consists of a list of clauses that are elaborated to a case tree, which can be further translated to primitive eliminators. In previous work this second step has received a lot of attention, but the first step has been mostly ignored so far. We present an algorithm elaborating definitions by dependent copattern matching to a core language with inductive data types, coinductive record types, an identity type, and constants defined by well-typed case trees. To ensure correctness, we prove that elaboration preserves the first-match semantics of the user clauses. Based on this theoretical work, we reimplement the algorithm used by Agda to check left-hand sides of definitions by pattern matching. The new implementation is at the same time more general and less complex, and fixes a number of bugs and usability issues with the old version. Thus, we take another step towards the formally verified implementation of a practical dependently typed language.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching.pdf;/home/bohdan/Zotero/storage/QG7VDBAT/F13CECDAB2B6200135D45452CA44A8B3.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Cockx_Abel/2020/Cockx_Abel_2020_Elaborating dependent (co)pattern matching.pdf}
 }
 
 @online{coqdevelopmentteamHowWritePlugins,
@@ -296,6 +296,16 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ferreira_Pientka/2014/Ferreira_Pientka_2014_Bidirectional Elaboration of Dependently Typed Programs.pdf}
 }
 
+@software{francescomazzoliTog2017,
+  title = {Tog},
+  author = {{Francesco Mazzoli}},
+  date = {2017},
+  url = {https://github.com/bitonic/tog},
+  urldate = {2023-02-03},
+  abstract = {A prototypical implementation of dependent types},
+  version = {0.1.0}
+}
+
 @software{frisbyNfrisbyCoxswain2022,
   title = {Nfrisby/Coxswain},
   author = {Frisby, Nicolas},
@@ -357,7 +367,7 @@
   urldate = {2021-03-24},
   abstract = {In this paper we are interested in high-level programming languages to implement the core components of an interactive theorem prover for a dependently typed language: the kernel — responsible for type-checking closed terms — and the elaborator — that manipulates terms with holes or, equivalently, partial proof terms. In the first part of the paper we confirm that λProlog, the language developed by Miller and Nadathur since the 80s, is extremely suitable for implementing the kernel, even when efficient techniques like reduction machines are employed. In the second part of the paper we turn our attention to the elaborator and we observe that the eager generative semantics inherited by Prolog makes it impossible to reason by induction over terms containing metavariables. We also conclude that the minimal extension to λProlog that allows to do so is the possibility to delay inductive predicates over flexible terms, turning them into (set of) constraints to be propagated according to user provided constraint propagation rules. Therefore we propose extensions to λProlog to declare and manipulate higher order constraints, and we implement the proposed extensions in the ELPI system. Our test case is the implementation of an elaborator for a type theory as a CLP extension to a kernel written in plain λProlog.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Guidi et al/2017/Guidi et al_2017_Implementing Type Theory in Higher Order Constraint Logic Programming.pdf;/home/bohdan/Zotero/storage/LUD3BH7S/hal-01410567v2.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Guidi et al/2017/Guidi et al_2017_Implementing Type Theory in Higher Order Constraint Logic Programming.pdf}
 }
 
 @software{guillaumeallaisTypOS2022,
@@ -369,6 +379,25 @@
   urldate = {2022-10-04},
   abstract = {being an operating system for typechecking processes},
   organization = {{MSP group}}
+}
+
+@unpublished{gundryTutorialImplementationDynamic,
+  title = {A Tutorial Implementation of Dynamic Pattern Unification},
+  author = {Gundry, Adam and McBride, Conor},
+  abstract = {A higher-order unification algorithm is an essential component of a dependently typed programming language implementation, and understanding its capabilities is important if dependently typed programmers are to become productive. Miller showed that, for simply typed λ-terms in the pattern fragment (where metavariables are applied to spines of distinct bound variables), unification is decidable and most general unifiers exist. We describe an algorithm for pattern unification in a full-spectrum dependent type theory with dependent pairs (Σ-types). The algorithm exploits heterogeneous equality and a novel concept of ‘twin’ free variables to handle dependency. Moreover, it supports dynamic management of constraints, postponing equations that fall outside the pattern fragment in case other equations make them simpler. We aim to make sense both to language implementors and users, and to this end present our algorithm as a Haskell program.},
+  howpublished = {Paper draft},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Gundry_McBride/undefined/Gundry_McBride_A tutorial implementation of dynamic pattern uniﬁcation.pdf}
+}
+
+@thesis{gundryTypeInferenceHaskell2013,
+  type = {phdthesis},
+  title = {Type {{Inference}}, {{Haskell}} and {{Dependent Types}}},
+  author = {Gundry, Adam Michael},
+  date = {2013},
+  institution = {{University of Strathclyde}},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Gundry/2013/Gundry_2013_Type Inference, Haskell and Dependent Types.pdf}
 }
 
 @misc{henryModularizingGHC,
@@ -407,7 +436,19 @@
   urldate = {2022-06-28},
   abstract = {The Haskell compiler GHC includes a type inference engine for a rather sophisticated type system.~ You might worry that a complicated type system leads to a very complicated type inference engine. ~ You’d be right, but we have learned a lot about how to structure type inference so that the complexity does not get out […]},
   langid = {american},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf;/home/bohdan/Zotero/storage/7PNMILIF/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf}
+}
+
+@thesis{juanPracticalUnificationDependent2020,
+  title = {Practical {{Unification}} for {{Dependent Type Checking}}},
+  author = {Juan, Víctor López},
+  date = {2020},
+  institution = {{Chalmers University of Technology}},
+  url = {https://research.chalmers.se/en/publication/519011},
+  urldate = {2023-02-17},
+  abstract = {When using popular dependently-typed languages such as Agda, Idris or Coq to write a proof or a program, some function arguments can be omitted, both to decrease code size and to improve readability. Type checking such a program involves inferring a combination of these implicit arguments that makes the program type-correct.{$<$}br /{$><$}br /{$>$}Finding such a combination of implicit arguments entails solving a higher-order unification problem.{$<$}br /{$>$}Because higher-order unification is undecidable, our aim is to infer the omitted arguments for as many programs as possible with a reasonable use of computational resources. The extent to which{$<$}br /{$>$}these goals are achieved affect how usable a dependently-typed proof assistant or programming language is in practice.{$<$}br /{$><$}br /{$>$}Current approaches to higher-order unification are in some cases too inflexible, postponing unification of terms until their types have been unified (Coq, Idris). In other cases they are too optimistic, which sometimes leads to ill-typed terms that break internal invariants (Agda).{$<$}br /{$><$}br /{$>$}In order to increase the flexibility of our unifier without sacrificing soundness, we use the twin types technique by Gundry and McBride. We simplify their approach so that it can be used within an existing type{$<$}br /{$>$}theory without changes to the syntax of terms. We also extend it so that it can handle more classes of constraints. We show that the resulting solutions are correct and unique.{$<$}br /{$><$}br /{$>$}Finally, we implement the resulting unification algorithm on an existing type checker prototype for a smaller variant of the Agda language, developed by Mazzoli and Abel. We make a suitable choice of internal term representation, and use few, if any, example-specific optimizations. We obtain a type-checker which avoids ill-typed solutions, and is also able to handle some challenging examples in time and memory comparable to the existing Agda implementation.},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Juan/2020/Juan_2020_Practical Unification for Dependent Type Checking.pdf}
 }
 
 @article{koppelSearchingEntangledProgram2022,
@@ -469,7 +510,7 @@
   url = {https://doi.org/10.1007/978-3-642-39634-2_5},
   abstract = {This paper provides a gentle introduction to the art of programming type inference with the mechanism of Canonical Structures. Programmable type inference has been one of the key ingredients for the successful formalization of the Odd Order Theorem using the Coq proof assistant. The paper concludes comparing the language of Canonical Structures to the one of Type Classes and Unification Hints.},
   isbn = {978-3-642-39633-5},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Mahboubi_Tassi/2013/Mahboubi_Tassi_2013_Canonical Structures for the Working Coq User.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Mahboubi_Tassi/2013/Mahboubi_Tassi_2013_Canonical structures for the working coq user.pdf}
 }
 
 @thesis{malechaExtensibleProofEngineering2014,
@@ -483,6 +524,24 @@
   abstract = {We increasingly rely on large, complex systems in our daily lives---from the computers that park our cars to the medical devices that regulate insulin levels to the servers that store our personal information in the cloud. As these systems grow, they become too complex for a person to understand, yet it is essential that they are correct. Proof assistants are tools that let us specify properties about complex systems and build, maintain, and check proofs of these properties in a rigorous way. Proof assistants achieve this level of rigor for a wide range of properties by requiring detailed certificates (proofs) that can be easily checked. In this dissertation, I describe a technique for compositionally building extensible automation within a foundational proof assistant for intensional type theory. My technique builds on computational reflection---where properties are checked by verified programs---which effectively bridges the gap between the low-level reasoning that is native to the proof assistant and the interesting, high-level properties of real systems. Building automation within a proof assistant provides a rigorous foundation that makes it possible to compose and extend the automation with other tools (including humans). However, previous approaches require using low-level proofs to compose different automation which limits scalability. My techniques allow for reasoning at a higher level about composing automation, which enables more scalable reflective reasoning. I demonstrate these techniques through a series of case studies centered around tasks in program verification.},
   pagetotal = {195},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Malecha/2014/Malecha_2014_Extensible Proof Engineering in Intensional Type Theory.pdf}
+}
+
+@misc{mazzoliTypeCheckingUnification2016,
+  title = {Type Checking through Unification},
+  author = {Mazzoli, Francesco and Abel, Andreas},
+  date = {2016-09-30},
+  number = {arXiv:1609.09709},
+  eprint = {1609.09709},
+  eprinttype = {arxiv},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.1609.09709},
+  url = {http://arxiv.org/abs/1609.09709},
+  urldate = {2023-02-09},
+  abstract = {In this paper we describe how to leverage higher-order unification to type check a dependently typed language with meta-variables. The literature usually presents the unification algorithm as a standalone component, however the need to check definitional equality of terms while type checking gives rise to a tight interplay between type checking and unification. This interplay is a major source of complexity in the type-checking algorithm for existing dependently typed programming languages. We propose an algorithm that encodes a type-checking problem entirely in the form of unification constraints, reducing the complexity of the type-checking code by taking advantage of higher order unification, which is already part of the implementation of many dependently typed languages.},
+  archiveprefix = {arXiv},
+  keywords = {Computer Science - Programming Languages},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Mazzoli_Abel/2016/Mazzoli_Abel_2016_Type checking through unification.pdf}
 }
 
 @incollection{mcbrideEpigramPracticalProgramming2005,
@@ -502,7 +561,24 @@
   urldate = {2022-12-06},
   isbn = {978-3-540-28540-3 978-3-540-31872-9},
   langid = {english},
-  file = {/home/bohdan/Zotero/storage/B6323RDS/McBride - 2005 - Epigram Practical Programming with Dependent Type.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/McBride/2005/McBride_2005_Epigram.pdf}
+}
+
+@article{millerLogicProgrammingLanguage1991,
+  title = {A {{Logic Programming Language}} with {{Lambda-Abstraction}}, {{Function Variables}}, and {{Simple Unification}}},
+  author = {Miller, Dale},
+  date = {1991-09-01},
+  journaltitle = {Journal of Logic and Computation},
+  shortjournal = {Journal of Logic and Computation},
+  volume = {1},
+  number = {4},
+  pages = {497--536},
+  issn = {0955-792X},
+  doi = {10.1093/logcom/1.4.497},
+  url = {https://doi.org/10.1093/logcom/1.4.497},
+  urldate = {2023-02-06},
+  abstract = {It has been argued elsewhere that a logic programming language with function variables and λ-abstractions within terms makes a good meta-programming language, especially when an object-language contains notions of bound variables and scope. The λProlog logic programming language and the related Elf and Isabelle systems provide meta-programs with both function variables and λ-abstractions by containing implementations of higher order unification. This paper presents a logic programming language, called Lλ, that also contains both function variables and λ-abstractions, although certain restrictions are placed on occurrences of function variables. As a result of these restrictions, an implementation of Lλdoes not need to implement full higher-order unification. Instead, an extension to first-order unification that respects bound variable names and scopes is all that is required. Such unification problems are shown to be decidable and to possess most general unifiers when unifiers exist. A unification algorithm and logic programming interpreter are described and proved correct. Several examples of using Lλ as a meta-programming language are presented.},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Miller/1991/Miller_1991_A Logic Programming Language with Lambda-Abstraction, Function Variables, and.pdf}
 }
 
 @inproceedings{mouraLeanTheoremProver2021,
@@ -692,7 +768,7 @@
   abstract = {Development of formal proofs of correctness of programs can increase actual and perceived reliability and facilitate better understanding of program specifications and their underlying assumptions. Tools supporting such development have been available for over 40 years, but have only recently seen wide practical use. Projects based on construction of machine-checked formal proofs are now reaching an unprecedented scale, comparable to large software projects, which leads to new challenges in proof development and maintenance. Despite its increasing importance, the field of proof engineering is seldom considered in its own right; related theories, techniques, and tools span many fields and venues. This survey of the literature presents a holistic understanding of proof engineering for program correctness, covering impact in practice, foundations, proof automation, proof organization, and practical proof development.},
   archiveprefix = {arXiv},
   keywords = {Computer Science - Logic in Computer Science,Computer Science - Programming Languages,D.2.4,F.3.1,I.2.3},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ringer et al/2019/Ringer et al_2019_QED at Large.pdf;/home/bohdan/Zotero/storage/8URS22FC/2003.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ringer et al/2019/Ringer et al_2019_QED at Large.pdf}
 }
 
 @online{robertestelleHeavyCouplingHaskell2019,
@@ -721,7 +797,7 @@
   abstract = {Typeclasses provide an elegant and effective way of managing ad-hoc polymorphism in both programming languages and interactive proof assistants. However, the increasingly sophisticated uses of typeclasses within proof assistants, especially within Lean's burgeoning mathematics library, mathlib, have elevated once-theoretical limitations of existing typeclass resolution procedures into major impediments to ongoing progress. The two most devastating limitations of existing procedures are exponential running times in the presence of diamonds and divergence in the presence of cycles. We present a new procedure, tabled typeclass resolution, that solves both problems by tabling, which is a generalization of memoizing originally introduced to address similar limitations of early logic programming systems. We have implemented our procedure for the upcoming version (v4) of Lean, and have confirmed empirically that our implementation is exponentially faster than existing systems in the presence of diamonds. Although tabling is notoriously difficult to implement, our procedure is notably lightweight and could easily be implemented in other systems. We hope our new procedure facilitates even more sophisticated uses of typeclasses in both software development and interactive theorem proving.},
   archiveprefix = {arXiv},
   keywords = {Computer Science - Logic in Computer Science,Computer Science - Programming Languages},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Selsam et al/2020/Selsam et al_2020_Tabled Typeclass Resolution.pdf;/home/bohdan/Zotero/storage/36ELAYLP/2001.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Selsam et al/2020/Selsam et al_2020_Tabled Typeclass Resolution.pdf}
 }
 
 @article{serranoQuickLookImpredicativity2020,
@@ -801,7 +877,7 @@
   urldate = {2022-06-09},
   abstract = {This paper describes a technique for assembling both data types and functions from isolated individual components. We also explore how the same technology can be used to combine free monads and, as a result, structure Haskell's monolithic IO monad.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Swierstra/2008/Swierstra_2008_Data types à la carte.pdf;/home/bohdan/Zotero/storage/USMDQ6VX/14416CB20C4637164EA9F77097909409.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Swierstra/2008/Swierstra_2008_Data types à la carte.pdf}
 }
 
 @article{tassiBiDirectionalRefinementAlgorithm2012,
@@ -900,6 +976,29 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ullrich_Moura/2021/Ullrich_Moura_2021_`do' Unchained.pdf}
 }
 
+@thesis{victorlopezjuanPracticalHeterogeneousUnification2021,
+  title = {Practical {{Heterogeneous Unification}} for {{Dependent Type Checking}}},
+  author = {{Víctor López Juan}},
+  date = {2021},
+  institution = {{Chalmers University of Technology}},
+  url = {https://research.chalmers.se/en/publication/527051},
+  urldate = {2023-02-03},
+  abstract = {Dependent types can specify in detail which inputs to a program are allowed, and how the properties of its output depend on the inputs. A program called the type checker assesses whether a program has a given type, thus detecting situations where the implementation of a program potentially differs from its intended behaviour. When using dependent types, the inputs to a program often occur in the types of other inputs or in the type of the output. The user may omit some of these redundant inputs when calling the program, expecting the type-checker to infer those subterms automatically. {$<$}br /{$><$}br /{$>$}Some type-checkers restrict the inference of missing subterms to those cases where there is a provably unique solution. This makes the process more predictable, but also limits the situations in which the omitted terms can be inferred; specially when considering that whether a unique solution exists is in general an undecidable problem. This restriction can be made less limiting by giving flexibility to the type-checker regarding the order in which the missing subterms are inferred. The type-checker can then use the information gained by filling in any one subterm in order to infer others, until the whole program has been type-checked. However, this flexibility may in some cases lead to ill-typed subterms being inferred, breaking internal invariants of the type-checker and causing it to crash or loop. The type checker could mitigate this by consistently rechecking the type of each inferred subterm, but this might incur a performance penalty.{$<$}br /{$>$} {$<$}br /{$>$}An approach by Gundry and McBride (2012) called twin types has the potential to afford the desired flexibility while preserving well-typedness invariants. However, this method had not yet been tested in a practical setting. In this thesis we streamline the method of twin types in order to ease its practical implementation, justify the correctness of our modifications, and then implement the result in an established dependently-typed language called Agda. We show that our implementation resolves certain existing bugs in Agda while still allowing a wide range of examples to be type-checked, and achieves this without heavily impacting performance.},
+  isbn = {9789179055837},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Víctor López Juan/2021/Víctor López Juan_2021_Practical Heterogeneous Unification for Dependent Type Checking.pdf}
+}
+
+@software{victorlopezjuanTog2020,
+  title = {{{Tog}}⁺},
+  author = {{Víctor López Juan}},
+  date = {2020-08-28},
+  url = {https://framagit.org/vlopez/togt},
+  urldate = {2023-02-08},
+  abstract = {Tog⁺ (pronounced tog-tee) is right now a laboratory to experiment in implementing dependent types. It is a variant/extension of tog.},
+  version = {1.0}
+}
+
 @article{vytiniotisOutsideInModularType2011,
   ids = {vytiniotisOutsideInModularType2011a},
   title = {{{OutsideIn}}({{X}}) {{Modular}} Type Inference with Local Assumptions},
@@ -916,7 +1015,7 @@
   urldate = {2021-06-15},
   abstract = {Advanced type system features, such as GADTs, type classes and type families, have proven to be invaluable language extensions for ensuring data invariants and program correctness. Unfortunately, they pose a tough problem for type inference when they are used as local type assumptions. Local type assumptions often result in the lack of principal types and cast the generalisation of local let-bindings prohibitively difficult to implement and specify. User-declared axioms only make this situation worse. In this paper, we explain the problems and – perhaps controversially – argue for abandoning local let-binding generalisation. We give empirical results that local let generalisation is only sporadically used by Haskell programmers. Moving on, we present a novel constraint-based type inference approach for local type assumptions. Our system, called OutsideIn(X), is parameterised over the particular underlying constraint domain X, in the same way as HM(X). This stratification allows us to use a common metatheory and inference algorithm. OutsideIn(X) extends the constraints of X by introducing implication constraints on top. We describe the strategy for solving these implication constraints, which, in turn, relies on a constraint solver for X. We characterise the properties of the constraint solver for X so that the resulting algorithm only accepts programs with principal types, even when the type system specification accepts programs that do not enjoy principal types. Going beyond the general framework, we give a particular constraint solver for X = type classes + GADTs + type families, a non-trivial challenge in its own right. This constraint solver has been implemented and distributed as part of GHC 7.},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions.pdf;/home/bohdan/Zotero/storage/SJYLB9DF/65110D74CF75563F91F9C68010604329.html}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Vytiniotis et al/2011/Vytiniotis et al_2011_OutsideIn(X) Modular type inference with local assumptions.pdf}
 }
 
 @unpublished{weirichImplementingDependentTypes2022,
