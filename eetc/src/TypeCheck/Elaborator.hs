@@ -513,7 +513,10 @@ checkType (S.Case scrut alts) ty = do
           -- could fail if branch is in-accessible
           --FIXME
           let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
-              unify = undefined
+              unify ln at bt = Env.warn [DS "supposed to unify",
+                                         DD at,
+                                         DD bt,
+                                         DS "for now pretending that they are the same"]
           decls' <- unify [] escrut' (pat2Term epat)
           ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
           let ebnd = Unbound.bind epat ebody
@@ -643,7 +646,10 @@ doSubst ss (I.Def x ty : tele') = do
   let ty' = Unbound.substs ss ty
   --FIXME
   let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
-      unify = undefined
+      unify ln at bt = Env.warn [DS "supposed to unify",
+                                 DD at,
+                                 DD bt,
+                                 DS "for now pretending that they are the same"]
   -- relying on a behaviour of unify to produce a Def when tx is a variable
   -- which it is here, so essentially the only thing this does is whnf-reduces the ty'
   -- and then adds (I.Dex tx whnfty') to the decls1
@@ -871,8 +877,8 @@ exhaustivityCheck scrut ty pats = do
       where
         loop [] [] = return ()
         loop [] dcons = do
-          Env.warn [DS "Can't verify impossible patterns at the moment in the elaborator"]
           -- FIXME
+          Env.warn [DS "Can't verify impossible patterns at the moment in the elaborator"]
           -- | Can't verify impossible patterns atm
           -- l <- checkImpossible dcons
           -- if null l
@@ -895,6 +901,9 @@ exhaustivityCheck scrut ty pats = do
           this <-
             ( do
                 tele' <- substTele delta tys tele
+                Env.warn [DS "supposed to typecheck a telescope, but can't do it atm",
+                          DD tele'
+                         ]
                 --FIXME
                 -- this has to typecheck the telescope, but takes internal syntax as input
                 -- currently all elaboration is going from surface to internal
