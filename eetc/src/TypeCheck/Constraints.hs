@@ -9,6 +9,7 @@ module TypeCheck.Constraints ( ConstraintF
                              , (:+:)
                              , (:<:)(..)
                              , inject
+                             , match
                              , SourceLocation(..)
                              ) where
 

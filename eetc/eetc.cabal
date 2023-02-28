@@ -84,6 +84,7 @@ library
     TypeCheck.Equal
     TypeCheck.TypeCheck
     TypeCheck.Monad
+    TypeCheck.Solver
     TypeCheck.State
     TypeCheck.StateActions
     TypeCheck.Constraints

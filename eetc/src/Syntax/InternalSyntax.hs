@@ -345,7 +345,6 @@ pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
 --
 
 
-
 -----------------
 
 -- * Source Positions
@@ -373,3 +372,59 @@ instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id; substBvs
 -- Internally generated source positions
 internalPos :: SourcePos
 internalPos = initialPos "internal"
+
+
+-------------------
+
+-- * Metavariables
+
+class CheckForMetas a where
+  collectAllMetas :: a -> [MetaVarId]
+  hasMetas :: a -> Bool
+  hasMetas = null . collectAllMetas
+
+collectBoundMetas :: (Unbound.Alpha a, Unbound.Alpha t, CheckForMetas t) => Unbound.Bind a t -> [MetaVarId]
+collectBoundMetas bod = Unbound.runFreshM $ do
+  (_, b) <- Unbound.unbind bod
+  return $ collectAllMetas b
+
+instance CheckForMetas Epsilon where
+  collectAllMetas = const []
+
+instance CheckForMetas Term where
+  collectAllMetas (Type) = []
+  collectAllMetas (Var _) = []
+  collectAllMetas (Lam ep bod) = collectAllMetas ep ++ collectBoundMetas bod
+  collectAllMetas (App t arg) = collectAllMetas t ++ collectAllMetas arg
+  collectAllMetas (Pi ep typ bod) = collectAllMetas ep ++
+                                    collectAllMetas typ ++
+                                    collectBoundMetas bod
+  collectAllMetas (Ann term typ) = collectAllMetas term ++ collectAllMetas typ
+  collectAllMetas (Pos _ term) = collectAllMetas term
+  collectAllMetas (TrustMe) = []
+  collectAllMetas (PrintMe) = []
+  collectAllMetas (Let term bod) = collectAllMetas term ++ collectBoundMetas bod
+  collectAllMetas (TyUnit) = []
+  collectAllMetas (LitUnit) = []
+  collectAllMetas (TyBool) = []
+  collectAllMetas (LitBool _ ) = []
+  collectAllMetas (If cond thent elset) = collectAllMetas cond ++
+                                          collectAllMetas thent ++
+                                          collectAllMetas elset
+  collectAllMetas (Sigma term bod) = collectAllMetas term ++ collectBoundMetas bod
+  collectAllMetas (Prod term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
+  collectAllMetas (LetPair term bod) = collectAllMetas term ++ collectBoundMetas bod
+  collectAllMetas (TyEq term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
+  collectAllMetas (Refl) = []
+  collectAllMetas (Subst term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
+  collectAllMetas (Contra term) = collectAllMetas term
+  collectAllMetas (TCon _ args) = args >>= collectAllMetas
+  collectAllMetas (DCon _ args) = args >>= collectAllMetas
+  collectAllMetas (Case term ms) = collectAllMetas term ++ (ms >>= collectAllMetas)
+  collectAllMetas (MetaVar mid) = [mid]
+
+instance CheckForMetas Arg where
+  collectAllMetas = undefined
+
+instance CheckForMetas Match where
+  collectAllMetas = undefined
