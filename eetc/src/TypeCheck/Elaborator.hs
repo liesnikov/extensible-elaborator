@@ -495,7 +495,6 @@ checkType (S.Case scrut alts) ty = do
   -- FIXME
   escrut' <- whnf escrut
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-      -- FIXME
       ensureTCon (I.TCon c args) = return $ (c, args)
       ensureTCon term = Env.err $ [DS "can't verify that",
                                    DD term,
@@ -669,8 +668,10 @@ declarePat :: (MonadElab c m) => I.Pattern -> I.Epsilon -> I.Type -> m [I.Decl]
 declarePat (I.PatVar x)       ep ty  = return [I.TypeSig (I.Sig x ep ty)]
 declarePat (I.PatCon dc pats) I.Rel ty = do
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-      -- FIXME
-      ensureTCon = undefined
+      ensureTCon (I.TCon c args) = return $ (c, args)
+      ensureTCon term = Env.err $ [DS "can't verify that",
+                                   DD term,
+                                   DS "has TCon as head-symbol"]
   (tc,params) <- ensureTCon ty
   (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon dc tc
   tele <- substTele delta params deltai
@@ -858,8 +859,10 @@ exhaustivityCheck :: (MonadElab c m) => I.Term -> I.Type -> [I.Pattern] -> m ()
 exhaustivityCheck scrut ty (I.PatVar x : _) = return ()
 exhaustivityCheck scrut ty pats = do
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-      -- FIXME
-      ensureTCon = undefined
+      ensureTCon (I.TCon c args) = return $ (c, args)
+      ensureTCon term = Env.err $ [DS "can't verify that",
+                                   DD term,
+                                   DS "has TCon as head-symbol"]
   (tcon, tys) <- ensureTCon ty
   (I.Telescope delta, mdefs) <- SA.lookupTCon tcon
   case mdefs of
