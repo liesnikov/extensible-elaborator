@@ -133,7 +133,6 @@
   url = {http://drops.dagstuhl.de/opus/volltexte/2018/9857/},
   urldate = {2022-07-22},
   abstract = {Andromeda is an LCF-style proof assistant where the user builds derivable judgments by writing code in a meta-level programming language AML. The only trusted component of Andromeda is a minimalist nucleus (an implementation of the inference rules of an object-level type theory), which controls construction and decomposition of type-theoretic judgments. Since the nucleus does not perform complex tasks like equality checking beyond syntactic equality, this responsibility is delegated to the user, who implements one or more equality checking procedures in the meta-language. The AML interpreter requests witnesses of equality from user code using the mechanism of algebraic operations and handlers. Dynamic checks in the nucleus guarantee that no invalid object-level derivations can be constructed.},
-  archiveprefix = {arXiv},
   editora = {Wagner, Michael},
   editoratype = {collaborator},
   langid = {english},
@@ -177,6 +176,18 @@
   abstract = {Many components of a dependently typed programming language are by now well understood, for example, the underlying type theory, type checking, unification and evaluation. How to combine these components into a realistic and usable high-level language is, however, folklore, discovered anew by successive language implementors. In this paper, I describe the implementation of Idris, a new dependently typed functional programming language. Idris is intended to be a general-purpose programming language and as such provides high-level concepts such as implicit syntax, type classes and do notation. I describe the high-level language and the underlying type theory, and present a tactic-based method for elaborating concrete high-level syntax with implicit arguments and type classes into a fully explicit type theory. Furthermore, I show how this method facilitates the implementation of new high-level language constructs.},
   langid = {english},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Brady/2013/Brady_2013_Idris, a general-purpose dependently typed programming language.pdf}
+}
+
+@incollection{bruijnPleaWeakerFrameworks1991,
+  title = {A Plea for Weaker Frameworks},
+  booktitle = {Logical Frameworks},
+  author = {Bruijn, N.G., de},
+  editor = {Huet, Gérard and Plotkin, G.},
+  date = {1991},
+  pages = {40--67},
+  publisher = {{Cambridge University Press}},
+  location = {{Cambridge}},
+  isbn = {978-0-521-41300-8}
 }
 
 @article{changDependentTypeSystems2019,
@@ -268,12 +279,11 @@
   date = {2017-08-12},
   eprint = {1610.07978},
   eprinttype = {arxiv},
-  primaryclass = {cs},
+  eprintclass = {cs},
   institution = {{University of Pennsylvania}},
   url = {http://arxiv.org/abs/1610.07978},
   urldate = {2022-08-10},
   abstract = {Haskell, as implemented in the Glasgow Haskell Compiler (GHC), has been adding new type-level programming features for some time. Many of these features---chiefly: generalized algebraic datatypes (GADTs), type families, kind polymorphism, and promoted datatypes---have brought Haskell to the doorstep of dependent types. Many dependently typed programs can even currently be encoded, but often the constructions are painful. In this dissertation, I describe Dependent Haskell, which supports full dependent types via a backward-compatible extension to today's Haskell. An important contribution of this work is an implementation, in GHC, of a portion of Dependent Haskell, with the rest to follow. The features I have implemented are already released, in GHC 8.0. This dissertation contains several practical examples of Dependent Haskell code, a full description of the differences between Dependent Haskell and today's Haskell, a novel type-safe dependently typed lambda-calculus (called Pico) suitable for use as an intermediate language for compiling Dependent Haskell, and a type inference and elaboration algorithm, Bake, that translates Dependent Haskell to type-correct Pico.},
-  archiveprefix = {arXiv},
   keywords = {Computer Science - Programming Languages},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Eisenberg/2017/Eisenberg_2017_Dependent Types in Haskell.pdf}
 }
@@ -400,12 +410,13 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Gundry/2013/Gundry_2013_Type Inference, Haskell and Dependent Types.pdf}
 }
 
-@misc{henryModularizingGHC,
+@online{henryModularizingGHC,
   title = {Modularizing {{GHC}}},
   author = {Henry, Sylvain and Ericson, John and Young, Jeffrey M},
   url = {https://hsyl20.fr/home/posts/2022-05-03-modularizing-ghc-paper.html},
   abstract = {GHC is the de facto main implementation of the Haskell programming language. Over its year history it has served well the needs of pure functional programmers and researchers alike. However, GHC is not exemplary of good large scale system design in a pure function language. Rather ironically, it violates the properties that draw people to functional programming in the first place: immutability, modularity, and composability. These scars have become more noticeable as modern projects currently underway, such as the Haskell Language Server and cross-compilation, aim to fulfill user needs and desires far more diverse than before. We believe a better GHC is possible. We write this paper to properly situate both the current state of GHC’s codebase and that better future state in the design space of large scale, pure, functional systems. Firstly, we document in detail, GHC’s architectural problems, such as low coherence and high coupling of mutable state, and their genesis. Secondly, we describe what we believe to be a superior design, drawing heavily on domain-driven design principles. Lastly, we sketch a plan to get this design implemented iteratively and durably, mentioning interactions with other ongoing refactorings (structured errors, Trees That Grow, etc.). All of this is informed not just by our own experience working on GHC and deep dives into its history, but also by the traditional software engineering literature. The paper is written from an engineering perspective, with the hope that our collection and recapitulation may provide insight into future best practices for other pure functional software engineers.},
   langid = {english},
+  pubstate = {preprint},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Henry et al/undefined/Henry et al_Modularizing GHC.pdf}
 }
 
@@ -526,20 +537,18 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Malecha/2014/Malecha_2014_Extensible Proof Engineering in Intensional Type Theory.pdf}
 }
 
-@misc{mazzoliTypeCheckingUnification2016,
+@online{mazzoliTypeCheckingUnification2016,
   title = {Type Checking through Unification},
   author = {Mazzoli, Francesco and Abel, Andreas},
   date = {2016-09-30},
   number = {arXiv:1609.09709},
-  eprint = {1609.09709},
+  eprint = {arXiv:1609.09709},
   eprinttype = {arxiv},
-  primaryclass = {cs},
-  publisher = {{arXiv}},
   doi = {10.48550/arXiv.1609.09709},
   url = {http://arxiv.org/abs/1609.09709},
   urldate = {2023-02-09},
   abstract = {In this paper we describe how to leverage higher-order unification to type check a dependently typed language with meta-variables. The literature usually presents the unification algorithm as a standalone component, however the need to check definitional equality of terms while type checking gives rise to a tight interplay between type checking and unification. This interplay is a major source of complexity in the type-checking algorithm for existing dependently typed programming languages. We propose an algorithm that encodes a type-checking problem entirely in the form of unification constraints, reducing the complexity of the type-checking code by taking advantage of higher order unification, which is already part of the implementation of many dependently typed languages.},
-  archiveprefix = {arXiv},
+  pubstate = {preprint},
   keywords = {Computer Science - Programming Languages},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Mazzoli_Abel/2016/Mazzoli_Abel_2016_Type checking through unification.pdf}
 }
@@ -658,7 +667,6 @@
   urldate = {2022-12-13},
   abstract = {We present a general framework HM(X) for type systems with constraints. The framework stays in the tradition of the Hindley/Milner type system. Its type system instances are sound under a standard untyped compositional semantics. We can give a generic type inference algorithm for HM(X) so that, under sufficient conditions on X, type inference will always compute the principal type of a term. We discuss instances of the framework that deal with polymorphic records, equational theories, and subtypes. © 1999 John Wiley \& Sons, Inc.},
   langid = {english},
-  annotation = {\_eprint: https://onlinelibrary.wiley.com/doi/pdf/10.1002/\%28SICI\%291096-9942\%28199901/03\%295\%3A1\%3C35\%3A\%3AAID-TAPO4\%3E3.0.CO\%3B2-4},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Odersky et al/1999/Odersky et al_1999_Type inference with constrained types.pdf}
 }
 
@@ -766,7 +774,6 @@
   url = {http://arxiv.org/abs/2003.06458},
   urldate = {2020-11-12},
   abstract = {Development of formal proofs of correctness of programs can increase actual and perceived reliability and facilitate better understanding of program specifications and their underlying assumptions. Tools supporting such development have been available for over 40 years, but have only recently seen wide practical use. Projects based on construction of machine-checked formal proofs are now reaching an unprecedented scale, comparable to large software projects, which leads to new challenges in proof development and maintenance. Despite its increasing importance, the field of proof engineering is seldom considered in its own right; related theories, techniques, and tools span many fields and venues. This survey of the literature presents a holistic understanding of proof engineering for program correctness, covering impact in practice, foundations, proof automation, proof organization, and practical proof development.},
-  archiveprefix = {arXiv},
   keywords = {Computer Science - Logic in Computer Science,Computer Science - Programming Languages,D.2.4,F.3.1,I.2.3},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Ringer et al/2019/Ringer et al_2019_QED at Large.pdf}
 }
@@ -789,13 +796,12 @@
   number = {arXiv:2001.04301},
   eprint = {2001.04301},
   eprinttype = {arxiv},
-  primaryclass = {cs},
+  eprintclass = {cs},
   publisher = {{arXiv}},
   doi = {10.48550/arXiv.2001.04301},
   url = {http://arxiv.org/abs/2001.04301},
   urldate = {2022-06-07},
   abstract = {Typeclasses provide an elegant and effective way of managing ad-hoc polymorphism in both programming languages and interactive proof assistants. However, the increasingly sophisticated uses of typeclasses within proof assistants, especially within Lean's burgeoning mathematics library, mathlib, have elevated once-theoretical limitations of existing typeclass resolution procedures into major impediments to ongoing progress. The two most devastating limitations of existing procedures are exponential running times in the presence of diamonds and divergence in the presence of cycles. We present a new procedure, tabled typeclass resolution, that solves both problems by tabling, which is a generalization of memoizing originally introduced to address similar limitations of early logic programming systems. We have implemented our procedure for the upcoming version (v4) of Lean, and have confirmed empirically that our implementation is exponentially faster than existing systems in the presence of diamonds. Although tabling is notoriously difficult to implement, our procedure is notably lightweight and could easily be implemented in other systems. We hope our new procedure facilitates even more sophisticated uses of typeclasses in both software development and interactive theorem proving.},
-  archiveprefix = {arXiv},
   keywords = {Computer Science - Logic in Computer Science,Computer Science - Programming Languages},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Selsam et al/2020/Selsam et al_2020_Tabled Typeclass Resolution.pdf}
 }
@@ -896,7 +902,7 @@
 }
 
 @software{teamCoqProofAssistant2022,
-  title = {The {{Coq Proof Assistant}}},
+  title = {The {{Coq Proof Assistant}}, Version 8.15.0},
   author = {Team, The Coq Development},
   date = {2022-01-13},
   doi = {10.5281/zenodo.5846982},

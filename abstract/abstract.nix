@@ -32,11 +32,13 @@ in stdenv.mkDerivation ({
     [ pandoc texlive-combined ] ++  extraBuildInputs;
 
   buildPhase = ''
+    make main.tex
     make main.pdf
   '';
 
   installPhase = ''
     mkdir $out
+    mv main.tex $out/main.tex
     mv main.pdf $out/main.pdf
   '';
 
