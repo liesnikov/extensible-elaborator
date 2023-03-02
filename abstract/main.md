@@ -16,27 +16,47 @@ header-includes: |
     \titlerunning{Extensible elaborator design}
     \institute{TU Delft}
     \usepackage{todonotes}
+    \definecolor{darkblue}{rgb}{0,0,0.5}
+    \definecolor{darkgreen}{rgb}{0,0.3,0}
+    \definecolor{darkpink}{rgb}{0.4,0,0.3}
+    \definecolor{graygreen}{rgb}{0.3,0.5,0.3}
+    \definecolor{grayblue}{rgb}{0.2,0.2,0.6}
+    \definecolor{grayred}{rgb}{0.5,0.2,0.2}
     \lstset{
-      frame=none,
-      xleftmargin=2pt,
-      stepnumber=1,
-      numbers=left,
-      numbersep=5pt,
-      numberstyle=\ttfamily\tiny\color[gray]{0.3},
-      belowcaptionskip=\bigskipamount,
-      captionpos=b,
-      escapeinside={*'}{'*},
-      language=haskell,
-      tabsize=2,
-      emphstyle={\bf},
-      commentstyle=\it,
-      stringstyle=\mdseries\rmfamily,
-      showspaces=false,
-      keywordstyle=\bfseries\rmfamily,
-      columns=flexible,
-      basicstyle=\small\sffamily,
-      showstringspaces=false,
-      morecomment=[l]\%,
+      backgroundcolor=\color{white},     % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+      %identifierstyle=\color{red},
+      basicstyle=\small\ttfamily,   % the size of the fonts that are used for the code
+      breakatwhitespace=false,           % sets if automatic breaks should only happen at whitespace
+      breaklines=false,                  % sets automatic line breaking
+      captionpos=b,                      % sets the caption-position to bottom
+      abovecaptionskip=-3 mm,
+      commentstyle=\itshape\color{graygreen}, % comment style
+      % escapeinside={(:}{:)},           % if you want to add LaTeX within your code
+      escapechar={!},
+      % extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+      % firstnumber=1000,                % start line enumeration with line 1000
+      % frame=tb,                        % adds a frame around the code
+      % keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+      keywordstyle=\color{darkblue},     % keyword style
+      language=Haskell,                  % the language of the code
+      morekeywords={},
+      deletekeywords={instance, data, where, class, filter, type, insert, delete, union, map},      % if you want to delete keywords from the given language
+      emph={data, class, instance, where, type},
+      emphstyle=\color{darkpink},
+      numbers=none,                      % where to put the line-numbers; possible values are (none, left, right)
+      % numbersep=5pt,                   % how far the line-numbers are from the code
+      % numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+      % rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+      % showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+      % showstringspaces=false,          % underline spaces within strings only
+      % showtabs=false,                  % show tabs within strings adding particular underscores
+      % stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+      stringstyle=\color{grayred},     % string literal style
+      % tabsize=2,                       % sets default tabsize to 2 spaces
+      % title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+      % xleftmargin=10pt,
+      aboveskip=4pt,
+      belowskip=4pt
     }
 ---
 
