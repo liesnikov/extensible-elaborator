@@ -234,9 +234,15 @@ data FillInTheTerm e =
 
 This metavariable in its own turn gets instantiated by a fitting solver.
 The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
+
 If it is a regular implicit, however, the only solver that's needed is a trivial one that checks that the metavariable has been instantiated indeed.
 This is because a regular implicit should be instantiated by a unification problem encountered at some point later.
 This serves as a guarantee that all implicits have been filled in.
+
+##### Type classes #####
+
+If we wish to add type classes we can use the implicits mechanism but specify that the type has to be a type class instance.
+On the solver side we can define a handler that only matches `FillInTheTerm T` such that `T` is of the form `Implicit
 
 Let us go through an example of the elaboration process for a simple term:
 
@@ -255,7 +261,7 @@ We will step through the elaboration of the term `two`.
    We end with the following declarations:
    ```
    plus : (impA : Implicit Type)
-       -> TypeClass PlusOperation (deImp impA)
+       -> (impT : Implicit(TypeClass PlusOperation (deImp impA)))
        -> (a : deImp impA) -> (b :  deImp impA)
        ->  deImp impA
    
