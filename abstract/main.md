@@ -125,7 +125,7 @@ This plugin symbol will be picked up by the linker and registered at the runtime
 The system above should result in a compact base of an elaborator.
 However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions.
 \todo[size=tiny, fancyline, author=Jesper]{is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?}
-\todo[color=green, size=tiny, fancyline, author=Jesper]{We can mention it here, potentially}
+\todo[color=green, size=tiny, fancyline, author=Bohdan]{We can mention it here, potentially}
 
 ##### Implicits #####
 
