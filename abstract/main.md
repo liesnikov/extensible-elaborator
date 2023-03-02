@@ -129,29 +129,12 @@ Our idea for a new design is to shift focus more towards the constraints themsel
 
 In the examples below, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
-For the purposes of the base language it suffices to have the following two classes:
-
+To solve unification problems we need to define a constraint that denotes them:
 ``` haskell
--- two terms given should be equal
 data EqualityConstraint e =
      EqualityConstraint Syntax.Term Syntax.Term
                         Syntax.Type
-
--- this terms has to be filled in
-data FillInTheTerm e =
-     FillInTheTerm Syntax.Term Syntax.Type
 ```
-% Jesper: this needs a bit more explanation of why it is important to have this constraint / where it is used.
-
-We also provide an additional constraint that is resolved to the equality one: \todo{hash it out in the implementation}
-% Jesper: it's a bit confusing you talk about a constraint here for which there is no concrete motivation yet.
-
-``` haskell
--- the term passed to the constraint should be a type constructor
-data TypeConstructorConstraint e = TConConstraint Syntax.Term
-```
-
-The type-checker raises them supplying the information necessary, but agnostic of how they'll be solved.
 
 On the solver side we provide a suite of unification solvers that handle different cases of the problem:
 % Jesper: it would be nice if we could include a version of your picture showing how the
@@ -178,7 +161,8 @@ We first define the class of constraints that will be handled by the solver via 
 In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself,
 which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
-The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state. \todo{make the types adhere to this paradigm}
+The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
+
 Finally, we register the solver by declaring it using a plugin interface.
 This plugin symbol will be picked up by the linker and registered at the runtime.
 
@@ -188,13 +172,9 @@ Similarly, we can define solvers that only work on problems where one of the sid
 -- solve cases when one side is a metavariable
 unifySolverL :: (EqualityConstraint :<: c)
              => Constraint c -> MonadElab Bool
-unifySolverR :: (EqualityConstraint :<: c)
-             => Constraint c -> MonadElab Bool
 unifySolverLHandler :: (EqualityConstraint :<: c)
                     => Constraint c -> MonadElab Bool
-unifySolverRHandler :: (EqualityConstraint :<: c)
-                    => Constraint c -> MonadElab Bool
-...
+
 ```
 % Jesper: this is probably too much detail. Just showing one of the four type signatures above is probably enough.
 
@@ -254,9 +234,14 @@ checkType (Implicit) ty = do
   raiseConstraint $ FillInTheTerm m ty
   return m
 ```
-% Jesper: Ah here it finally becomes clear why the FillInTheTerm constraint is needed!
-% It might make sense to try to restructure the text to bring this to the front,
-% or even show them together in one place.
+
+where `FillInTheTerm` is defined as follows:
+
+```haskell
+-- this terms has to be filled in
+data FillInTheTerm e =
+     FillInTheTerm Syntax.Term Syntax.Type
+```
 
 This metavariable in its own turn gets instantiated by a fitting solver.
 The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
