@@ -120,14 +120,11 @@ To give a concrete example, Agda's constraint [solver](https://github.com/agda/a
 
 Our idea for a new design is to:
 
-1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.
+1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.\todo{This relates to TypOS [@allaisTypOSOperatingSystem2022a] and [@guidiImplementingTypeTheory2017] reference them here?}
 
 2. Make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
 
-In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
-
-For the purposes of this presentation, we write a type-checker for a dependently-typed language with support for metavariables and show how to extend it to include implicit arguments, type-classes and potentially other features.
-We show more complex features in the [Case Studies section](#section_casestudies) and some basic examples of how the system works below:
+In the examples below, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
 For the purposes of the base language it suffices to have the following two classes:
 
@@ -151,7 +148,7 @@ data TypeConstructorConstraint e = TConConstraint Syntax.Term
 
 The type-checker raises them supplying the information necessary, but agnostic of how they'll be solved.
 
-On the solver side we provide a suite of unification solvers that handle different cases of the problem: \todo{this is mock code, go over it once all is implemented}
+On the solver side we provide a suite of unification solvers that handle different cases of the problem:
 
 Let's take a look at the simplest example -- syntactically equal terms.
 
@@ -219,14 +216,7 @@ complex2 = Plugin { ...
 
 At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
 
-From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure) \todo{redraw the diagram in tikz and figure out numbering}
-
-![Architecture diagram](architecture-diagram.svg){#architecture-figure width=75%}
-
-In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
-It can raise a constraint that gets registered by the Solver Director.
-Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
-All of the components have some read access to the state, including Solver which might e.g. verify that there are no additional constraints on the meta.
+Solvers here have read access to the state which might e.g. verify that there are no additional constraints on the meta or verify that there's another one.
 
 #### Extension of the system to include open constraint datatype ####
 
