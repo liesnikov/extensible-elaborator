@@ -74,46 +74,32 @@ We don't require modifications to the core of type-checker, therefore preserving
 **Introduction**
 The usual design of a compiler for a dependently-typed language consist of four main parts: a parser, an elaborator, a core type-checker, and a back-end.
 Some languages omit some parts, such as Agda which lacks a full core type-checker.
-
 Both the elaborator and the core type-checker can be divided into two parts: traversal of the terms and collection (followed by solving) of the constraints [@bruijnPleaWeakerFrameworks1991].
 These can be found in all major dependently-typed languages like Idris, Coq, Lean, and Agda.
 
-_Idris_ has only [one kind of constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for two terms and for two sequences of terms.
-Both of these are [solved by the unifier](https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430) in the module `Core.Unify` which spans over 1.5 thousand lines.
-
-_Lean_ \todo[size=tiny, fancyline]{example from Lean}
-[the wrong thing ](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) and
-[basic metavariable definitions](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean) and
-[some unification tactic?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Tactic/UnifyEq.lean) and
-[this seems like definitional equality checker?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean#L1550-L1561) which is linked to [these partial functions](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)
-
+_Idris_ has only [one kind of constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for terms and for sequences of terms.
+The module of the [unifier]((https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430)) which solves them spans over a 1.5 thousand lines.
+_Lean_'s [unifier](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean) module has a similar line count of about 1.8 thousand lines.
 _Coq_ \todo[size=tiny,fancyline]{example from Coq}
 [solving evars??](https://github.com/coq/coq/blob/4804c2b3479a447d75473b7d6b57be01bcb45cdf/pretyping/evarsolve.mli) and
 [evared term type](https://github.com/coq/coq/blob/110921a449fcb830ec2a1cd07e3acc32319feae6/engine/eConstr.mli) and
 [term type](https://github.com/coq/coq/blob/c609f9b8549e7e9a946f3d783f71f7cdca35c8cc/kernel/constr.mli) and
 [unification](https://github.com/coq/coq/blob/61ed5bf56871768ca020f119baa963b69ffe56f3/pretyping/unification.mli) and
-[unification for type inference](https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli) and
-
-_Agda_ perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically.
+[unification for type inference](https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli).
+_Agda_ perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092).
 We will focus on Agda specifically below since there the problems are most prominent.
-
 As a side note, Haskell, while isn't dependently-typed at the moment, features a powerful type system and has a very stable constraint language with 5 constructors [@jonesTypeInferenceConstraint2019].
 
 **Problems with unifiers**
 As hopefully evident the most common constraint type is equality.
 And the solver for it is typically called a unifier.
-For a modern language it is expected that to implement higher-order unification which is notoriously hard since it is undecidable in general.
-
-The complexity stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
+The unifiers can quickly become incredibly complex which stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
 This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug.
 
-An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking.
-The function is almost 90 lines long, and yet the vast majority of it is special cases of metavariables.
-This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386), which itself is 130 lines.
-`compareTerm'` calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
-Which itself is almost 200 lines of code.
-Each of the above functions implements part of the "business logic" of the conversion checker.
-But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints: they have to throw and catch exceptions, driving the control flow of the unification, compute blocking tags that determine when a postponed constraint is retried,and deal with cases where either or both of the sides equation or its type are either metavariables or blocked terms.
+An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases of metavariables.
+This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
+Each of the above functions implements part of the "business logic" of the conversion checker with the total line count above 400 lines.
+But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints: they have to throw and catch exceptions, driving the control flow of the unification, compute blocking tags that determine when a postponed constraint is retried,and deal with cases where either or both of the sides equation or its type are either metavariables or the reduction is blocked on one.
 As a result this code is unintuitive and full of intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
 
 Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
@@ -124,68 +110,48 @@ While Agda relies on constraints heavily, the design at large doesn't put at the
 To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the code.
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
-
-1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.\todo[size=tiny,fancyline]{This relates to TypOS [@allaisTypOSOperatingSystem2022a] and [@guidiImplementingTypeTheory2017] reference them here?}
-
-2. Make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
+First we give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers. This isn't dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017.
+Second, to make the language more modular we make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
 
 For example, to solve unification problems we need to define a constraint that denotes them:
 ```haskell
-data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
+data EqualityC e = EqCC Syntax.Term Syntax.Term Syntax.Type
 ```
 
 On the solver side we provide a suite of unification solvers that handle different cases of the problem.
 Let's take a look at the simplest example -- syntactically equal terms.
 ``` haskell
-syntacticSolverHandler :: (EqualityConstraint :<: c) => Constraint c -> MonadElab Bool
-syntacticSolver :: (EqualityConstraint :<: c) => Constraint c -> MonadElab Bool
-syntactic  = Plugin {solver  = syntacticSolver, handler = syntacticSolverHandler
-                     pre = [...], pro=[...], tag=...}
+syntacticHandler :: (MonadElab m, EqualityC :<: c) => Constraint c -> m Bool
+syntacticSolver :: (MonadElab m, EqualityC :<: c) => Constraint c -> m ()
+syntactic = Plugin {solver=syntacticSolver, handler=syntacticHandler
+                    pre=[...], pro=[...], tag="syntactic"}
 ```
 
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
 \todo[size=tiny,fancyline,author=Jesper]{I'm thinking now of whether there is some connection with handlers from effect systems, could we see constraints as effects and solvers as handlers for them?}
 In this case -- checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself,
-which marks the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
-The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
-
+which marks the constraint as solved, since we assume it only fires once it's been cleared to do so by a less expensive decision procedure implemented by the handler.
 Finally, we register the solver by declaring it using a plugin interface specifying solvers that precede and proceed it.
 This plugin symbol will be picked up by the linker and registered at the runtime.
 
-#### Extension of the system to include open constraint datatype ####
-
+**Open constraint datatype**
 The system above should result in a compact base of an elaborator.
 However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions.
 \todo[size=tiny, fancyline, author=Jesper]{is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?}
 \todo[color=green, size=tiny, fancyline, author=Bohdan]{We can mention it here, potentially}
 
-##### Implicits #####
-
-In this view, the elaborator for the application of a function doesn't have to know anything about the implicits at all.
-The only thing we require is that the elaboration of the argument is called with the type information available.
+For example, to add implicit arguments to the language it's enough to add a new kind of contraint and a case to the elaborator:
 
 ```haskell
+data FillInTheTerm e = FillInTheTerm Syntax.Term Syntax.Type
+...
 checkType (Implicit) ty = do
-  m <- createMeta
-  raiseConstraint $ FillInTheTerm m ty
-  return m
+  m <- createMeta; raiseConstraint (FillInTheTerm m ty); return m
 ```
 
-where `FillInTheTerm` is defined as follows:
-
-```haskell
--- this terms has to be filled in
-data FillInTheTerm e =
-     FillInTheTerm Syntax.Term Syntax.Type
-```
-
-This metavariable in its own turn gets instantiated by a fitting solver.
-The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
-
-If it is a regular implicit, however, the only solver that's needed is a trivial one that checks that the metavariable has been instantiated indeed.
-This is because a regular implicit should be instantiated by a unification problem encountered at some point later.
-This serves as a guarantee that all implicits have been filled in.
+This metavariable `m` in its own turn gets instantiated by a fitting solver based on the type.
+Once we have implicits as a case in the elaborator it should be possible to extend this system to accommodate type classes, tactic arguments with just additional solvers. With some more changes we hope to accommodate coercive subtyping, and perhaps row types.
 
 ##### Type classes #####
 
