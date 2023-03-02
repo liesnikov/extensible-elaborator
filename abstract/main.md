@@ -110,7 +110,7 @@ syntactic  = Plugin {solver  = syntacticSolver, handler = syntacticSolverHandler
 
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
 \todo[size=tiny,fancyline,author=Jesper]{I'm thinking now of whether there is some connection with handlers from effect systems, could we see constraints as effects and solvers as handlers for them?}
-In this case - checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
+In this case -- checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself,
 which marks the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
 The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
