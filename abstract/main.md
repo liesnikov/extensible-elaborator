@@ -64,9 +64,8 @@ We will focus on Agda specifically below since there the problems are most promi
 
 As hopefully evident the most common constraint type is equality.
 And the solver for it is typically called a unifier.
+For a modern language it is expected that to implement higher-order unification which is notoriously hard since it is undecidable in general.
 
-Such a solver has to implement higher-order unification which is notoriously hard since it is undecidable in general.
-% Jesper: higher-order unification is not strictly *necessary*, but it is kind of *expected* for a modern language.
 The complexity stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
 This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath}
 Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components.
