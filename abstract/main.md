@@ -40,15 +40,13 @@ These can be found in all major dependently-typed languages like Idris, Coq, Lea
 _Idris_ has only [one kind of constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for two terms and for two sequences of terms.
 Both of these are [solved by the unifier](https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430) in the module `Core.Unify` which spans over 1.5 thousand lines.
 
-_Lean_ \todo{example from Lean}
-
+_Lean_ \todo[size=tiny, fancyline]{example from Lean}
 [the wrong thing ](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) and
 [basic metavariable definitions](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean) and
 [some unification tactic?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Tactic/UnifyEq.lean) and
-[this seems like definitional equality checker?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean#L1550-L1561)
+[this seems like definitional equality checker?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean#L1550-L1561) which is linked to [these partial functions](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)
 
-_Coq_ \todo{example from Coq}
-
+_Coq_ \todo[size=tiny,fancyline]{example from Coq}
 [solving evars??](https://github.com/coq/coq/blob/4804c2b3479a447d75473b7d6b57be01bcb45cdf/pretyping/evarsolve.mli) and
 [evared term type](https://github.com/coq/coq/blob/110921a449fcb830ec2a1cd07e3acc32319feae6/engine/eConstr.mli) and
 [term type](https://github.com/coq/coq/blob/c609f9b8549e7e9a946f3d783f71f7cdca35c8cc/kernel/constr.mli) and
@@ -121,27 +119,19 @@ To give a concrete example, Agda's constraint [solver](https://github.com/agda/a
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 
-1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.\todo{This relates to TypOS [@allaisTypOSOperatingSystem2022a] and [@guidiImplementingTypeTheory2017] reference them here?}
+1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.\todo[size=tiny,fancyline]{This relates to TypOS [@allaisTypOSOperatingSystem2022a] and [@guidiImplementingTypeTheory2017] reference them here?}
 
 2. Make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
 
-% Jesper: is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?
+\todo[size=tiny, fancyline, author=Jesper]{is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?}
 
-In the examples below, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
-
-To solve unification problems we need to define a constraint that denotes them:
-``` haskell
-data EqualityConstraint e =
-     EqualityConstraint Syntax.Term Syntax.Term
-                        Syntax.Type
+For example, to solve unification problems we need to define a constraint that denotes them:
+```haskell
+data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
 ```
 
-On the solver side we provide a suite of unification solvers that handle different cases of the problem:
-% Jesper: it would be nice if we could include a version of your picture showing how the
-% relation is between the syntax traversal and the solvers.
-
+On the solver side we provide a suite of unification solvers that handle different cases of the problem. \todo[size=tiny,fancyline,author=Jesper]{it would be nice if we could include a version of your picture showing how the relation is between the syntax traversal and the solvers.}
 Let's take a look at the simplest example -- syntactically equal terms.
-
 ``` haskell
 -- solves syntactically equal terms
 syntacticSolverHandler :: (EqualityConstraint :<: c)
@@ -156,9 +146,8 @@ syntactic  = Plugin { solver  = syntacticSolver
 ```
 
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
-% Jesper: I'm thinking now of whether there is some connection with handlers from effect systems,
-% could we see constraints as effects and solvers as handlers for them?
-In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
+\todo[size=tiny,fancyline,author=Jesper]{I'm thinking now of whether there is some connection with handlers from effect systems, could we see constraints as effects and solvers as handlers for them?}
+In this case - checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself,
 which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
 The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
