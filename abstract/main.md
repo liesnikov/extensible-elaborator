@@ -74,12 +74,10 @@ This function calls the `compareTerm'` [function](https://github.com/agda/agda/b
 Which itself is almost 200 lines of code.
 Each of the above functions implements part of the "business logic" of the conversion checker.
 But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints:
-
 1. They have to throw and catch exceptions, driving the control flow of the unification.
 2. They have to compute blocking tags that determine when a postponed constraint is retried.
 3. They have to deal with cases where either or both of the sides equation or its type are either metavariables or terms whose evaluation is blocked on some metavariables.
-
-This code is unintuitive and full of intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
+As a result this code is unintuitive and full of intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
 
 Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
