@@ -11,8 +11,8 @@ classoption:
 colorlinks: true
 
 header-includes: |
-    \author{Bohdan Liesnikov\inst{1} \and Jesper Cockx\inst{1}}
-    \authorrunning{Liesnikov and Cockx}
+    \author{Bohdan Liesnikov\inst{1}, Jesper Cockx\inst{1}}
+    \authorrunning{Bohdan Liesnikov, Jesper Cockx}
     \titlerunning{Extensible elaborator design}
     \institute{TU Delft}
     \usepackage{todonotes}
