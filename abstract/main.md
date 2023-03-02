@@ -95,8 +95,6 @@ Our idea for a new design is to shift focus more towards the constraints themsel
 
 2. Make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
 
-\todo[size=tiny, fancyline, author=Jesper]{is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?}
-
 For example, to solve unification problems we need to define a constraint that denotes them:
 ```haskell
 data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
@@ -126,6 +124,8 @@ This plugin symbol will be picked up by the linker and registered at the runtime
 
 The system above should result in a compact base of an elaborator.
 However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions.
+\todo[size=tiny, fancyline, author=Jesper]{is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?}
+\todo[color=green, size=tiny, fancyline, author=Jesper]{We can mention it here, potentially}
 
 ##### Implicits #####
 
