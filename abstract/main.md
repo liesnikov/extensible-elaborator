@@ -6,6 +6,8 @@ output: pdf_document
 documentclass: easychair
 classoption:
     - a4paper
+
+# remove this before submission?
 colorlinks: true
 
 header-includes: |
@@ -25,38 +27,41 @@ We don't require modifications to the core of type-checker, therefore preserving
 \end{abstract}
 
 
-##### Introduction #####  {#section_introduction}
+#### Introduction ####  {#section_introduction}
 
 The usual design of a compiler for a dependently-typed language consist of three main parts: a parser, an elaborator, a core type-checker, and a back-end.
 Some of the languages can omit some parts, like lack of the core type-checker in Agda.
 
 Both the elaborator and the core type-checker can be divided into two parts: traversal of the terms and collection (followed by solving) of the constraints [@bruijnPleaWeakerFrameworks1991].
-These can be found in all major languages like Idris, Coq, Lean, and Agda.
+These can be found in all major dependently-typed languages like Idris, Coq, Lean, and Agda.
 
-Idris has only [one kind of constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for two terms and for two sequences of terms.
-Both of these are [solved by the unifier](https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430).
-It is defined in the module `Core.Unify` which spans over 1.5 thousand lines.
+_Idris_ has only [one kind of constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for two terms and for two sequences of terms.
+Both of these are [solved by the unifier](https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430) in the module `Core.Unify` which spans over 1.5 thousand lines.
 
-\todo{example from Lean}
+_Lean_ \todo{example from Lean}
 
-* [the wrong thing ](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) for Lean
-* basic metavariable definitions https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean
-* some unification tactic? https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Tactic/UnifyEq.lean
-* this seems like definitional equality checker? https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean#L1550-L1561
+[the wrong thing ](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) and
+[basic metavariable definitions](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean) and
+[some unification tactic?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Tactic/UnifyEq.lean) and
+[this seems like definitional equality checker?](https://github.com/leanprover/lean4/blob/30199745ad205dab58ff80bd8eb9b212ac1e765f/src/Lean/Meta/Basic.lean#L1550-L1561)
 
-\todo{example from Coq}
+_Coq_ \todo{example from Coq}
 
-* solving evars?? https://github.com/coq/coq/blob/4804c2b3479a447d75473b7d6b57be01bcb45cdf/pretyping/evarsolve.mli
-* evared term type https://github.com/coq/coq/blob/110921a449fcb830ec2a1cd07e3acc32319feae6/engine/eConstr.mli* term type https://github.com/coq/coq/blob/c609f9b8549e7e9a946f3d783f71f7cdca35c8cc/kernel/constr.mli
-* Unification https://github.com/coq/coq/blob/61ed5bf56871768ca020f119baa963b69ffe56f3/pretyping/unification.mli
-* Unification for type inference https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli
+[solving evars??](https://github.com/coq/coq/blob/4804c2b3479a447d75473b7d6b57be01bcb45cdf/pretyping/evarsolve.mli) and
+[evared term type](https://github.com/coq/coq/blob/110921a449fcb830ec2a1cd07e3acc32319feae6/engine/eConstr.mli) and
+[term type](https://github.com/coq/coq/blob/c609f9b8549e7e9a946f3d783f71f7cdca35c8cc/kernel/constr.mli) and
+[unification](https://github.com/coq/coq/blob/61ed5bf56871768ca020f119baa963b69ffe56f3/pretyping/unification.mli) and
+[unification for type inference](https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli) and
 
+_Agda_ perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically.
+We will focus on Agda specifically below since there the problems are most prominent.
 
-Agda differs somewhat from the others [a family of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically, currently, that's 17 constructors.
+#### Problems with unifiers ####  {#section_unifier_problems}
 
-##### Problems with unifiers #####  {#section_unifier_problems}
+As hopefully evident the most common constraint type is equality.
+And the solver for it is typically called a unifier.
 
-Higher-order unification is notoriously hard to implement because it is undecidable in general.
+Such a solver has to implement higher-order unification which notoriously hard since it is undecidable in general.
 The complexity stems from the desire of compiler writers to implement the most powerful unifier.
 This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath}
 Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components.
@@ -105,11 +110,130 @@ case (m, n) of
 
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
-##### How do we solve this #####  {#section_solution}
+#### How do we solve this ####  {#section_solution}
 
-##### Extension of the system to include open constraint datatype #####
+The examples above show that when building a dependently-typed language while the core might be perfectly elegant and simple, the features that appear on top of it complicate the design.
+And while metavariables and unification constraints solve some of them, in the end, it is not a satisfactory resolution.
 
-###### Implicits ######
+One can also observe that while the code above might rely on constraints, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
+To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
+
+Our idea for a new design is to:
+
+1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.
+
+2. Make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what they match on.
+
+In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
+
+For the purposes of this presentation, we write a type-checker for a dependently-typed language with support for metavariables and show how to extend it to include implicit arguments, type-classes and potentially other features.
+We show more complex features in the [Case Studies section](#section_casestudies) and some basic examples of how the system works below:
+
+For the purposes of the base language it suffices to have the following two classes:
+
+``` haskell
+-- two terms given should be equal
+data EqualityConstraint e =
+     EqualityConstraint Syntax.Term Syntax.Term
+                        Syntax.Type
+
+-- this terms has to be filled in
+data FillInTheTerm e =
+     FillInTheTerm Syntax.Term Syntax.Type
+```
+
+We also provide an additional constraint that is resolved to the equality one: \todo{hash it out in the implementation}
+
+``` haskell
+-- the term passed to the constraint should be a type constructor
+data TypeConstructorConstraint e = TConConstraint Syntax.Term
+```
+
+The type-checker raises them supplying the information necessary, but agnostic of how they'll be solved.
+
+On the solver side we provide a suite of unification solvers that handle different cases of the problem: \todo{this is mock code, go over it once all is implemented}
+
+Let's take a look at the simplest example -- syntactically equal terms.
+
+``` haskell
+-- solves syntactically equal terms
+syntacticSolverHandler :: (EqualityConstraint :<: c)
+                       => Constraint c -> MonadElab Bool
+syntacticSolver :: (EqualityConstraint :<: c)
+                => Constraint c -> MonadElab Bool
+syntactic :: Plugin
+syntactic  = Plugin { solver  = syntacticSolver
+                    , handler = syntacticSolverHandler
+                    ...
+                    }
+```
+
+We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
+In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
+Then we define the solver itself.
+Which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
+The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state. \todo{make the types adhere to this paradigm}
+Finally, we register the solver by declaring it using a plugin interface.
+This plugin symbol will be picked up by the linker and registered at the runtime.
+
+Similarly, we can define solvers that only work on problems where one of the sides is a metavariable:
+
+``` haskell
+-- solve cases when one side is a metavariable
+unifySolverL :: (EqualityConstraint :<: c)
+             => Constraint c -> MonadElab Bool
+unifySolverR :: (EqualityConstraint :<: c)
+             => Constraint c -> MonadElab Bool
+unifySolverLHandler :: (EqualityConstraint :<: c)
+                    => Constraint c -> MonadElab Bool
+unifySolverRHandler :: (EqualityConstraint :<: c)
+                    => Constraint c -> MonadElab Bool
+...
+```
+
+Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
+If both of those steps are successful we can return `True` and the constraint will be marked as solved.
+
+In the cases above we don't have to worry about the order since the problems they match on don't overlap.
+In the case they don't we can provide priority preferences:
+
+``` haskell
+complexSolver1 :: Constraint c -> MonadElab Bool
+complexHandler1 :: Constraint c -> MonadElab Bool
+complexSymbol1 = "complexSolver1"
+complex1 = Plugin { ...
+                  , symbol   = complexSymbol1
+                  , precedes = [unifySolverLS, unifySolverRS]
+                  , succeeds = []
+                  }
+
+complexSolver2 :: Constraint c -> MonadElab Bool
+complexHandler2 :: Constraint c -> MonadElab Bool
+complexSymbol2 = "complexSolver2"
+complex2 = Plugin { ...
+                  , symbol   = complexSymbol2
+                  , precedes = [complexSymbol1]
+                  , succeeds = []
+                  }
+```
+
+At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
+
+From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure) \todo{redraw the diagram in tikz and figure out numbering}
+
+![Architecture diagram](architecture-diagram.svg){#architecture-figure width=75%}
+
+In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
+It can raise a constraint that gets registered by the Solver Director.
+Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
+All of the components have some read access to the state, including Solver which might e.g. verify that there are no additional constraints on the meta.
+
+#### Extension of the system to include open constraint datatype ####
+
+The system above should result in a compact base of an elaborator.
+However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions of this bare-bones type theory
+
+##### Implicits #####
 
 In this view, the elaborator for the application of a function doesn't have to know anything about the implicits at all.
 The only thing we require is that the elaboration of the argument is called with the type information available.
@@ -184,18 +308,66 @@ We will step through the elaboration of the term `two`.
    Next, the type-class resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
    Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
 
-###### Tactic arguments ######
+##### Tactic arguments #####
 
-###### Coercion ######
+Similarly, we can declare a type `TacticArgument t A` which computes to `A`.
+We need the parser to desugar a definition like
 
-###### Row types ######
+```agda
+clever-search : Term -> TC Term
+clever-search hole = unify hole (lit (nat 17))
 
-##### Future work #####
+the-best-number : {@(tactic clever-search) n : Nat} -> Nat
+the-best-number {n} = n
+```
+
+to
+
+```agda
+the-best-number : Implicit (TacticArgument clever-search Nat) -> Nat
+```
+
+and whenever such a function is used to apply to an additional implicit argument
+
+```agda
+check : (the-best-number ?) = 17
+check = refl
+```
+
+This should result in two constraints being raised:
+```
+C1 : FillInTheTerm ?_1 (Implicit (TacticArgument clever-search) Nat)
+C2 : EqualityConstraint (the-best-number ?_1) 17
+```
+
+The first constraint is matched on by a tactic-runner constraint solver:
+
+```haskell
+tacticRunnerSolver :: (MonadElab m, FillInTheTerm :<: c)
+                   -> Constraint c -> m ()
+tacticRunnerSolver c = do
+    (FillInTheTerm m T) <- match @FillInTheTerm c
+    tactic <- createMeta
+    typ <- createMeta
+    raiseEqualityConstraint T (App (TCon "Implicit")
+                                   [(App (TCon "TacticArgument")
+                                         [tactic typ])] $ do
+        res <- runTactic tactic typ
+        raiseEqualityConstraint m res
+```
+
+##### Coercive subtyping #####
+
+Similarly, we should be able to render coercions by inserting a `coerce : Implicit (Coercion A B) -> A -> B` function pessimistically by the parser.
+Such `coerce` would compute to identity when the coercion is identity.
+
+#### Future work ####
 
 There are some things we leave for future work.
 
 * Implement erasure inference [@tejiscakDependentlyTypedCalculus2020]?
 * Implement Canonical structures [@mahboubiCanonicalStructuresWorking2013]?
+* Row types?
 * Rendering of macros as constraints?
   Map a macro to an implicit term with the right kind of annotation in the type, to get the right expander as an elaboration procedure?
 * Mapping constraint solving onto a concurrent execution model.
