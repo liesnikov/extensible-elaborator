@@ -22,7 +22,7 @@ main.pdf: main.tex Makefile
 	latexmk -pdf main.tex
 
 main.tex: main.md bib.bib Makefile
-	pandoc --standalone main.md --bibliography bib.bib --biblatex -o main.tex
+	pandoc --standalone main.md --listings --bibliography bib.bib --biblatex -o main.tex
 
 #main.pdf: main.md bib.bib Makefile
 #	pandoc --standalone main.md \
