@@ -105,89 +105,32 @@ data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Ty
 On the solver side we provide a suite of unification solvers that handle different cases of the problem. \todo[size=tiny,fancyline,author=Jesper]{it would be nice if we could include a version of your picture showing how the relation is between the syntax traversal and the solvers.}
 Let's take a look at the simplest example -- syntactically equal terms.
 ``` haskell
--- solves syntactically equal terms
-syntacticSolverHandler :: (EqualityConstraint :<: c)
-                       => Constraint c -> MonadElab Bool
-syntacticSolver :: (EqualityConstraint :<: c)
-                => Constraint c -> MonadElab Bool
+syntacticSolverHandler :: (EqualityConstraint :<: c) => Constraint c -> MonadElab Bool
+syntacticSolver :: (EqualityConstraint :<: c) => Constraint c -> MonadElab Bool
 syntactic :: Plugin
-syntactic  = Plugin { solver  = syntacticSolver
-                    , handler = syntacticSolverHandler
-                    ...
-                    }
+syntactic  = Plugin {solver  = syntacticSolver, handler = syntacticSolverHandler
+                     pre = [...], pro=[...], tag=...}
 ```
 
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
 \todo[size=tiny,fancyline,author=Jesper]{I'm thinking now of whether there is some connection with handlers from effect systems, could we see constraints as effects and solvers as handlers for them?}
 In this case - checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself,
-which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
+which marks the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
 The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
 
-Finally, we register the solver by declaring it using a plugin interface.
+Finally, we register the solver by declaring it using a plugin interface specifying solvers that precede and proceed it.
 This plugin symbol will be picked up by the linker and registered at the runtime.
-
-Similarly, we can define solvers that only work on problems where one of the sides is a metavariable:
-
-``` haskell
--- solve cases when one side is a metavariable
-unifySolverL :: (EqualityConstraint :<: c)
-             => Constraint c -> MonadElab Bool
-unifySolverLHandler :: (EqualityConstraint :<: c)
-                    => Constraint c -> MonadElab Bool
-
-```
-% Jesper: this is probably too much detail. Just showing one of the four type signatures above is probably enough.
-
-Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
-If both of those steps are successful we can return `True` and the constraint will be marked as solved.
-
-In the cases above we don't have to worry about the order since the problems they match on don't overlap.
-In the case they don't we can provide priority preferences:
-
-``` haskell
-complexSolver1 :: Constraint c -> MonadElab Bool
-complexHandler1 :: Constraint c -> MonadElab Bool
-complexSymbol1 = "complexSolver1"
-complex1 = Plugin { ...
-                  , symbol   = complexSymbol1
-                  , precedes = [unifySolverLS, unifySolverRS]
-                  , succeeds = []
-                  }
-
-complexSolver2 :: Constraint c -> MonadElab Bool
-complexHandler2 :: Constraint c -> MonadElab Bool
-complexSymbol2 = "complexSolver2"
-complex2 = Plugin { ...
-                  , symbol   = complexSymbol2
-                  , precedes = [complexSymbol1]
-                  , succeeds = []
-                  }
-```
-% Jesper: I would probably hide this code completely and instead just describe how the priorities work
-% in words, e.g. that you have a partial ordering on the names of the handlers.
-
-At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
-
-Solvers here have read access to the state which might e.g. verify that there are no additional constraints on the meta or verify that there's another one.
 
 #### Extension of the system to include open constraint datatype ####
 
 The system above should result in a compact base of an elaborator.
-However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions of this bare-bones type theory
+However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions.
 
 ##### Implicits #####
 
 In this view, the elaborator for the application of a function doesn't have to know anything about the implicits at all.
 The only thing we require is that the elaboration of the argument is called with the type information available.
-This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
-
-```haskell
-inferType (App t1 t2) = do
-  (et1, Pi tyA tyB) <- inferType t1
-  et2 <- checkType t2 tyA
-  return (App et1 et2, subst tyB et2)
-```
 
 ```haskell
 checkType (Implicit) ty = do
