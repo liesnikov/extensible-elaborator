@@ -98,7 +98,7 @@ For example, to solve unification problems we need to define a constraint that d
 data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
 ```
 
-On the solver side we provide a suite of unification solvers that handle different cases of the problem. \todo[size=tiny,fancyline,author=Jesper]{it would be nice if we could include a version of your picture showing how the relation is between the syntax traversal and the solvers.}
+On the solver side we provide a suite of unification solvers that handle different cases of the problem.
 Let's take a look at the simplest example -- syntactically equal terms.
 ``` haskell
 syntacticSolverHandler :: (EqualityConstraint :<: c) => Constraint c -> MonadElab Bool
