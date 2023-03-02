@@ -211,50 +211,7 @@ We will step through the elaboration of the term `two`.
 ##### Tactic arguments #####
 
 Similarly, we can declare a type `TacticArgument t A` which computes to `A`.
-We need the parser to desugar a definition borrowed from Agda manual
-
-```agda
-clever-search : Term -> TC Term
-clever-search hole = unify hole (lit (nat 17))
-
-the-best-number : {@(tactic clever-search) n : Nat} -> Nat
-the-best-number {n} = n
-```
-
-to the following one
-
-```agda
-the-best-number : Implicit (TacticArgument clever-search Nat) -> Nat
-```
-
-and whenever such a function is used to apply to an additional implicit argument
-
-```agda
-check : (the-best-number ?) = 17
-check = refl
-```
-
-This should result in two constraints being raised:
-```
-C1 : FillInTheTerm ?_1 (Implicit (TacticArgument clever-search) Nat)
-C2 : EqualityConstraint (the-best-number ?_1) 17
-```
-
-The first constraint is matched on by a tactic-runner constraint solver:
-
-```haskell
-tacticRunnerSolver :: (MonadElab m, FillInTheTerm :<: c)
-                   -> Constraint c -> m ()
-tacticRunnerSolver c = do
-    (FillInTheTerm m T) <- match @FillInTheTerm c
-    tactic <- createMeta
-    typ <- createMeta
-    raiseEqualityConstraint T (App (TCon "Implicit")
-                                   [(App (TCon "TacticArgument")
-                                         [tactic typ])] $ do
-        res <- runTactic tactic typ
-        raiseEqualityConstraint m res
-```
+We need the parser to desugar a definition with tactic argument to one that uses `Implicit (TacticArgument t A)` and supply a solver that runs such a tactic
 
 ##### Coercive subtyping #####
 
