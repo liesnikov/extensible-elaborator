@@ -116,15 +116,10 @@ This is precisely what we'd like the compiler developer to write, not to worry a
 
 #### How do we solve this ####  {#section_solution}
 
-The examples above show that when building a dependently-typed language while the core might be perfectly elegant and simple, the features that appear on top of it complicate the design.
-And while metavariables and unification constraints solve some of them, in the end, it is not a satisfactory resolution.
-% Jesper: not sure what you mean here, aren't metavariables and constraints a source of complexity rather than a solution for it?
+While Agda relies on constraints, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
+To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the code.
 
-% Jesper: what code above?
-One can also observe that while the code above might rely on constraints, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
-To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
-
-Our idea for a new design is to:
+Our idea for a new design is to shift focus more towards the constraints themselves:
 
 1. Give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers.\todo{This relates to TypOS [@allaisTypOSOperatingSystem2022a] and [@guidiImplementingTypeTheory2017] reference them here?}
 
