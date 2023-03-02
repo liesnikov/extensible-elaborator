@@ -56,7 +56,7 @@ _Coq_ \todo[size=tiny,fancyline]{example from Coq}
 _Agda_ perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically.
 We will focus on Agda specifically below since there the problems are most prominent.
 
-% Jesper: Perhaps also mention constraints in Haskell?
+Haskell, while isn't dependently-typed at the moment, features a powerful type system and has a very stable constraint language with 5 constructors [@jonesTypeInferenceConstraint2019].
 
 #### Problems with unifiers ####  {#section_unifier_problems}
 
