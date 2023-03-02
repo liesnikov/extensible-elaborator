@@ -65,10 +65,7 @@ And the solver for it is typically called a unifier.
 For a modern language it is expected that to implement higher-order unification which is notoriously hard since it is undecidable in general.
 
 The complexity stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
-This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath}
-Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components.
-In practice, this means that one doesn't have to fit together an always-growing conversion checker but can instead write different cases separately.
-We again rely on the constraint solver machinery to distribute the problems to the fitting solvers.
+This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug.
 
 An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking.
 The function is almost 90 lines long, and yet the vast majority of it is special cases of metavariables.
@@ -77,39 +74,14 @@ This function calls the `compareTerm'` [function](https://github.com/agda/agda/b
 Which itself is almost 200 lines of code.
 Each of the above functions implements part of the "business logic" of the conversion checker.
 But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints:
+
 1. They have to throw and catch exceptions, driving the control flow of the unification.
 2. They have to compute blocking tags that determine when a postponed constraint is retried.
 3. They have to deal with cases where either or both of the sides equation or its type are either metavariables or terms whose evaluation is blocked on some metavariables.
 
 This code is unintuitive and full of intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529).
 
-Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code. \todo{stripping out size checks, cumulativity, polarity, and forcing}
-
-``` haskell
-case (m, n) of
-  (Pi{}, Pi{}) -> equalFun m n
-
-  (Sort s1, Sort s2) -> equalSort s1 s2
-
-  (Lit l1, Lit l2) | l1 == l2 -> return ()
-
-  (Var i es, Var i' es') | i == i' -> do
-      a <- typeOfBV i
-      compareElims [] [] a (var i) es es'
-
-  (Def f es, Def f' es') -> do
-      a <- computeElimHeadType f es es'
-      compareElims [] a (Def f []) es es'
-
-  (Con x ci xArgs, Con y _ yArgs) | x == y -> do
-      t' <- conType x t
-      compareElims t' (Con x ci []) xArgs yArgs
-
-  _ -> notEqual
-```
-
-\todo{get an example from Idris 2?}
-
+Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
 #### How do we solve this ####  {#section_solution}
