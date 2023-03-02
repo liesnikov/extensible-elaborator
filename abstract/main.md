@@ -290,7 +290,7 @@ We will step through the elaboration of the term `two`.
 ##### Tactic arguments #####
 
 Similarly, we can declare a type `TacticArgument t A` which computes to `A`.
-We need the parser to desugar a definition like
+We need the parser to desugar a definition borrowed from Agda manual
 
 ```agda
 clever-search : Term -> TC Term
@@ -300,7 +300,7 @@ the-best-number : {@(tactic clever-search) n : Nat} -> Nat
 the-best-number {n} = n
 ```
 
-to
+to the following one
 
 ```agda
 the-best-number : Implicit (TacticArgument clever-search Nat) -> Nat
