@@ -71,8 +71,7 @@ We don't require modifications to the core of type-checker, therefore preserving
 \end{abstract}
 
 
-#### Introduction ####  {#section_introduction}
-
+**Introduction**
 The usual design of a compiler for a dependently-typed language consist of four main parts: a parser, an elaborator, a core type-checker, and a back-end.
 Some languages omit some parts, such as Agda which lacks a full core type-checker.
 
@@ -100,8 +99,7 @@ We will focus on Agda specifically below since there the problems are most promi
 
 As a side note, Haskell, while isn't dependently-typed at the moment, features a powerful type system and has a very stable constraint language with 5 constructors [@jonesTypeInferenceConstraint2019].
 
-#### Problems with unifiers ####  {#section_unifier_problems}
-
+**Problems with unifiers**
 As hopefully evident the most common constraint type is equality.
 And the solver for it is typically called a unifier.
 For a modern language it is expected that to implement higher-order unification which is notoriously hard since it is undecidable in general.
@@ -121,9 +119,8 @@ As a result this code is unintuitive and full of intricacies as indicated by [mu
 Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
-#### How do we solve this ####  {#section_solution}
-
-While Agda relies on constraints, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
+**How do we solve this**
+While Agda relies on constraints heavily, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
 To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the code.
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
