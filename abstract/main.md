@@ -77,7 +77,7 @@ We will focus on it specifically below since there the problems are most promine
 **Problems with unifiers**
 The most common constraint type is equality, the solver for it is typically called a unifier.
 The unifiers can quickly become incredibly complex which stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
-This code is also heavily used\todo[author=Jesper]{find examples} throughout the compiler, making it sensitive towards changes and hard to maintain and debug.
+This code is also heavily used throughout the compiler (either as direct functions `leqType`, `compareType`, or as raised constraints `ValueCmp`, `ValueCmpOnFace`, `SortCmp`), making it sensitive towards changes and hard to maintain and debug.
 
 An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases of metavariables.
 This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
@@ -93,11 +93,13 @@ The sizes of modules with unifiers are as follows: Idris ([1.5kloc](https://gith
 For Haskell, which isn't a dependently-typed language yet but does have a constraints system [@jonesTypeInferenceConstraint2019], this number is at [2kloc](https://gitlab.haskell.org/ghc/ghc/-/blob/2f97c86151d7eed115ddcbdee1842684aed63176/compiler/GHC/Core/Unify.hs).
 
 **How do we solve this**
-While Agda relies on constraints heavily, the design at large doesn't put at them the centre of the picture and instead are primarily seen as a gadget.
-To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the code.\todo[author=Jesper]{mention how `noConstraints` and `solveConstraints` functions are sprinkled around the codebase}
+While Agda relies on constraints heavily, the design at large doesn't put at them the centre of the picture and instead frames as a gadget.
+To give a concrete example, function `noConstraints` allows you to pose restrictions on the computation that break the abstraction.
+On the other hand, `abortIfBlocked`/`reduce` and friends force you to make a choice between letting the constraint system handle blockers or doing it manually.
+These things are known to be brittle and pose an increased mental overhead when writing a type-checker.
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
-First we give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers. \todo{insert a reference to effect systems} This isn't dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017.
+First we give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers. This isn't dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, ch. 4.4] or communication with an independent process [@allaisTypOSOperatingSystem2022a].
 Second, to make the language more modular we make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what kinds of constraints they match on.
 Our current prototype is implemented in Haskell as is available at ....\todo{insert a link}
 
@@ -124,89 +126,13 @@ This plugin symbol will be picked up by the linker and registered at the runtime
 
 **Open constraint datatype**
 Refactoring the unifier into smaller solvers results in a compact elaborator for a simple language.
-However, making the constraint datatype open and allowing users to register new solvers results in a few extensions to the language that don't affect the core.
+However, making the constraint datatype open and allowing users to register new solvers allows us to extend the language without affecting the core.
 
-For example, to add implicit arguments to the language it's enough to extend the parser, add a case to the elaborator to add a new meta for every implicit and register a solver.
+For example, to add implicit arguments to the language it's enough to extend the parser, add one case to the elaborator to add a new meta for every implicit and register a solver.
 For a simple implicit every such metavariable will be instantiated by the unifier.
 
 Once we have implicits as a case in the elaborator it should be possible to extend this system to accommodate for type classes [@hallTypeClassesHaskell1996], tactic arguments [@theagdateamAgdaUserManual2022, ch. 3.16.1] (assuming tactics) with just additional solvers and parsing rules.
 We hope to also implement coercive subtyping (akin to [@aspertiCraftingProofAssistant2007]) and, perhaps, row types [@gasterPolymorphicTypeSystem1996].
-
-##### Type classes #####
-
-If we wish to add type classes we can use the implicits mechanism but specify that the type has to be a type class instance.
-On the solver side we can define a handler that only matches `FillInTheTerm T` such that `T` is of the form `Implicit
-
-Let us go through an example of the elaboration process for a simple term:
-
-```
-plus : {A : Type} -> {{PlusOperation A}} -> (a : A) -> (b : A) -> A
-
-instance PlusNat : PlusOperation Nat where
-  plus = plusNat
-
-two = plus 1 1
-```
-
-We will step through the elaboration of the term `two`.
-
-1. First, the pre-processor eliminates the implicits and type-class arguments.
-   We end with the following declarations:
-   ```
-   plus : (impA : Implicit Type)
-       -> (impT : Implicit(TypeClass PlusOperation (deImp impA)))
-       -> (a : deImp impA) -> (b :  deImp impA)
-       ->  deImp impA
-   
-   PlusNat = Instance {
-       class = PlusOperation Nat,
-       body = {plus = plusNat}}
-   
-   two = plus _ _ 1 1
-   ```
-2. We go into the elaboration of `two` now.
-   The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders.
-   The output of the elaborator is
-   ```
-   two = plus ?_1 ?_2 1 1
-   ```
-   And the state of the elaborator contains four more constraints:
-   ```
-   C1: FillInTheTerm ?_1 (Implicit Type)
-   C2: FillInTheTerm ?_2 (TypeClass PlusOperation (deImp ?_1))`
-   C3: EqualityConstraint ?_1 Nat Type`
-   C4: EqualityConstraint ?_1 Nat Type`
-   ```
-   
-   The first two correspond to implicit arguments.
-   The latter two are unification problems rendered into constraints.
-
-3. Now we step into the constraint-solving world.
-   First, the unifier solves the latter two, instantiating `?_1` to `Nat`.
-   Next, the type-class resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
-   Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
-
-##### Tactic arguments #####
-
-Similarly, we can declare a type `TacticArgument t A` which computes to `A`.
-We need the parser to desugar a definition with tactic argument to one that uses `Implicit (TacticArgument t A)` and supply a solver that runs such a tactic
-
-##### Coercive subtyping #####
-
-Similarly, we should be able to render coercions by inserting a `coerce : Implicit (Coercion A B) -> A -> B` function pessimistically by the parser.
-Such `coerce` would compute to identity when the coercion is identity.
-
-#### Future work ####
-
-There are some things we leave for future work.
-
-* Implement erasure inference [@tejiscakDependentlyTypedCalculus2020]?
-* Implement Canonical structures [@mahboubiCanonicalStructuresWorking2013]?
-* Row types?
-* Rendering of macros as constraints?
-  Map a macro to an implicit term with the right kind of annotation in the type, to get the right expander as an elaboration procedure?
-* Mapping constraint solving onto a concurrent execution model.
-  Use LVars here [@kuperLatticebasedDataStructures2015] here, similar to what TypOS [@allaisTypOSOperatingSystem2022a] is doing?
 
 \newpage
 
