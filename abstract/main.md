@@ -89,21 +89,13 @@ As a result this code is unintuitive and full of intricacies as indicated by [mu
 Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
-\todo{compress into one sentence}
-_Idris_ has only [one kind of constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for terms and for sequences of terms.
-The module of the [unifier]((https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430)) which solves them spans over a 1.5 thousand lines.
-_Lean_'s [unifier](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean) module has a similar line count of about 1.8 thousand lines.
-_Coq_ \todo[size=tiny,fancyline]{example from Coq}
-[solving evars??](https://github.com/coq/coq/blob/4804c2b3479a447d75473b7d6b57be01bcb45cdf/pretyping/evarsolve.mli) and
-[evared term type](https://github.com/coq/coq/blob/110921a449fcb830ec2a1cd07e3acc32319feae6/engine/eConstr.mli) and
-[term type](https://github.com/coq/coq/blob/c609f9b8549e7e9a946f3d783f71f7cdca35c8cc/kernel/constr.mli) and
-[unification](https://github.com/coq/coq/blob/61ed5bf56871768ca020f119baa963b69ffe56f3/pretyping/unification.mli) and
-[unification for type inference](https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli).
-As a side note, Haskell, while isn't dependently-typed at the moment, features a powerful type system and has a very stable constraint language with 5 constructors [@jonesTypeInferenceConstraint2019].
+The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large modules hard to understand.
+The sizes of modules with unifiers are as follows: Idris ([1.5kloc](https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430)), Lean ([1.8kloc](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)), Coq ([1.8kloc](https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli)).
+For Haskell, which isn't a dependently-typed language yet but does have a constraints system [@jonesTypeInferenceConstraint2019], this number is at [2kloc](https://gitlab.haskell.org/ghc/ghc/-/blob/2f97c86151d7eed115ddcbdee1842684aed63176/compiler/GHC/Core/Unify.hs).
 
 **How do we solve this**
 While Agda relies on constraints heavily, the design at large doesn't put at them the centre of the picture and instead are primarily seen as a gadget.
-To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the code.
+To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the code.\todo[author=Jesper]{mention how `noConstraints` and `solveConstraints` functions are sprinkled around the codebase}
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 First we give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers. \todo{insert a reference to effect systems} This isn't dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017.
