@@ -117,9 +117,9 @@ data EqualityC e = EqCC Syntax.Term Syntax.Term Syntax.Type
 On the solver side we provide a suite of unification solvers that handle different cases of the problem.
 Let's take a look at the simplest example -- syntactically equal terms.
 ``` haskell
-syntacticHandler :: (MonadElab m, EqualityC :<: c) => Constraint c -> m Bool
-syntacticSolver :: (MonadElab m, EqualityC :<: c) => Constraint c -> m ()
-syntactic = Plugin {solver=syntacticSolver, handler=syntacticHandler
+syntacticH :: (MonadElab m, EqualityC :<: c)=> Constraint c -> m Bool
+syntacticS :: (MonadElab m, EqualityC :<: c)=> Constraint c -> m ()
+syntactic = Plugin {handler=syntacticH, solver=syntacticS,
                     pre=[...], pro=[...], tag="syntactic"}
 ```
 
