@@ -18,6 +18,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       listings
       mathtools
       lastpage
+      eso-pic # for debug
     ; };
     extraTexInputs = [ ];
     extraBuildInputs = [ librsvg biber];
