@@ -60,7 +60,6 @@ header-includes: |
     }
 ---
 
-**Abstract**
 Dependent types are a useful tool for statically enforcing properties of programs and for enabling type-driven development.
 However, one reason why they have not yet been adopted more widely is because dependent type checkers are notoriously difficult to implement.
 We present work-in-progress on a new design for elaboration of dependently-typed languages based on the idea of an open datatype for constraints.
