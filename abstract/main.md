@@ -118,28 +118,20 @@ syntactic = Plugin {handler=syntacticH, solver=syntacticS,
 
 We first define the class of constraints that will be handled by the solver by providing a "handler" -- a function that decides whether a given solver has to fire.
 In this case -- checking that the constraint given is indeed an `EqualityC` and that the two terms given to it are syntactically equal.
-The solver in this case marks the constraint as solved, since it only fires once it's been cleared to do so by a handler.
-We separate the handler from the solver to separate the decision of whether the constraint can be solved from the effectful solving procedure.
+The solver in this case simply marks the constraint as solved, since it only fires once it's been cleared to do so by a handler.
+We separate the handler from the solver to allow for cheaper decision procedures and more expensive, effectful solvers.
 Finally, we register the solver by declaring it using a plugin interface specifying solvers that precede and succeed it.
 This plugin symbol will be picked up by the linker and registered at the runtime.
 
 **Open constraint datatype**
-The system above should result in a compact base of an elaborator.
-However, if now extend the constraint datatype to be open and allow users to register new solvers it allows us for a few extensions.
-\todo[size=tiny, fancyline, author=Jesper]{is another goal here also to be able to add new syntax to the language without having to mess around too much with metavariables? Or is that a separate concern?}
-\todo[color=green, size=tiny, fancyline, author=Bohdan]{We can mention it here, potentially}
+Refactoring the unifier into smaller solvers results in a compact elaborator for a simple language.
+However, making the constraint datatype open and allowing users to register new solvers results in a few extensions to the language that don't affect the core.
 
-For example, to add implicit arguments to the language it's enough to add a new kind of constraint and a case to the elaborator:
+For example, to add implicit arguments to the language it's enough to extend the parser, add a case to the elaborator to add a new meta for every implicit and register a solver.
+For a simple implicit every such metavariable will be instantiated by the unifier.
 
-```haskell
-data FillInTheTerm e = FillInTheTerm Term Type
-...
-checkType (Implicit) ty = do
-  m <- createMeta; raiseConstraint (FillInTheTerm m ty); return m
-```
-
-This metavariable `m` in its own turn gets instantiated by a fitting solver.
-Once we have implicits as a case in the elaborator it should be possible to extend this system to accommodate type classes, tactic arguments with just additional solvers. With some more changes we hope to accommodate coercive subtyping, and perhaps row types.
+Once we have implicits as a case in the elaborator it should be possible to extend this system to accommodate for type classes [@hallTypeClassesHaskell1996], tactic arguments [@theagdateamAgdaUserManual2022, ch. 3.16.1] (assuming tactics) with just additional solvers and parsing rules.
+We hope to also implement coercive subtyping (akin to [@aspertiCraftingProofAssistant2007]) and, perhaps, row types [@gasterPolymorphicTypeSystem1996].
 
 ##### Type classes #####
 
