@@ -71,8 +71,7 @@ The usual design of a compiler for a dependently-typed language consist of four 
 Some languages omit some parts, such as Agda which lacks a full core type-checker.
 Both the elaborator and the core type-checker can be divided into two parts: traversal of the terms and collection (followed by solving) of the constraints [@bruijnPleaWeakerFrameworks1991].
 These can be found in all major dependently-typed languages like Idris, Coq, Lean, and Agda.
-
-_Agda_ perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092).
+Agda perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092).
 We will focus on it specifically below since there the problems are most prominent.
 
 **Problems with unifiers**
