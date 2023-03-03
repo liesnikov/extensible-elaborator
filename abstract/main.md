@@ -77,7 +77,7 @@ We will focus on it specifically below since there the problems are most promine
 **Problems with unifiers**
 The most common constraint type is equality, the solver for it is typically called a unifier.
 The unifiers can quickly become incredibly complex which stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
-This code is also heavily used throughout the compiler (either as direct functions `leqType`, `compareType`, or as raised constraints `ValueCmp`, `ValueCmpOnFace`, `SortCmp`), making it sensitive towards changes and hard to maintain and debug.
+This code is also heavily used throughout the compiler (either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp`, `ValueCmpOnFace`, `SortCmp`\todo{more poiters to where exactly this is used, maybe ask @Jesper}), making it sensitive towards changes and hard to maintain and debug.
 
 An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases of metavariables.
 This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
