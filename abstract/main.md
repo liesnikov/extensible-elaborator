@@ -60,16 +60,12 @@ header-includes: |
     }
 ---
 
-\begin{abstract}
-
+**Abstract**
 Dependent types are a useful tool for statically enforcing properties of programs and for enabling type-driven development.
 However, one reason why they have not yet been adopted more widely is because dependent type checkers are notoriously difficult to implement.
 We present work-in-progress on a new design for elaboration of dependently-typed languages based on the idea of an open datatype for constraints.
 This allows for a more compact base elaborator implementation while enabling extensions to the type system.
 We don't require modifications to the core of type-checker, therefore preserving safety of the language.
-
-\end{abstract}
-
 
 **Introduction**
 The usual design of a compiler for a dependently-typed language consist of four main parts: a parser, an elaborator, a core type-checker, and a back-end.
