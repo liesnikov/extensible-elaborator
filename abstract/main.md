@@ -14,7 +14,7 @@ header-includes: |
     \author{Bohdan Liesnikov\inst{1}, Jesper Cockx\inst{1}}
     \authorrunning{Bohdan Liesnikov, Jesper Cockx}
     \titlerunning{Extensible elaborator design}
-    \institute{TU Delft}
+    \institute{TU Delft, Delft, Netherlands}
     \usepackage{todonotes}
     \definecolor{darkblue}{rgb}{0,0,0.5}
     \definecolor{darkgreen}{rgb}{0,0.3,0}
@@ -22,7 +22,7 @@ header-includes: |
     \definecolor{graygreen}{rgb}{0.3,0.5,0.3}
     \definecolor{grayblue}{rgb}{0.2,0.2,0.6}
     \definecolor{grayred}{rgb}{0.5,0.2,0.2}
-    \lstset{
+    \lstset{ % stolen from build systems paper github.com/snowleopard/united/blob/main/paper/main.tex
       backgroundcolor=\color{white},     % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
       %identifierstyle=\color{red},
       basicstyle=\small\ttfamily,   % the size of the fonts that are used for the code
@@ -39,8 +39,8 @@ header-includes: |
       % keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
       keywordstyle=\color{darkblue},     % keyword style
       language=Haskell,                  % the language of the code
-      morekeywords={},
-      deletekeywords={instance, data, where, class, filter, type, insert, delete, union, map},      % if you want to delete keywords from the given language
+      morekeywords={}, % doesn't work for some reason
+      deletekeywords={instance, data, where, class},      % if you want to delete keywords from the given language
       emph={data, class, instance, where, type},
       emphstyle=\color{darkpink},
       numbers=none,                      % where to put the line-numbers; possible values are (none, left, right)
@@ -66,20 +66,20 @@ We present work-in-progress on a new design for elaboration of dependently-typed
 This allows for a more compact base elaborator implementation while enabling extensions to the type system.
 We don't require modifications to the core of type-checker, therefore preserving safety of the language.
 
-**Introduction**
+**Introduction.**
 The usual design of a compiler for a dependently-typed language consist of four main parts: a parser, an elaborator, a core type-checker, and a back-end.
 Some languages omit some parts, such as Agda which lacks a full core type-checker.
-Both the elaborator and the core type-checker can be divided into two parts: traversal of the terms and collection (followed by solving) of the constraints [@bruijnPleaWeakerFrameworks1991].
-These can be found in all major dependently-typed languages like Idris, Coq, Lean, and Agda.
+The elaborator can be divided into two parts: traversal of the terms with collection of the constraints and solving of the constraints [@bruijnPleaWeakerFrameworks1991].
+These can be found in all major dependently-typed languages like Idris, Coq, Lean, and Agda, though at times interleaved.
 Agda perhaps pushes the idea of constraints the furthest of them all and internally has a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092).
-We will focus on it specifically below since there the problems are most prominent.
+We will focus on it specifically below since the problems are most prominent there.
 
-**Problems with unifiers**
-The most common constraint type is equality, the solver for it is typically called a unifier.
-The unifiers can quickly become incredibly complex which stems from the desire of compiler writers to implement the most powerful unifier, thus providing the most powerful inference to users.
-This code is also heavily used throughout the compiler (either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp`, `ValueCmpOnFace`, `SortCmp`\todo{more poiters to where exactly this is used, maybe ask @Jesper}), making it sensitive towards changes and hard to maintain and debug.
+**Problems with unifiers.**
+The most common constraint type is equality, which is typically solved by a unifier.
+In order to provide the most powerful inference to users, compiler writers often extend the unifier to make it more powerful, which leads to complex and intricate code.
+This code is also heavily used throughout the compiler (either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp`, `ValueCmpOnFace`, `SortCmp`\todo{more poiters to where exactly this is used}), making it sensitive towards changes and hard to maintain and debug.
 
-An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases of metavariables.
+An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases for metavariables.
 This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
 Each of the above functions implements part of the "business logic" of the conversion checker with the total line count above 400 lines.
 But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints: they have to throw and catch exceptions, driving the control flow of the unification, compute blocking tags that determine when a postponed constraint is retried,and deal with cases where either or both of the sides equation or its type are either metavariables or the reduction is blocked on one.
@@ -88,20 +88,20 @@ As a result this code is unintuitive and full of intricacies as indicated by [mu
 Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
 This is precisely what we'd like the compiler developer to write, not to worry about the dance around the constraint system.
 
-The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large modules hard to understand.
+The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large modules that are hard to understand.
 The sizes of modules with unifiers are as follows: Idris ([1.5kloc](https://github.com/idris-lang/Idris2/blob/542ebeae97ed8b35ca1c987a56a61e98d4291a75/src/Core/Unify.idr#L1392-L1430)), Lean ([1.8kloc](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)), Coq ([1.8kloc](https://github.com/coq/coq/blob/155688103c43f578a8aef464bf0cb9a76acd269e/pretyping/evarconv.mli)).
 For Haskell, which isn't a dependently-typed language yet but does have a constraints system [@jonesTypeInferenceConstraint2019], this number is at [2kloc](https://gitlab.haskell.org/ghc/ghc/-/blob/2f97c86151d7eed115ddcbdee1842684aed63176/compiler/GHC/Core/Unify.hs).
 
-**How do we solve this**
+**How do we solve this?**
 While Agda relies on constraints heavily, the design at large doesn't put at them the centre of the picture and instead frames as a gadget.
-To give a concrete example, function `noConstraints` allows you to pose restrictions on the computation that break the abstraction.
+To give a concrete example, function `noConstraints` allows you to pose restrictions on the computation that break the abstraction \todo{which abstraction}.
 On the other hand, `abortIfBlocked`/`reduce` and friends force you to make a choice between letting the constraint system handle blockers or doing it manually.
 These things are known to be brittle and pose an increased mental overhead when writing a type-checker.
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 First we give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers. This isn't dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, ch. 4.4] or communication with an independent process [@allaisTypOSOperatingSystem2022a].
-Second, to make the language more modular we make constraints an extensible data type in the style of "Data types à la carte" [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what kinds of constraints they match on.
-Our current prototype is implemented in Haskell as is available at ....\todo{insert a link}
+Second, to make the language more modular we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they match on.
+Our current prototype is implemented in Haskell as is available at [github.com/liesnikov/extensible-elaborators](https://github.com/liesnikov/extensible-elaborators).\todo{make the repo public}
 
 For example, to solve unification problems we need to define a constraint that models them:
 ```haskell
@@ -124,10 +124,9 @@ We separate the handler from the solver to allow for cheaper decision procedures
 Finally, we register the solver by declaring it using a plugin interface specifying solvers that precede and succeed it.
 This plugin symbol will be picked up by the linker and registered at the runtime.
 
-**Open constraint datatype**
+**Open constraint datatype.**
 Refactoring the unifier into smaller solvers results in a compact elaborator for a simple language.
 However, making the constraint datatype open and allowing users to register new solvers allows us to extend the language without affecting the core.
-
 For example, to add implicit arguments to the language it's enough to extend the parser, add one case to the elaborator to add a new meta for every implicit and register a solver.
 For a simple implicit every such metavariable will be instantiated by the unifier.
 
