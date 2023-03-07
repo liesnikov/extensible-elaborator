@@ -77,7 +77,7 @@ We will focus on it specifically below since the problems are most prominent the
 **Problems with unifiers.**
 The most common constraint type is equality, which is typically solved by a unifier.
 In order to provide the most powerful inference to users, compiler writers often extend the unifier to make it more powerful, which leads to complex and intricate code.
-This code is also heavily used throughout the compiler (either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp`, `ValueCmpOnFace`, `SortCmp`\todo{more poiters to where exactly this is used}), making it sensitive towards changes and hard to maintain and debug.
+This code is also heavily used throughout the compiler (either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions, `ValueCmpOnFace` from `equalTermOnFace` again while checking applications), making it sensitive towards changes and hard to maintain and debug.
 
 An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases for metavariables.
 This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
@@ -94,8 +94,8 @@ For Haskell, which isn't a dependently-typed language yet but does have a constr
 
 **How do we solve this?**
 While Agda relies on constraints heavily, the design at large doesn't put at them the centre of the picture and instead frames as a gadget.
-To give a concrete example, function `noConstraints` allows you to pose restrictions on the computation that break the abstraction \todo{which abstraction}.
-On the other hand, `abortIfBlocked`/`reduce` and friends force you to make a choice between letting the constraint system handle blockers or doing it manually.
+To give a concrete example, functions `noConstraints` or `dontAssignMetas` allows you to pose restrictions on a computation that rely on some behaviour of the constraint solver system throughout the rest of the codebase.
+`abortIfBlocked`, `reduce` and `catchConstraint`/`patternViolation` force the programmer to make a choice between letting the constraint system handle blockers or doing it manually.
 These things are known to be brittle and pose an increased mental overhead when writing a type-checker.
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
