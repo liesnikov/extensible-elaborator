@@ -57,7 +57,7 @@ header-includes: |
       % title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
       % xleftmargin=10pt,
       aboveskip=4pt,
-      belowskip=4pt
+      belowskip=0pt
     }
 ---
 
@@ -80,7 +80,7 @@ The most common constraint type is equality, which is typically solved by a unif
 In order to provide the most powerful inference to users, compiler writers often extend the unifier to make it more powerful, which leads to complex and intricate code.
 This code is also heavily used throughout the compiler (either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions, `ValueCmpOnFace` from `equalTermOnFace` again while checking applications), making it sensitive towards changes and hard to maintain and debug.
 
-An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-driven conversion checking and yet the vast majority of it is special cases for metavariables.
+An example from Agda's conversion checker is `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-direced unification and yet the vast majority of it is special cases for metavariables.
 This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
 Each of the above functions implements part of the "business logic" of the conversion checker with the total line count above 400 lines.
 But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints: they have to throw and catch exceptions, driving the control flow of the unification, compute blocking tags that determine when a postponed constraint is retried,and deal with cases where either or both of the sides equation or its type are either metavariables or the reduction is blocked on one.
@@ -102,7 +102,7 @@ These things are known to be brittle and pose an increased mental overhead when 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 First we give a stable API for raising constraints so that instead of the type-checker carefully calling the right procedure we raise a constraint, essentially creating an "ask" to be fulfilled by the solvers. This isn't dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, ch. 4.4] or communication with an independent process [@allaisTypOSOperatingSystem2022a].
 Second, to make the language more modular we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they match on.
-Our current prototype is implemented in Haskell as is available at [github.com/liesnikov/extensible-elaborators](https://github.com/liesnikov/extensible-elaborators).\todo{make the repo public}
+Our prototype is implemented in Haskell as is available at [github.com/liesnikov/extensible-elaborators](https://github.com/liesnikov/extensible-elaborators).\todo{make the repo public}
 
 For example, to solve unification problems we need to define a constraint that models them:
 ```haskell
@@ -131,7 +131,7 @@ However, making the constraint datatype open and allowing users to register new 
 For example, to add implicit arguments to the language it's enough to extend the parser, add one case to the elaborator to add a new meta for every implicit and register a solver.
 For a simple implicit every such metavariable will be instantiated by the unifier.
 
-Once we have implicits as a case in the elaborator it should be possible to extend this system to accommodate for type classes [@hallTypeClassesHaskell1996], tactic arguments [@theagdateamAgdaUserManual2022, ch. 3.16.1] (assuming tactics) with just additional solvers and parsing rules.
+Once we have implicits as a case in the elaborator it should be possible to extend this system to accommodate for type classes [@hallTypeClassesHaskell1996], tactic arguments [@theagdateamAgdaUserManual2022, ch. 3.16.1] with just additional solvers and parsing rules.
 We hope to also implement coercive subtyping (akin to [@aspertiCraftingProofAssistant2007]) and, perhaps, row types [@gasterPolymorphicTypeSystem1996].
 
 \newpage
