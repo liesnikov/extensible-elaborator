@@ -14,6 +14,7 @@ header-includes: |
     \author{Bohdan Liesnikov\inst{1}, Jesper Cockx\inst{1}}
     \authorrunning{Bohdan Liesnikov, Jesper Cockx}
     \titlerunning{Extensible elaborator design}
+    \usepackage{upquote}
     \institute{TU Delft, Delft, Netherlands}
     \usepackage{todonotes}
     \definecolor{darkblue}{rgb}{0,0,0.5}
@@ -24,7 +25,7 @@ header-includes: |
     \definecolor{grayred}{rgb}{0.5,0.2,0.2}
     \lstset{ % stolen from build systems paper github.com/snowleopard/united/blob/main/paper/main.tex
       backgroundcolor=\color{white},     % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
-      %identifierstyle=\color{red},
+      identifierstyle=\color{darkgray},
       basicstyle=\small\ttfamily,   % the size of the fonts that are used for the code
       breakatwhitespace=false,           % sets if automatic breaks should only happen at whitespace
       breaklines=false,                  % sets automatic line breaking
@@ -39,9 +40,9 @@ header-includes: |
       % keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
       keywordstyle=\color{darkblue},     % keyword style
       language=Haskell,                  % the language of the code
-      morekeywords={}, % doesn't work for some reason
-      deletekeywords={instance, data, where, class},      % if you want to delete keywords from the given language
-      emph={data, class, instance, where, type},
+      morekeywords={()}, % doesn't work for some reason
+      deletekeywords={},      % if you want to delete keywords from the given language
+      emph={EqualityC, Plugin, Constraint, Term, Type, MonadElab},
       emphstyle=\color{darkpink},
       numbers=none,                      % where to put the line-numbers; possible values are (none, left, right)
       % numbersep=5pt,                   % how far the line-numbers are from the code

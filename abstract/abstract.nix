@@ -19,6 +19,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       mathtools
       lastpage
       eso-pic # for debug
+      upquote # for straight apostrophes in code
     ; };
     extraTexInputs = [ ];
     extraBuildInputs = [ librsvg biber];
