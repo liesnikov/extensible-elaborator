@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-{ stdenv, pandoc, texlive,
-  librsvg, biber,
-  makeFontsConf, source-serif, source-sans, source-code-pro}:
+{ stdenv, pandoc, texlive,  librsvg, biber}:
 let texlive-combined = texlive.combine { inherit (texlive)
-      scheme-basic xetex latexmk
+      scheme-basic latex latexmk
       fontspec koma-script  # ??
       unicode-math # ??
       xcolor # for coloured text
@@ -15,29 +13,36 @@ let texlive-combined = texlive.combine { inherit (texlive)
       biblatex
       hyperref # for references and links
       fancyvrb # fancy verbatim text
-      ; };
+      # for easychair.cls
+      footmisc
+      listings
+      mathtools
+      lastpage
+      eso-pic # for debug
+      upquote # for straight apostrophes in code
+    ; };
     extraTexInputs = [ ];
     extraBuildInputs = [ librsvg biber];
 in stdenv.mkDerivation ({
 
   name = "extensible-elaborator-paper";
   src = builtins.filterSource
-    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result" "fonts.patch"]))
+    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result"]))
     ./.;
 
   nativeBuildInputs =
     [ pandoc texlive-combined ] ++  extraBuildInputs;
 
   buildPhase = ''
+    make main.tex
     make main.pdf
   '';
 
   installPhase = ''
     mkdir $out
+    mv main.tex $out/main.tex
     mv main.pdf $out/main.pdf
   '';
-
-  FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-serif source-sans source-code-pro]; };
 
   TEXINPUTS =
     builtins.concatStringsSep ":" ([ "." ] ++ extraTexInputs ++ [ "" ]);

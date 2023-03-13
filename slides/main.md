@@ -2,8 +2,7 @@
 author: Bohdan Liesnikov
 institute: TU Delft
 title: Extensible elaborators
-subtitle: Seminar talk
-date: September 21, 2022
+date: November 22, 2022
 classoption: "aspectratio=169"
 fontsize: 12pt
 navigation: empty
@@ -17,7 +16,16 @@ sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
 ---
 
-We would like to have extensible languages.
+So, you want to build a compiler.
+
+\pause
+
+A compiler for a dependently-typed language.
+
+\pause
+
+You don't want to bake everything in just yet.
+Great, let's make it extensible and figure things out as we go!
 
 \pause
 
@@ -26,32 +34,32 @@ We can settle for extensible "on the surface".
 
 # Bit of background
 
-## How the compiler is structured
+## How is your compiler structured
 
 ![](./dependent-types-compiler.pdf)
 
-## How the typechecker is structured
+## How is the typechecker structured
 
 ![](./dependent-types-typechecker.pdf)
 
-* Not interested in the compilation part
-* Talking dependently-typed (DT) languages in particular
+* not interested in the compilation part
+* talking dependently-typed (DT) languages in particular
 
 ## Can we tackle the parser?
 
 ![](./dependent-types-typechecker.pdf)
 
-* Parsing is an old and hard problem
-* In modern DT languages one either has a custom syntax declarations or proper macros
-* Let's not go there today
+* parsing is an old and hard problem
+* in modern DT languages one either has a custom syntax declarations or proper macros
+* let's not go there today
 
 ## Can we tackle the core?
 
 ![](./dependent-types-typechecker.pdf)
 
-* Core rules correspond to the encoded logic
-* Modifying core can violate soundness
-* Generally speaking, not something you want to mess with
+* core rules correspond to the encoded logic
+* modifying core can violate soundness
+* generally speaking, not something you want to mess with
 
 ## Elaborator under attack
 
@@ -59,26 +67,25 @@ We can settle for extensible "on the surface".
 
 ## Problem statement
 
-We would like to have extensible languages.
-
-Well, maybe not _completely_ extensible.  
-We can settle for extensible ~~"on the surface"~~ "in the middle".
+* want to find a principled design for an extensible elaborator.
+* *don't want to* create a DSL to only express "correct" type theories
 
 # Going deeper into the elaborator
 
 ## How does an elaborator work
 
-* We essentially do type-checking
-* More liberal
-* If something isn't immediately obvious  
+* essentially do type-checking
+* more liberal
+* if something isn't immediately obvious  
   constrain the unknowns such that it typechecks
 
-## "Simple" example: type classes
+## Example: type classes
 
-* during initial typechecking of the body you don't care about a instance
+* during initial typechecking of the body you don't care about a particular instance
 * just that it does exist
 * create a constraint to look for one
 * do a search later
+* maybe block the problem if you need to reduce something that involves the instance
 
 ## Example: infer an argument
 
@@ -98,23 +105,22 @@ How do we go around typechecking it?
 * done
 
 
-## Example: infer an argument (complex)
+## Example: infer an argument
 
 ```
 f : ∀ (k : Nat) (A : F k) (a : A) (n : Nat) -> Vec A n
 
-f k _ t (succ zero)
+f k _¹ (C _² _³) (succ zero)
 ```
 
-* replace `_` with `?¹`
-* look up `k` yields not fully elaborated term *yet*
-* you get a constraint `?¹ ~ F ?²`
-* looking up `t` yields type `G`
-* produce a constraint `F ?² ~ G`
+* replace `_¹` with `?¹`
+* we know that `?¹ : F k`
+* elaborating `(C _² _³)` yields type `T ?² ?³`
+* produce a constraint `?¹ ~ T ?² ?³`
 
 ## How do constraints work
 
-* Typically a compiler has a constraint language
+* typically a compiler has a constraint language
 * Haskell has a "simple" one:
   ```
   W = empty
@@ -141,8 +147,22 @@ W = ValueCmp t1 t2 # eq comparison
 
 ## How do constraints work
 
-* Create and collect constraints while typechecking
-* Solve them one by one in the process or afterwards
+* aiming for something in-between in the core + your extensions
+
+```
+W = empty
+  | W1, W2
+  | IsDatatypeConstructor
+  | EqualityComparison
+  | MetaSolved
+  ...
+  # more to come?
+```
+
+## How do constraints work
+
+* create and collect constraints while typechecking
+* solve them one by one in the process or afterwards
 
 ## Core idea
 
@@ -150,10 +170,10 @@ What if we open this constraint language to the "power users"?
 
 ## Why
 
-* Get a relatively compact core of the elaborator
-* Build features around it as "extensions" or "plugins"
-* Allow cheaper experiments with the language
-* Main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
+* get a relatively compact core of the elaborator
+* build features around it as "extensions" or "plugins"
+* allow cheaper experiments with the language
+* main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
 
 Bottom line: this is a design study
 
@@ -164,7 +184,7 @@ Bottom line: this is a design study
 * DT language
 * Pi, Sigma types
 * inductive types
-* case-constructs for elimination
+* case-constructs for elimination (not case-trees)
 * some other extra features, ignored for now
 
 ## Additions
@@ -181,14 +201,30 @@ Bottom line: this is a design study
 :::
 
 
-## Implementation space
+## Design choices and implementation ideas
+
+* constraints are async procedure calls
+* metas are communication channels for async computations
+* we have metas for terms  
+  but not for modalities or other language constructs just yet
+* in the process of solver implementation
+
+## Design choices and implementation ideas
+
+* the extension writer communicates whether the problem is blocking or not by freezing the rest of the typechecking
+* each constraint raised gets an opportunity to be solved/simplified immediately by the user-supplied solver
+* if it doesn't - we can freeze the problem and return a meta in place of the typechecked solution
+
+## Design overview
+
+![](./architecture-diagram.pdf)
+
+## Open questions
 
 ::: incremental
 
 * how to encode solver patterns and order?
-* are metavariables special enough to bake them in explicitly?
-* should we make syntax an open data-type?
-* how does dynamic linking interfere with what we can do?
+* can we link dynamically?
 
 :::
 
@@ -197,37 +233,34 @@ Bottom line: this is a design study
 
 Current idea:
 
-* at plugin writing-time "import" modules with existing solvers
-* reuse pattern-matching machinery from the typechecker
 * specify a (pre-) order in which the solvers should run  
   i.e. type classes run after name disambiguation
 
-## are metavariables special enough to bake them in explicitly
-
-* for now -- probably, yes
-* similar problem to "open datatype"
-
-
-## should we make syntax an open data-type
-
-* Would be great, not clear how much accidental complexity this brings.
-* Currently the code is written using `unbound-generics` [@alekseykligerUnboundgenerics2022]. Needs Generic instances, which might be problematic to get.
-* Alternatively, "open" datatype on top of the existing internal one.
-* Trees that grow? [@najdTreesThatGrow2017]
-
 ## how does dynamic linking interfere with what we can do
 
-* There is machinery in Haskell to declare interfaces [@pangPluggingHaskell2004]
+* there is machinery in Haskell to declare interfaces [@pangPluggingHaskell2004]
 * what should the interface look like?
-* ```
+```
   data SolverTag = ...
   
-  type Solver = Problem -> (Set Problem, Substitution)
+  type Solver = ConstraintF c -> ( Set (ConstraintF c)
+                                 , Map MetaId Term )
   
   data PluginInterface = Plugin {
     solvers :: Map SolverTag Solver,
     solverTags :: [SolverTag],
     priorities :: [(SolverTag, SolverTag)]
+  }
+```
+
+## how does dynamic linking interfere with what we can do
+
+```
+  instance ConstraintMap constraintTag ConstraintType where
+  ...
+  
+  data Constraints = Constraints {
+    constraintTags :: Set String,
   }
   ```
 
@@ -235,16 +268,19 @@ Current idea:
 ## Prior work
 
 * Haskell
-  * Plugins
-  * Hooks
-  * Was supposed to get dependent types
+  * plugins
+  * hooks
+  * was supposed to get dependent types
 * Coq
-  * Plugins don't really have an interface
-  * Not restricted in any way, if you go into ml space
-  * Very confusing
+  * plugins don't really have an interface
+  * not restricted in any way, if you go into ml space
+  * very confusing
 * Lean
-  * Uses macros to redefine symbols
-  * Uses reflection and typechecking monads to define custom elaboration procedures
+  * uses macros to redefine symbols
+  * uses reflection and typechecking monads to define custom elaboration procedures
+* TypOS
+  * you have to buy into a whole new discipline
+  * we hope to keep things a bit more conventional engineering-wise
 
 ## Closing slide
 
@@ -255,10 +291,6 @@ Current idea:
 
 \bibliographytrue
 \printbibliography[heading=none]
-
-## Backup
-
-* Hey, we have backup slides!
 
 <!-- Local Variables: -->
 <!-- mode: markdown; reftex -->

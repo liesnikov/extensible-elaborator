@@ -12,24 +12,24 @@ open: main.pdf
 nix-build: main.md Makefile bib.bib
 	nix-build . ""
 
-main.pdf: main.md bib.bib Makefile
-	pandoc --standalone main.md \
-	--citeproc --bibliography bib.bib \
-	--pdf-engine=xelatex \
-	-o main.pdf
+#main.pdf: main.md bib.bib Makefile
+#	pandoc --standalone main.md \
+#	--listings \
+#	--citeproc --bibliography bib.bib \
+#	-o main.pdf
 
-#main.pdf: main.tex Makefile
-#	latexmk -pdfxe main.tex
+main.pdf: main.tex Makefile
+	latexmk -pdf main.tex
 
 main.tex: main.md bib.bib Makefile
-	pandoc --standalone main.md --bibliography bib.bib --biblatex --pdf-engine=xelatex -o main.tex
+	pandoc --standalone main.md --listings --bibliography bib.bib --biblatex -o main.tex
 
 #main.pdf: main.md bib.bib Makefile
 #	pandoc --standalone main.md \
 #         --bibliography=bib.bib --biblatex\
 #         --pdf-engine=xelatex -o main.pdf
 
-#main.pdf: main.tex
+# main.pdf: main.tex
 #	xelatex main
 #	biblatex main
 #	xelatex main
