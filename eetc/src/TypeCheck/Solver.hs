@@ -22,9 +22,13 @@ type HandlerType c = forall cs m .
                     (ConstraintF cs) ->
                     m Bool
 
+type PluginId = String
 
 data Plugin c = Plugin { solver  :: SolverType c
                        , handler :: HandlerType c
+                       , symbol :: PluginId
+                       , pre :: [PluginId]
+                       , suc :: [PluginId]
                        }
 
 identityEqualityHandler :: HandlerType EqualityConstraint
@@ -39,6 +43,15 @@ identityEqualityHandler constr = do
 
 identityEqualitySolver :: SolverType EqualityConstraint
 identityEqualitySolver constr = return True
+
+identityPlugin :: Plugin EqualityConstraint
+identityPlugin = Plugin {
+  solver = identityEqualitySolver,
+  handler = identityEqualityHandler,
+  symbol = "identity equality solver",
+  pre = [],
+  suc = []
+  }
 
 syntacticEqualityHandler :: HandlerType EqualityConstraint
 syntacticEqualityHandler constr = do
