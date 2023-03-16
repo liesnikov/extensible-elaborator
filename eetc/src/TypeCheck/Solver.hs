@@ -1,8 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 module TypeCheck.Solver where
 
-import           Control.Monad.Trans ( MonadTrans(..), lift )
-
 
 import qualified Unbound.Generics.LocallyNameless as Unbound (aeq)
 
