@@ -4,7 +4,9 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , asksTcNames, localTcNames
 
                        , MonadTcReaderEnv(..)
-                       , asksEnv
+                       , asksEnv, getSourceLocation
+
+                       , warn
 
                        , MonadTcState(..)
                        , getsTc, modifyTcNames
@@ -20,8 +22,8 @@ module TypeCheck.Monad ( MonadTcReader(..)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-import           Control.Monad (join, MonadPlus(..))
 import           Control.Applicative (Alternative(..))
+import           Control.Monad (join, MonadPlus(..))
 import           Control.Monad.Except ( MonadError(..)
                                       , ExceptT
                                       , runExceptT )
@@ -30,28 +32,35 @@ import           Control.Monad.Reader ( ReaderT(runReaderT)
                                       , ask
                                       , local )
 import           Control.Monad.State ( StateT(runStateT)
-                                     , put
-                                     , modify
-                                     , get )
-import           Control.Monad.Trans ( MonadTrans(..), lift )
-import           Control.Monad.Trans.Control ( MonadTransControl(..), liftThrough )
+                                      , put
+                                      , modify
+                                      , get )
+import           Control.Monad.Trans ( MonadTrans(..)
+                                      , lift )
+import           Control.Monad.Trans.Control ( MonadTransControl(..)
+                                             , liftThrough )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
+
+import           PrettyPrint           ( D(..)
+                                       , Disp(..)
+                                       , Disp1
+                                       , render
+                                       )
 import qualified Syntax.Internal as I
-import           Syntax.Internal ( Meta(..)
-                                 , MetaTag(..)
-                                 , MetaVarId )
+import           Syntax.Internal       ( Meta(..)
+                                       , MetaTag(..)
+                                       , MetaVarId )
+import           Syntax.SourceLocation (SourceLocation)
 import           TypeCheck.Constraints ( ConstraintF
                                        , BasicConstraintsF
                                        , (:<:)
                                        , inject )
-
-import           TypeCheck.State ( Env(..)
-                                 , Err(..)
-                                 , NameMap)
 import qualified TypeCheck.State as State
-                                 (TcState(..))
+import           TypeCheck.State       ( Env(..)
+                                       , Err(..)
+                                       , NameMap)
 
 -- Monad with read access to TcState
 
@@ -88,9 +97,18 @@ class Monad m => MonadTcReaderEnv m where
     =>  (Env -> Env) -> m a -> m a
   localEnv = liftThrough . localEnv
 
-
 asksEnv :: (MonadTcReaderEnv m) => (Env -> a) -> m a
 asksEnv f = f <$> askEnv
+
+-- | access current source location
+getSourceLocation :: MonadTcReaderEnv m => m [SourceLocation]
+getSourceLocation = asksEnv sourceLocation
+
+-- | Print a warning
+warn :: (Disp a, MonadTcReaderEnv m, MonadIO m) => a -> m ()
+warn e = do
+  loc <- getSourceLocation
+  liftIO $ putStrLn $ "warning: " ++ render (disp (Err loc (disp e)))
 
 -- Monad with write access to TcState
 
@@ -131,7 +149,7 @@ class MonadConstraints cs m | m -> cs where
   createMetaVar :: MetaTag -> m MetaVarId
   lookupMetaVar :: MetaVarId -> m (Maybe (Meta I.Term))
   raiseConstraintMaybeFreeze :: (c :<: cs) => c (ConstraintF cs) -> Maybe (m ()) -> m ()
-  solveAllConstraints :: m ()
+  solveAllConstraints :: Disp1 cs => m ()
 
 raiseConstraint :: (MonadConstraints cs m, c :<: cs)
                 => c (ConstraintF cs) -> m ()
@@ -225,9 +243,9 @@ lookupMetaVarTc mid = do
 --FIXME
 -- dispatch simplifier before storing the constraints
 raiseConstraintMaybeFreezeTc :: (c :<: cs)
-                           => c (ConstraintF cs)
-                           -> Maybe (TcMonad cs ())
-                           -> TcMonad cs ()
+                             => c (ConstraintF cs)
+                             -> Maybe (TcMonad cs ())
+                             -> TcMonad cs ()
 raiseConstraintMaybeFreezeTc cons freeze = do
   f <- Unbound.fresh (Unbound.string2Name "constraint")
   let constraintId = Unbound.name2Integer f
@@ -240,9 +258,12 @@ raiseConstraintMaybeFreezeTc cons freeze = do
       modifyTc (\s -> s { State.frozen =
                             Map.insert constraintId frozenproblem (State.frozen s)})
 
-solveAllConstraintsTc :: TcMonad cs ()
+solveAllConstraintsTc :: (Disp1 cs, MonadIO m,
+                          MonadTcReaderEnv m,
+                          MonadTcState cs m, MonadError Err m) => m ()
 solveAllConstraintsTc = do
   cons <- fmap State.constraints getTc
+  warn [DD cons]
 --  error [DS "After checking an entry there are unsolved constraints",
 --         DD cons
 --        ]
@@ -261,6 +282,7 @@ type MonadTcCore m = (MonadTcReaderEnv m,
                       MonadIO m)
 
 type MonadElab c m = (MonadTcState c m,
+                      Disp1 c,
                       BasicConstraintsF :<: c,
                       MonadTcReaderEnv m,
                       MonadError Err m, MonadFail m,

@@ -93,6 +93,10 @@ instance (Disp a, Disp b) => Disp (Either a b) where
   disp (Left a) = PP.text "Left" <+> disp a
   disp (Right a) = PP.text "Right" <+> disp a
 
+instance (Disp a) => Disp (S.Set a) where
+  disp l =  PP.text "[ "
+        <+> PP.hsep (PP.punctuate (PP.text ",") $ fmap disp $ S.toList l)
+        <+> PP.text " ]"
 
 -------------------------------------------------------------------------
 

@@ -32,16 +32,16 @@ module TypeCheck.Environment
 where
 
 import Control.Monad.Except
-    ( unless, MonadError(..), MonadIO(..))
+    ( unless, MonadError(..))
 import Data.List
 import Data.Maybe ( listToMaybe )
-import PrettyPrint ( SourcePos, render, D(..), Disp(..), Doc )
+import PrettyPrint ( SourcePos, D(..), Disp(..), Doc )
 
 import Syntax.Internal
 import Syntax.ModuleStub
 import TypeCheck.State
-import TypeCheck.Monad (MonadTcReaderEnv(..), localEnv, asksEnv)
-import Text.PrettyPrint.HughesPJ ( ($$), sep)
+import TypeCheck.Monad (MonadTcReaderEnv(..), localEnv, asksEnv, getSourceLocation, warn)
+import Text.PrettyPrint.HughesPJ ( ($$), sep )
 
 -- | Find a name's user supplied type signature.
 lookupHint :: (MonadTcReaderEnv m) => TName -> m (Maybe Sig)
@@ -211,7 +211,6 @@ extendCtxTele ( _ : tele) m =
   err [DS "Invalid telescope ", DD tele]
 
 
-
 -- | Extend the context with a module
 -- Note we must reverse the order.
 extendCtxMod :: (MonadTcReaderEnv m) => Module -> m a -> m a
@@ -237,9 +236,6 @@ extendSourceLocation :: (MonadTcReaderEnv m, Disp t) => SourcePos -> t -> m a ->
 extendSourceLocation p t =
   localEnv (\e@Env {sourceLocation = locs} -> e {sourceLocation = SourceLocation p t : locs})
 
--- | access current source location
-getSourceLocation :: MonadTcReaderEnv m => m [SourceLocation]
-getSourceLocation = asksEnv sourceLocation
 
 -- | Add a type hint
 extendHints :: (MonadTcReaderEnv m) => Sig -> m a -> m a
@@ -256,12 +252,6 @@ err :: (Disp a, MonadError Err m, MonadTcReaderEnv m) => [a] -> m b
 err d = do
   loc <- getSourceLocation
   throwError $ Err loc (sep $ map disp d)
-
--- | Print a warning
-warn :: (Disp a, MonadTcReaderEnv m, MonadIO m) => a -> m ()
-warn e = do
-  loc <- getSourceLocation
-  liftIO $ putStrLn $ "warning: " ++ render (disp (Err loc (disp e)))
 
 checkStage ::
   (MonadTcReaderEnv m, MonadError Err m) =>

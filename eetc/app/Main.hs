@@ -6,7 +6,6 @@ module Main(goFilename,go,main) where
 
 
 import Control.Monad.Except (runExceptT )
-import Data.List (intercalate)
 import System.Environment(getArgs)
 import System.Exit (exitFailure,exitSuccess)
 import System.FilePath (splitFileName)
