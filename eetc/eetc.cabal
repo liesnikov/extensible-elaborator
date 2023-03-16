@@ -72,6 +72,7 @@ library
     Parser
     Modules
     PrettyPrint
+
     Syntax.ModuleStub
     Syntax.PrettyPrintInternal
     Syntax.PrettyPrintSurface
@@ -79,6 +80,8 @@ library
     Syntax.Internal
     Syntax.SurfaceSyntax
     Syntax.Surface
+    Syntax.SourceLocation
+
     TypeCheck.Elaborator
     TypeCheck.Environment
     TypeCheck.Equal
@@ -89,6 +92,7 @@ library
     TypeCheck.StateActions
     TypeCheck.Constraints
     TypeCheck.ConstraintsActions
+
     Arbitrary
 
 

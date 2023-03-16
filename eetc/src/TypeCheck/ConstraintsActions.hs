@@ -4,6 +4,7 @@ module TypeCheck.ConstraintsActions ( constrainEquality
                                     ) where
 
 import           Syntax.Internal as Syntax
+import           Syntax.SourceLocation (SourceLocation)
 import           TypeCheck.Monad ( MonadConstraints
                                  , raiseConstraint
                                  , raiseConstraintAndFreeze
@@ -12,7 +13,7 @@ import           TypeCheck.Constraints ( BasicConstraintsF
                                        , EqualityConstraint(..)
                                        , TypeConstructorConstraint(..)
                                        , (:<:)(..)
-                                       , SourceLocation)
+                                       )
 
 constrainEquality :: (MonadConstraints cs m, BasicConstraintsF :<: cs)
                   => Syntax.Term -> Syntax.Term -> Syntax.Type

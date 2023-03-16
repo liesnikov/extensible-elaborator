@@ -10,13 +10,13 @@ module TypeCheck.Constraints ( ConstraintF
                              , (:<:)(..)
                              , inject
                              , match
-                             , SourceLocation(..)
                              ) where
 
 import qualified Syntax.Internal as Syntax
+import           Syntax.SourceLocation (SourceLocation, getPosition)
 import           Text.PrettyPrint ( (<+>) )
 import qualified Text.PrettyPrint as PP
-import PrettyPrint (Disp, Disp1(..), disp, SourcePos)
+import PrettyPrint (Disp, Disp1(..), disp)
 
 -- following data types a-la carte approach
 
@@ -167,11 +167,5 @@ match :: (g :<: f) => ConstraintF f -> Maybe (g (ConstraintF f ))
 match (In _ t) = prj t
 
 -- Pretty-printing boilerplate
-
--- FIXME this doesn't belong here, but putting it in State results in import cycle
--- | Marked locations in the source code
-data SourceLocation where
-  SourceLocation :: forall a. Disp a => SourcePos -> a -> SourceLocation
-
 raisedat :: SourceLocation -> PP.Doc
-raisedat (SourceLocation s _) = PP.text "raised at" <+> disp s
+raisedat s = PP.text "raised at" <+> (disp . getPosition $ s)

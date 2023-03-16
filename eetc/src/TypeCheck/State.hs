@@ -13,11 +13,11 @@ import           Data.Set as Set
 
 import Syntax.Surface as S
 import Syntax.Internal as I
+import Syntax.SourceLocation (SourceLocation(..))
 import PrettyPrint ( Disp(..), Doc )
 import Text.PrettyPrint.HughesPJ ( ($$), nest, text, vcat )
 import TypeCheck.Constraints ( ConstraintF
                              , ConstraintId
-                             , SourceLocation(..)
                              )
 
 -- | Environment manipulation and accessing functions
