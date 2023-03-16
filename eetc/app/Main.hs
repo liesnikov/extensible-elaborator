@@ -7,7 +7,6 @@ module Main(goFilename,go,main) where
 
 import Control.Monad.Except (runExceptT )
 import Data.List (intercalate)
-import qualified Data.Set as Set (toList)
 import System.Environment(getArgs)
 import System.Exit (exitFailure,exitSuccess)
 import System.FilePath (splitFileName)
@@ -19,10 +18,9 @@ import Syntax.Surface ()
 
 import Modules (getModules)
 
-import TypeCheck.State ( TcState(constraints),
-                         emptyElabEnv, emptyElabState,
+import TypeCheck.State ( emptyElabEnv, emptyElabState,
                          emptyCoreEnv, emptyCoreState)
-import TypeCheck.Monad (runTcMonad, runTcStateMonad)
+import TypeCheck.Monad (runTcMonad)
 import TypeCheck.Constraints (BasicConstraintsF)
 import TypeCheck.Elaborator ( elabModules, elabTerm )
 import TypeCheck.TypeCheck ( tcModules, inferType )
@@ -42,11 +40,10 @@ go str = do
     Right term -> do
       putStrLn "parsed as"
       putStrLn $ render $ disp term
-      elabterm <- runTcStateMonad emptyElabState emptyElabEnv (elabTerm @BasicConstraintsF term)
+      elabterm <- runTcMonad emptyElabState emptyElabEnv (elabTerm @BasicConstraintsF term)
       case elabterm of
         Left elaberror -> putElabError elaberror
-        Right (elabt, s) -> do
-          putStateDump . Set.toList . constraints $ s
+        Right elabt -> do
           res <- runTcMonad emptyCoreState emptyCoreEnv (inferType elabt)
           case res of
             Left typeError -> putTypeError typeError
@@ -72,11 +69,6 @@ putTypeError typeError = do
   putStrLn "Type Error:"
   putStrLn $ render $ disp typeError
 
-putStateDump :: Disp d => [d] -> IO ()
-putStateDump d = do
-  putStrLn "State is:"
-  putStrLn $ intercalate ",\n" $ fmap (render . disp) $ d
-
 -- | Type check the given file
 goFilename :: String -> IO ()
 goFilename pathToMainFile = do
@@ -87,9 +79,8 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcStateMonad @BasicConstraintsF emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
-  (elabs, s) <- e `exitWith` putElabError
-  putStateDump . Set.toList . constraints $ s
+  e <- runTcMonad @BasicConstraintsF emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  elabs <- e `exitWith` putElabError
   putStrLn "type checking..."
   d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError
