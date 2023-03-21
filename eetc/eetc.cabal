@@ -94,7 +94,14 @@ library
     TypeCheck.ConstraintsActions
 
     Arbitrary
-
+  other-modules:
+    TypeCheck.Monad.Prelude
+    TypeCheck.Monad.TcReader
+    TypeCheck.Monad.TcReaderEnv
+    TypeCheck.Monad.TcState
+    TypeCheck.Monad.Constraints
+    TypeCheck.Monad.Typeclasses
+    TypeCheck.Monad.TcMonad
 
 executable eetc
   import: shared-properties
