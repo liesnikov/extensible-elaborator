@@ -28,6 +28,8 @@ import qualified TypeCheck.State as State
 import TypeCheck.Monad.Prelude hiding (TcState)
 import TypeCheck.Monad.Typeclasses
 
+import TypeCheck.Solver (allSolvers)
+
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
 

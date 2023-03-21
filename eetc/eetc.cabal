@@ -103,6 +103,10 @@ library
     TypeCheck.Monad.Typeclasses
     TypeCheck.Monad.TcMonad
 
+    TypeCheck.Solver.Base
+    TypeCheck.Solver.Identity
+    TypeCheck.Solver.Syntactic
+
 executable eetc
   import: shared-properties
   build-depends: eetc
