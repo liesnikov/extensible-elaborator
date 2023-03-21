@@ -35,24 +35,24 @@ import           TypeCheck.State ( TcState(..), Err )
 
 type Decls = [Decl]
 
-askDecls :: (MonadTcReader c m) => m Decls
+askDecls :: (MonadTcReader m) => m Decls
 askDecls = decls <$> askTc
 
-localState :: (MonadTcReader c m) => (Decls -> Decls) -> m a -> m a
+localState :: (MonadTcReader m) => (Decls -> Decls) -> m a -> m a
 localState f = localTc (\s -> s { decls = f . decls $ s})
 
-asksState :: (MonadTcReader c m) => (Decls -> a) -> m a
+asksState :: (MonadTcReader m) => (Decls -> a) -> m a
 asksState f = asksTc (f . decls)
 
 -- | Find a name's user supplied type signature.
-lookupHint :: (MonadTcReader c m, MonadTcReaderEnv m) => TName -> m (Maybe Sig)
+lookupHint :: (MonadTcReader m, MonadTcReaderEnv m) => TName -> m (Maybe Sig)
 lookupHint v = do
    hints <- Env.lookupHint v
    return $ hints
 
 -- | Find a name's type in the context.
 lookupTyMaybe ::
-  (MonadTcReader c m, MonadTcReaderEnv m) =>
+  (MonadTcReader m, MonadTcReaderEnv m) =>
   TName ->
   m (Maybe Sig)
 lookupTyMaybe v = do
@@ -72,7 +72,7 @@ demoteSig ep s = s { sigEp = min ep (sigEp s) }
 -- | Find the type of a name specified in the context
 -- throwing an error if the name doesn't exist
 lookupTy ::
-  (MonadTcReader c m, MonadError Err m, MonadTcReaderEnv m) =>
+  (MonadTcReader m, MonadError Err m, MonadTcReaderEnv m) =>
   TName -> m Sig
 lookupTy v =
   do
@@ -89,7 +89,7 @@ lookupTy v =
 
 -- | Find a name's def in the context.
 lookupDef ::
-  (MonadTcReader c m) =>
+  (MonadTcReader m) =>
   TName ->
   m (Maybe Term)
 lookupDef v = do
@@ -97,7 +97,7 @@ lookupDef v = do
   return $ listToMaybe [a | Def v' a <- ctx, v == v']
 
 lookupRecDef ::
-  (MonadTcReader c m) =>
+  (MonadTcReader m) =>
   TName ->
   m (Maybe Term)
 lookupRecDef v = do
@@ -106,7 +106,7 @@ lookupRecDef v = do
 
 -- | Find a type constructor in the context
 lookupTCon ::
-  (MonadTcReader c m, MonadError Err m, MonadTcReaderEnv m) =>
+  (MonadTcReader m, MonadError Err m, MonadTcReaderEnv m) =>
   TCName ->
   m (Telescope, Maybe [ConstructorDef])
 lookupTCon v = do
@@ -135,7 +135,7 @@ lookupTCon v = do
 -- | Find a data constructor in the context, returns a list of
 -- all potential matches
 lookupDConAll ::
-  (MonadTcReader c m, MonadTcReaderEnv m) =>
+  (MonadTcReader m, MonadTcReaderEnv m) =>
   DCName ->
   m [(TCName, (Telescope, ConstructorDef))]
 lookupDConAll v = do
@@ -156,7 +156,7 @@ lookupDConAll v = do
 -- construct, find the telescopes for its parameters and arguments.
 -- Throws an error if the data constructor cannot be found for that type.
 lookupDCon ::
-  (MonadTcReader c m, MonadTcReaderEnv m, MonadError Err m) =>
+  (MonadTcReader m, MonadTcReaderEnv m, MonadError Err m) =>
   DCName ->
   TCName ->
   m (Telescope, Telescope)
@@ -180,7 +180,7 @@ lookupDCon c tname = do
 -- FIXME
 -- should we really pass the continuation?
 -- | Extend the context with a list of bindings, marking them as "global"
-extendGlobal :: (MonadTcState c m) => [Decl] -> m a -> m a
+extendGlobal :: (MonadTcState m) => [Decl] -> m a -> m a
 extendGlobal ds a = do
   modifyTc
     ( \m@(TcS {decls = cs}) ->

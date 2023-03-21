@@ -1,4 +1,4 @@
-{-# LANGUAGE ConstraintKinds, FunctionalDependencies, TypeApplications #-}
+{-# LANGUAGE ConstraintKinds, TypeFamilies, TypeApplications #-}
 module TypeCheck.Monad ( MonadTcReader(..)
                        , asksTc
                        , asksTcNames, localTcNames
@@ -19,6 +19,7 @@ module TypeCheck.Monad ( MonadTcReader(..)
                        , TcState
                        ) where
 
+import           Data.Kind (Type)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -64,25 +65,26 @@ import           TypeCheck.State       ( Env(..)
 
 -- Monad with read access to TcState
 
-class Monad m => MonadTcReader c m | m -> c where
-  askTc :: m (TcState c)
-  localTc :: (TcState c -> TcState c) -> m a -> m a
+class Monad m => MonadTcReader m where
+  type ReaderConstraint m :: Type -> Type
+  askTc :: m (TcState (ReaderConstraint m))
+  localTc :: (TcState (ReaderConstraint m) -> TcState (ReaderConstraint m)) -> m a -> m a
 
-  default askTc :: (MonadTrans t, MonadTcReader c n, t n ~ m) => m (TcState c)
-  askTc = lift askTc
+--  default askTc :: (MonadTrans t, MonadTcReader n, t n ~ m) => m (TcState (ReaderConstraint m))
+--  askTc = lift askTc
+--
+--  default localTc
+--    :: (MonadTransControl t, MonadTcReader n, t n ~ m)
+--    =>  (TcState (ReaderConstraint m) -> TcState (ReaderConstraint m)) -> m a -> m a
+--  localTc = liftThrough . localTc
 
-  default localTc
-    :: (MonadTransControl t, MonadTcReader c n, t n ~ m)
-    =>  (TcState c -> TcState c) -> m a -> m a
-  localTc = liftThrough . localTc
-
-asksTc :: (MonadTcReader c m) => (TcState c -> a) -> m a
+asksTc :: MonadTcReader m => (TcState (ReaderConstraint m) -> b) -> m b
 asksTc f = f <$> askTc
 
-asksTcNames :: (MonadTcReader c m) => (NameMap -> a) -> m a
+asksTcNames :: (MonadTcReader m) => (NameMap -> a) -> m a
 asksTcNames f = f <$> State.vars <$> askTc
 
-localTcNames :: (MonadTcReader c m) => (NameMap -> NameMap) -> m a -> m a
+localTcNames :: (MonadTcReader m) => (NameMap -> NameMap) -> m a -> m a
 localTcNames f = localTc (\s -> s {State.vars = f $ State.vars s})
 
 class Monad m => MonadTcReaderEnv m where
@@ -112,29 +114,31 @@ warn e = do
 
 -- Monad with write access to TcState
 
-class Monad m => MonadTcState c m | m -> c where
-  getTc :: m (TcState c)
-  putTc :: (TcState c) -> m ()
-  modifyTc :: (TcState c -> TcState c) -> m ()
+class Monad m => MonadTcState m where
+  type StateConstraint m :: Type -> Type
+  getTc :: m (TcState (StateConstraint m))
+  putTc :: (TcState (StateConstraint m)) -> m ()
+  modifyTc :: (TcState (StateConstraint m) -> TcState (StateConstraint m)) -> m ()
 
-  default getTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => m (TcState c)
-  getTc = lift getTc
+--  default getTc :: (MonadTrans t, MonadTcState n, t n ~ m) => m (TcState c)
+--  getTc = lift getTc
+--
+--  default putTc :: (MonadTrans t, MonadTcState n, t n ~ m) => TcState c -> m ()
+--  putTc = lift . putTc
+--
+--  default modifyTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => (TcState c -> TcState c) -> m ()
+--  modifyTc = lift . modifyTc
 
-  default putTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => TcState c -> m ()
-  putTc = lift . putTc
-
-  default modifyTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => (TcState c -> TcState c) -> m ()
-  modifyTc = lift . modifyTc
-
-getsTc :: (MonadTcState c m) => (TcState c -> a) -> m a
+getsTc :: MonadTcState m => (TcState (StateConstraint m) -> b) -> m b
 getsTc f = do
   s <- getTc
   return $ f s
 
-modifyTcNames :: (MonadTcState c m) => (NameMap -> NameMap) ->  m ()
+modifyTcNames :: (MonadTcState m) => (NameMap -> NameMap) ->  m ()
 modifyTcNames f = modifyTc (\s -> s {State.vars = f $ State.vars s})
 
-instance (Monad m, MonadTcState c m) => MonadTcReader c m where
+instance (Monad m, MonadTcState m) => MonadTcReader m where
+  type ReaderConstraint m = StateConstraint m
   askTc = getTc
   localTc f a = do
     s <- getTc
@@ -145,18 +149,19 @@ instance (Monad m, MonadTcState c m) => MonadTcReader c m where
 
 -- raising and catching constraints
 
-class MonadConstraints cs m | m -> cs where
+class MonadConstraints m where
+  type Constraints m :: Type -> Type
   createMetaVar :: MetaTag -> m MetaVarId
   lookupMetaVar :: MetaVarId -> m (Maybe (Meta I.Term))
-  raiseConstraintMaybeFreeze :: (c :<: cs) => c (ConstraintF cs) -> Maybe (m ()) -> m ()
-  solveAllConstraints :: Disp1 cs => m ()
+  raiseConstraintMaybeFreeze :: (c :<: (Constraints m)) => c (ConstraintF (Constraints m)) -> Maybe (m ()) -> m ()
+  solveAllConstraints :: Disp1 (Constraints m) => m ()
 
-raiseConstraint :: (MonadConstraints cs m, c :<: cs)
-                => c (ConstraintF cs) -> m ()
+raiseConstraint :: (MonadConstraints m, c :<: (Constraints m))
+                => c (ConstraintF (Constraints m)) -> m ()
 raiseConstraint c = raiseConstraintMaybeFreeze c Nothing
 
-raiseConstraintAndFreeze :: (MonadConstraints cs m, c :<: cs)
-                         => c (ConstraintF cs) -> m () -> m ()
+raiseConstraintAndFreeze :: (MonadConstraints m, c :<: (Constraints m))
+                         => c (ConstraintF (Constraints m)) -> m () -> m ()
 raiseConstraintAndFreeze c f = raiseConstraintMaybeFreeze c (Just f)
 
 {--
@@ -221,12 +226,13 @@ instance MonadTcReaderEnv (TcMonad c) where
   askEnv = TcM $ ask
   localEnv f (TcM m) = TcM $ local f m
 
-instance MonadTcState c (TcMonad c) where
+instance MonadTcState (TcMonad c) where
+  type StateConstraint (TcMonad c) = c
   getTc = TcM $ get
   putTc = TcM . put
   modifyTc = TcM . modify
 
-createMetaVarFresh :: (Unbound.Fresh m, MonadTcState c m) => MetaTag -> m MetaVarId
+createMetaVarFresh :: (Unbound.Fresh m, MonadTcState m) => MetaTag -> m MetaVarId
 createMetaVarFresh (MetaTermTag tel) = do
   dict <- State.metas <$> getTc
   newMetaVarId <- Unbound.fresh $ Unbound.string2Name "?"
@@ -258,9 +264,7 @@ raiseConstraintMaybeFreezeTc cons freeze = do
       modifyTc (\s -> s { State.frozen =
                             Map.insert constraintId frozenproblem (State.frozen s)})
 
-solveAllConstraintsTc :: (Disp1 cs, MonadIO m,
-                          MonadTcReaderEnv m,
-                          MonadTcState cs m, MonadError Err m) => m ()
+solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do
   cons <- fmap State.constraints getTc
   warn [DD cons]
@@ -269,24 +273,24 @@ solveAllConstraintsTc = do
 --        ]
   return ()
 
-instance MonadConstraints c (TcMonad c) where
+instance MonadConstraints (TcMonad c) where
+  type Constraints (TcMonad c) = c
   createMetaVar   = createMetaVarFresh
   lookupMetaVar   = lookupMetaVarTc
   raiseConstraintMaybeFreeze = raiseConstraintMaybeFreezeTc
   solveAllConstraints = solveAllConstraintsTc
-
 
 type MonadTcCore m = (MonadTcReaderEnv m,
                       MonadError Err m, MonadFail m,
                       Unbound.Fresh m, MonadPlus m,
                       MonadIO m)
 
-type MonadElab c m = (MonadTcState c m,
+type MonadElab c m = (MonadTcState m,
                       Disp1 c,
                       BasicConstraintsF :<: c,
                       MonadTcReaderEnv m,
                       MonadError Err m, MonadFail m,
-                      Unbound.Fresh m, MonadPlus m, MonadConstraints c m,
+                      Unbound.Fresh m, MonadPlus m, MonadConstraints m,
                       MonadIO m)
 
 -- Slightly more general version of TcMonad runner, where we don't throw away the state
