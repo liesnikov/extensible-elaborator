@@ -47,19 +47,11 @@ common shared-properties
     ViewPatterns
   build-depends:
     base >= 4 && < 5,
-    parsec >= 3.1.8 && < 3.2,
     mtl >= 2.2.1,
-    pretty >= 1.0.1.0,
-    unbound-generics >= 0.2,
-    transformers,
-    array >= 0.3.0.2 && < 0.6,
-    -- monad-control-1.0.1.0 is the first to contain liftThrough
-    monad-control >= 1.0.1.0 && < 1.1,
-    containers,
-    directory,
     filepath,
-    HUnit,
-    QuickCheck
+    parsec >= 3.1.8 && < 3.2,
+    pretty >= 1.0.1.0,
+    QuickCheck >= 2.13.2
   if !impl(ghc >= 8.0)
     build-depends: semigroups == 0.18.*
 
@@ -106,6 +98,14 @@ library
     TypeCheck.Solver.Base
     TypeCheck.Solver.Identity
     TypeCheck.Solver.Syntactic
+  build-depends:
+    array >= 0.3.0.2 && < 0.6,
+    containers,
+    directory,
+    -- monad-control-1.0.1.0 is the first to contain liftThrough
+    monad-control >= 1.0.1.0 && < 1.1,
+    transformers,
+    unbound-generics >= 0.2,
 
 executable eetc
   import: shared-properties
@@ -116,7 +116,7 @@ executable eetc
 test-suite test-eetc
   import: shared-properties
   build-depends: eetc
-    , QuickCheck >= 2.13.2
+               , HUnit
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Main.hs
