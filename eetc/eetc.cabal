@@ -98,6 +98,8 @@ library
     TypeCheck.Solver.Base
     TypeCheck.Solver.Identity
     TypeCheck.Solver.Syntactic
+    TypeCheck.Solver.TypeConstructor
+    TypeCheck.Solver.Allsolver
   build-depends:
     array >= 0.3.0.2 && < 0.6,
     containers,
@@ -106,6 +108,7 @@ library
     monad-control >= 1.0.1.0 && < 1.1,
     transformers,
     unbound-generics >= 0.2,
+    extra > 1 && < 2
 
 executable eetc
   import: shared-properties

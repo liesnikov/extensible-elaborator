@@ -7,7 +7,7 @@ import           TypeCheck.Constraints ( EqualityConstraint(..)
 
 import TypeCheck.Solver.Base
 
-syntacticEqualityHandler :: HandlerType EqualityConstraint
+syntacticEqualityHandler :: HandlerType EqualityConstraint cs
 syntacticEqualityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
@@ -15,10 +15,10 @@ syntacticEqualityHandler constr = do
       return True
     Nothing -> return False
 
-syntacticEqualitySolver :: SolverType EqualityConstraint
+syntacticEqualitySolver :: SolverType EqualityConstraint cs
 syntacticEqualitySolver = undefined
 
-syntacticPlugin :: Plugin EqualityConstraint
+syntacticPlugin :: Plugin EqualityConstraint cs
 syntacticPlugin = Plugin {
   solver = syntacticEqualitySolver,
   handler = syntacticEqualityHandler,
