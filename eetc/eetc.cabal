@@ -51,6 +51,7 @@ common shared-properties
     filepath,
     parsec >= 3.1.8 && < 3.2,
     pretty >= 1.0.1.0,
+    unbound-generics >= 0.2,
     QuickCheck >= 2.13.2
   if !impl(ghc >= 8.0)
     build-depends: semigroups == 0.18.*
@@ -107,7 +108,6 @@ library
     -- monad-control-1.0.1.0 is the first to contain liftThrough
     monad-control >= 1.0.1.0 && < 1.1,
     transformers,
-    unbound-generics >= 0.2,
     extra > 1 && < 2
 
 executable eetc
@@ -119,7 +119,14 @@ executable eetc
 test-suite test-eetc
   import: shared-properties
   build-depends: eetc
+               , tasty
+               , tasty-hunit
+               , tasty-quickcheck
                , HUnit
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Main.hs
+  other-modules:
+    Tests.Parsing
+    Tests.Solver
+    Tests.Full
