@@ -11,7 +11,7 @@ import           TypeCheck.Constraints ( (:<:)
 
 import TypeCheck.Solver.Base
 
-identityEqualityHandler :: HandlerType EqualityConstraint cs
+identityEqualityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 identityEqualityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
@@ -21,11 +21,10 @@ identityEqualityHandler constr = do
       else Unbound.aeq t1 t2
     Nothing -> return False
 
-identityEqualitySolver :: SolverType EqualityConstraint cs
+identityEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 identityEqualitySolver constr = return True
 
-identityPlugin :: forall cs. (EqualityConstraint :<: cs) =>
-                  Plugin EqualityConstraint cs
+identityPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 identityPlugin = Plugin {
   solver = identityEqualitySolver,
   handler = identityEqualityHandler,

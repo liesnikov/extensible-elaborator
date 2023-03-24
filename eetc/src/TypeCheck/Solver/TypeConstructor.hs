@@ -4,20 +4,21 @@ module TypeCheck.Solver.TypeConstructor (typeConstructorPlugin) where
 import           Syntax.Internal ( CheckForMetas(hasMetas)
                                  , Term(TCon)
                                  )
-import           TypeCheck.Constraints ( TypeConstructorConstraint(..)
+import           TypeCheck.Constraints ((:<:)
+                                       , TypeConstructorConstraint(..)
                                        , match
                                        )
 
 import TypeCheck.Solver.Base
 
-typeConstructorHandler :: HandlerType TypeConstructorConstraint cs
+typeConstructorHandler :: TypeConstructorConstraint :<: cs => HandlerType cs
 typeConstructorHandler constr = do
   let tcm = match @TypeConstructorConstraint constr
   case tcm of
     Just (TConConstraint t1) -> return $ hasMetas t1
     Nothing -> return False
 
-typeConstructorSolver :: SolverType TypeConstructorConstraint cs
+typeConstructorSolver :: TypeConstructorConstraint :<: cs => SolverType cs
 typeConstructorSolver constr = do
   let tcm = match @TypeConstructorConstraint constr
   case tcm of
@@ -27,7 +28,7 @@ typeConstructorSolver constr = do
         _ -> return False
     Nothing -> return False
 
-typeConstructorPlugin :: Plugin TypeConstructorConstraint cs
+typeConstructorPlugin :: TypeConstructorConstraint :<: cs => Plugin cs
 typeConstructorPlugin = Plugin { solver = typeConstructorSolver
                                , handler = typeConstructorHandler
                                , symbol = "type constructor resolver"

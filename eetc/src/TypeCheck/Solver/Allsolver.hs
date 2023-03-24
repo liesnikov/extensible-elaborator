@@ -14,7 +14,7 @@ compile = undefined
 
 solve :: (MonadElab c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
 solve [] cs = return Nothing
-solve ((BlindPlugin h) : t) cs = do
+solve (h : t) cs = do
   let tailcall = solve t cs
   ifM (handler h cs)
     (ifM (solver h cs)

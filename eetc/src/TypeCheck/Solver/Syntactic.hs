@@ -1,13 +1,14 @@
 {-# LANGUAGE TypeApplications #-}
 module TypeCheck.Solver.Syntactic (syntacticPlugin) where
 
-import           TypeCheck.Constraints ( EqualityConstraint(..)
+import           TypeCheck.Constraints ( (:<:)
+                                       , EqualityConstraint(..)
                                        , match
                                        )
 
 import TypeCheck.Solver.Base
 
-syntacticEqualityHandler :: HandlerType EqualityConstraint cs
+syntacticEqualityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 syntacticEqualityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
@@ -15,10 +16,10 @@ syntacticEqualityHandler constr = do
       return True
     Nothing -> return False
 
-syntacticEqualitySolver :: SolverType EqualityConstraint cs
+syntacticEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 syntacticEqualitySolver = undefined
 
-syntacticPlugin :: Plugin EqualityConstraint cs
+syntacticPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 syntacticPlugin = Plugin {
   solver = syntacticEqualitySolver,
   handler = syntacticEqualityHandler,
