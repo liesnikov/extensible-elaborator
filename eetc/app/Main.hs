@@ -78,7 +78,7 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcMonad @BasicConstraintsF emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  e <- runTcMonad emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
   elabs <- e `exitWith` putElabError
   putStrLn "type checking..."
   d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elabs)
