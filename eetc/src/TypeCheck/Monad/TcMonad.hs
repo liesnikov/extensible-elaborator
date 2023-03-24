@@ -28,7 +28,7 @@ import qualified TypeCheck.State as State
 import TypeCheck.Monad.Prelude hiding (TcState)
 import TypeCheck.Monad.Typeclasses
 
-import TypeCheck.Solver (allSolvers)
+import TypeCheck.Solver (allsolver, solve)
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
@@ -138,6 +138,15 @@ solveAllConstraintsTc = do
 --         DD cons
 --        ]
   return ()
+  -- let solver = allsolver solve
+  -- (solved, unsolved) <- solver cons
+  -- modifyTc (\s -> s { State.constraints = solved })
+  -- case unsolved of
+  --   [] -> return ()
+  --   _ -> do
+  --     warn [DS "After an iteration are unsolved constraints",
+  --           DD cons]
+  --     return ()
 
 instance MonadConstraints (TcMonad c) where
   type Constraints (TcMonad c) = c
