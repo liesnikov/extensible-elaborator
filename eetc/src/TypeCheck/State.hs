@@ -83,16 +83,16 @@ emptyCoreState = TcS { metas = Map.empty
                      , solvers = Nothing
                      }
 
-emptyElabState :: TcState tca c s
-emptyElabState = TcS { metas = Map.empty
-                     , metaSolutions = Map.empty
-                     , constraints = Set.empty
-                     , vars = Map.empty
-                     , decls = I.preludeDataDecls
-                     , udecls = []
-                     , frozen = Map.empty
-                     , solvers = Nothing
-                     }
+emptyElabState :: s -> TcState tca c s
+emptyElabState s = TcS { metas = Map.empty
+                       , metaSolutions = Map.empty
+                       , constraints = Set.empty
+                       , vars = Map.empty
+                       , decls = I.preludeDataDecls
+                       , udecls = []
+                       , frozen = Map.empty
+                       , solvers = Just s
+                       }
 
 
 -- | An error that should be reported to the user

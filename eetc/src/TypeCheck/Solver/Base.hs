@@ -7,13 +7,13 @@ module TypeCheck.Solver.Base ( SolverType
 import           TypeCheck.Constraints ( ConstraintF
                                        , (:<:)
                                        )
-import           TypeCheck.Monad.Typeclasses (MonadElab)
+import           TypeCheck.Monad.Typeclasses (MonadSolver)
 
-type SolverType cs = forall m. (MonadElab cs m) =>
+type SolverType cs = forall m. (MonadSolver cs m) =>
                      (ConstraintF cs) ->
                      m Bool
 
-type HandlerType cs = forall m. (MonadElab cs m) =>
+type HandlerType cs = forall m. (MonadSolver cs m) =>
                       (ConstraintF cs) ->
                       m Bool
 

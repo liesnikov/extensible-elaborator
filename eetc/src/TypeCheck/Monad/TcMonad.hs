@@ -134,20 +134,27 @@ raiseConstraintMaybeFreezeTc cons freeze = do
 solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do
   cons <- fmap State.constraints getTc
-  warn [DD cons]
---  error [DS "After checking an entry there are unsolved constraints",
---         DD cons
---        ]
-  return ()
-  -- let solver = allsolver solve
-  -- (solved, unsolved) <- solver cons
-  -- modifyTc (\s -> s { State.constraints = solved })
-  -- case unsolved of
-  --   [] -> return ()
-  --   _ -> do
-  --     warn [DS "After an iteration are unsolved constraints",
-  --           DD cons]
-  --     return ()
+  (Just solver) <- fmap State.solvers getTc
+  traversed <- traverse (solveOne solver) $ Set.toList cons
+  let unsolved = concat $ fmap (\x -> case x of Left a -> [a]; Right _ -> []) traversed
+  warn [DS "After checking an entry there are unsolved constraints",
+        DD $ Set.fromList unsolved
+       ]
+  where
+    solveOne :: Disp1 c =>
+                Allsolver c ->
+                ConstraintF c ->
+                TcMonad c (Either (ConstraintF c) ())
+    solveOne s c = do
+      mid <- solve s c
+      case mid of
+        Nothing -> return . Left $ c
+        Just pid -> do
+          warn [DS "managed to solve constraint",
+                DD c,
+                DS "with plugin",
+                DD pid]
+          return . Right $ ()
 
 instance MonadConstraints (TcMonad c) where
   type MConstr (TcMonad c) = c

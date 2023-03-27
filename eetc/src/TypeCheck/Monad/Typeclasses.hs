@@ -13,7 +13,7 @@ module TypeCheck.Monad.Typeclasses ( MonadTcReader(..)
                                    , MonadConstraints(..)
                                    , raiseConstraint, raiseConstraintAndFreeze
 
-                                   , MonadTcCore, MonadElab
+                                   , MonadTcCore, MonadElab, MonadSolver
                                    ) where
 
 import           Control.Monad (MonadPlus)
@@ -41,3 +41,13 @@ type MonadElab c m = (MonadTcState m,
                       MonadError Err m, MonadFail m,
                       Unbound.Fresh m, MonadPlus m,
                       MonadIO m)
+
+type MonadSolver c m = (MonadTcState m,
+                        MonadConstraints m,
+                        MonadTcReaderEnv m,
+                        c ~ SConstr m,
+                        c ~ MConstr m,
+                        Disp1 c,
+                        MonadError Err m, MonadFail m,
+                        Unbound.Fresh m, MonadPlus m,
+                        MonadIO m)

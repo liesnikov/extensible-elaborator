@@ -2,7 +2,7 @@ module TypeCheck.Solver.Allsolver where
 
 import Control.Monad.Extra (ifM)
 
-import TypeCheck.Monad.Typeclasses (MonadElab)
+import TypeCheck.Monad.Typeclasses (MonadSolver)
 import TypeCheck.Constraints
 import TypeCheck.Solver.Base
 
@@ -52,7 +52,7 @@ compile (h : t) =
       -- otherwise it will be inserted at the right place
   in insert h rest
 
-solve :: (MonadElab c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
+solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
 solve [] cs = return Nothing
 solve (h : t) cs = do
   let tailcall = solve t cs
