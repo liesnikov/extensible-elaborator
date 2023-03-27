@@ -8,10 +8,11 @@ import TypeCheck.Monad.TcReader
 -- Monad with write access to TcState
 
 class Monad m => MonadTcState m where
-  type StateConstraint m :: Type -> Type
-  getTc :: m (TcState m (StateConstraint m))
-  putTc :: (TcState m (StateConstraint m)) -> m ()
-  modifyTc :: (TcState m (StateConstraint m) -> TcState m (StateConstraint m)) -> m ()
+  type SConstr m :: Type -> Type
+  type SSolver m :: Type
+  getTc :: m (TcState m (SConstr m) (SSolver m))
+  putTc :: (TcState m (SConstr m) (SSolver m)) -> m ()
+  modifyTc :: (TcState m (SConstr m) (SSolver m) -> TcState m (SConstr m) (SSolver m)) -> m ()
 
 --  default getTc :: (MonadTrans t, MonadTcState n, t n ~ m) => m (TcState c)
 --  getTc = lift getTc
@@ -22,7 +23,7 @@ class Monad m => MonadTcState m where
 --  default modifyTc :: (MonadTrans t, MonadTcState c n, t n ~ m) => (TcState c -> TcState c) -> m ()
 --  modifyTc = lift . modifyTc
 
-getsTc :: MonadTcState m => (TcState m (StateConstraint m) -> b) -> m b
+getsTc :: MonadTcState m => (TcState m (SConstr m) (SSolver m) -> b) -> m b
 getsTc f = do
   s <- getTc
   return $ f s
@@ -31,7 +32,8 @@ modifyTcNames :: (MonadTcState m) => (NameMap -> NameMap) ->  m ()
 modifyTcNames f = modifyTc (\s -> s {vars = f $ vars s})
 
 instance (Monad m, MonadTcState m) => MonadTcReader m where
-  type ReaderConstraint m = StateConstraint m
+  type RConstr m = SConstr m
+  type RSolver m = SSolver m
   askTc = getTc
   localTc f a = do
     s <- getTc

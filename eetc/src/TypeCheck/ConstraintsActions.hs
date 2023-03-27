@@ -6,7 +6,7 @@ module TypeCheck.ConstraintsActions ( constrainEquality
 import           Syntax.Internal as Syntax
 import           Syntax.SourceLocation (SourceLocation)
 import           TypeCheck.Monad ( MonadConstraints
-                                 , Constraints
+                                 , MConstr
                                  , raiseConstraint
                                  , raiseConstraintAndFreeze
                                  )
@@ -16,7 +16,7 @@ import           TypeCheck.Constraints ( BasicConstraintsF
                                        , (:<:)(..)
                                        )
 
-constrainEquality :: (MonadConstraints m, BasicConstraintsF :<: (Constraints m))
+constrainEquality :: (MonadConstraints m, BasicConstraintsF :<: (MConstr m))
                   => Syntax.Term -> Syntax.Term -> Syntax.Type
                   -> SourceLocation -> m ()
 constrainEquality t1 t2 ty s =
@@ -24,7 +24,7 @@ constrainEquality t1 t2 ty s =
                   $ EqualityConstraint t1 t2 ty s
 
 
-constrainTConAndFreeze :: (MonadConstraints m, BasicConstraintsF :<: (Constraints m))
+constrainTConAndFreeze :: (MonadConstraints m, BasicConstraintsF :<: (MConstr m))
                        => Syntax.Type -> m () -> m ()
 constrainTConAndFreeze ty frozen =
   raiseConstraintAndFreeze

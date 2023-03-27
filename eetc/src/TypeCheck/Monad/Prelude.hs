@@ -23,4 +23,4 @@ import           TypeCheck.State ( Env(..) , Err(..), NameMap, vars)
 
 import qualified TypeCheck.State as State (TcState(..))
 
-type TcState m c = State.TcState (m ()) c
+type TcState m c s = State.TcState (m ()) c s

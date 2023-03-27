@@ -58,7 +58,7 @@ emptyElabEnv = Env { ctx = []
 
 type NameMap = Map S.TName I.TName
 
-data TcState tcaction c = TcS {
+data TcState tcaction c solver = TcS {
   -- FIXME
   -- previously was an existential forall a. Map .. (Meta a)
   -- but that can't be matched without ImpredicativeTypes
@@ -69,9 +69,10 @@ data TcState tcaction c = TcS {
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
   , frozen :: Map ConstraintId tcaction
+  , solvers :: Maybe solver
   }
 
-emptyCoreState :: TcState tca c
+emptyCoreState :: TcState tca c s
 emptyCoreState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
                      , constraints = Set.empty
@@ -79,9 +80,10 @@ emptyCoreState = TcS { metas = Map.empty
                      , decls = []
                      , udecls = []
                      , frozen = Map.empty
+                     , solvers = Nothing
                      }
 
-emptyElabState :: TcState tca c
+emptyElabState :: TcState tca c s
 emptyElabState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
                      , constraints = Set.empty
@@ -89,6 +91,7 @@ emptyElabState = TcS { metas = Map.empty
                      , decls = I.preludeDataDecls
                      , udecls = []
                      , frozen = Map.empty
+                     , solvers = Nothing
                      }
 
 

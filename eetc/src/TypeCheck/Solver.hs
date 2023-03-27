@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
-module TypeCheck.Solver (allsolver, solve) where
+module TypeCheck.Solver (Allsolver, allsolver, solve) where
 
 import TypeCheck.Constraints (BasicConstraintsF)
 

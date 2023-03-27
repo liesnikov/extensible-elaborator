@@ -8,16 +8,16 @@ import Syntax.Internal
 -- raising and catching constraints
 
 class MonadConstraints m where
-  type Constraints m :: TypeCheck.Monad.Prelude.Type -> TypeCheck.Monad.Prelude.Type
+  type MConstr m :: TypeCheck.Monad.Prelude.Type -> TypeCheck.Monad.Prelude.Type
   createMetaVar :: MetaTag -> m MetaVarId
   lookupMetaVar :: MetaVarId -> m (Maybe (Meta Term))
-  raiseConstraintMaybeFreeze :: (c :<: (Constraints m)) => c (ConstraintF (Constraints m)) -> Maybe (m ()) -> m ()
-  solveAllConstraints :: Disp1 (Constraints m) => m ()
+  raiseConstraintMaybeFreeze :: (c :<: (MConstr m)) => c (ConstraintF (MConstr m)) -> Maybe (m ()) -> m ()
+  solveAllConstraints :: Disp1 (MConstr m) => m ()
 
-raiseConstraint :: (MonadConstraints m, c :<: (Constraints m))
-                => c (ConstraintF (Constraints m)) -> m ()
+raiseConstraint :: (MonadConstraints m, c :<: (MConstr m))
+                => c (ConstraintF (MConstr m)) -> m ()
 raiseConstraint c = raiseConstraintMaybeFreeze c Nothing
 
-raiseConstraintAndFreeze :: (MonadConstraints m, c :<: (Constraints m))
-                         => c (ConstraintF (Constraints m)) -> m () -> m ()
+raiseConstraintAndFreeze :: (MonadConstraints m, c :<: (MConstr m))
+                         => c (ConstraintF (MConstr m)) -> m () -> m ()
 raiseConstraintAndFreeze c f = raiseConstraintMaybeFreeze c (Just f)

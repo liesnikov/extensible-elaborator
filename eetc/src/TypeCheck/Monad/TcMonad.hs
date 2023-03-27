@@ -28,7 +28,7 @@ import qualified TypeCheck.State as State
 import TypeCheck.Monad.Prelude hiding (TcState)
 import TypeCheck.Monad.Typeclasses
 
-import TypeCheck.Solver (allsolver, solve)
+import TypeCheck.Solver (Allsolver, allsolver, solve)
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
@@ -52,7 +52,7 @@ newtype TcMonad c a = TcM { unTcM :: Unbound.FreshMT
                                             IO)))
                                        a }
 
-type TcState c = State.TcState (TcMonad c ()) c
+type TcState c = State.TcState (TcMonad c ()) c (Allsolver c)
 
 instance Functor (TcMonad c) where
   fmap = \f (TcM m) -> TcM $ fmap f m
@@ -93,7 +93,8 @@ instance MonadTcReaderEnv (TcMonad c) where
   localEnv f (TcM m) = TcM $ local f m
 
 instance MonadTcState (TcMonad c) where
-  type StateConstraint (TcMonad c) = c
+  type SConstr (TcMonad c) = c
+  type SSolver (TcMonad c) = Allsolver c
   getTc = TcM $ get
   putTc = TcM . put
   modifyTc = TcM . modify
@@ -149,7 +150,7 @@ solveAllConstraintsTc = do
   --     return ()
 
 instance MonadConstraints (TcMonad c) where
-  type Constraints (TcMonad c) = c
+  type MConstr (TcMonad c) = c
   createMetaVar   = createMetaVarFresh
   lookupMetaVar   = lookupMetaVarTc
   raiseConstraintMaybeFreeze = raiseConstraintMaybeFreezeTc

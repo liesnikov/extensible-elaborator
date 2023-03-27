@@ -8,21 +8,22 @@ import TypeCheck.Monad.Prelude
 -- Monad with read access to TcState
 
 class Monad m => MonadTcReader m where
-  type ReaderConstraint m :: Type -> Type
-  askTc :: m (TcState m (ReaderConstraint m))
-  localTc :: (TcState m (ReaderConstraint m)  ->
-              TcState m (ReaderConstraint m)) ->
+  type RConstr m :: Type -> Type
+  type RSolver m :: Type
+  askTc :: m (TcState m (RConstr m) (RSolver m))
+  localTc :: (TcState m (RConstr m) (RSolver m)  ->
+              TcState m (RConstr m) (RSolver m)) ->
              m a -> m a
 
---  default askTc :: (MonadTrans t, MonadTcReader n, t n ~ m) => m (TcState (ReaderConstraint m))
+--  default askTc :: (MonadTrans t, MonadTcReader n, t n ~ m) => m (TcState (RConstr m) (RSolver m))
 --  askTc = lift askTc
 --
 --  default localTc
 --    :: (MonadTransControl t, MonadTcReader n, t n ~ m)
---    =>  (TcState (ReaderConstraint m) -> TcState (ReaderConstraint m)) -> m a -> m a
+--    =>  (TcState (RConstr m) (RSolver m) -> TcState (RConstr m) (RSolver m)) -> m a -> m a
 --  localTc = liftThrough . localTc
 
-asksTc :: MonadTcReader m => (TcState m (ReaderConstraint m) -> b) -> m b
+asksTc :: MonadTcReader m => (TcState m (RConstr m) (RSolver m) -> b) -> m b
 asksTc f = f <$> askTc
 
 asksTcNames :: (MonadTcReader m) => (NameMap -> a) -> m a
