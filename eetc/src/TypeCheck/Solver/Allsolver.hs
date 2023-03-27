@@ -2,8 +2,8 @@ module TypeCheck.Solver.Allsolver where
 
 import Control.Monad.Extra (ifM)
 
+import TypeCheck.Monad.Typeclasses (MonadElab)
 import TypeCheck.Constraints
-import TypeCheck.Monad.Typeclasses
 import TypeCheck.Solver.Base
 
 type Allsolver c = [Plugin c]
@@ -12,7 +12,7 @@ type Allsolver c = [Plugin c]
 -- such that p is before all solvers specified by the pre field
 -- and after all solvers specified by the suc field of the plugin p
 insert :: Plugin c -> Allsolver c -> Allsolver c
-insert p s = reverse $ insert' p s []
+insert plug s = reverse $ insert' plug s []
   where
     -- acc stores reversed linear order of the already traversed plugins in the allsolver
     -- if we reach the end of the list insert p in the last place
