@@ -24,11 +24,11 @@ import           Syntax.Internal       ( Meta(..)
                                        , MetaTag(..)
                                        , MetaVarId )
 import qualified TypeCheck.State as State
+import           TypeCheck.Solver (Allsolver, solve)
 
-import TypeCheck.Monad.Prelude hiding (TcState)
-import TypeCheck.Monad.Typeclasses
+import           TypeCheck.Monad.Prelude hiding (TcState)
+import           TypeCheck.Monad.Typeclasses
 
-import TypeCheck.Solver (Allsolver, allsolver, solve)
 
 {--
 type TcMonad = Unbound.FreshMT (StateT TcState c (ExceptT Err IO))
@@ -137,9 +137,11 @@ solveAllConstraintsTc = do
   (Just solver) <- fmap State.solvers getTc
   traversed <- traverse (solveOne solver) $ Set.toList cons
   let unsolved = concat $ fmap (\x -> case x of Left a -> [a]; Right _ -> []) traversed
-  warn [DS "After checking an entry there are unsolved constraints",
-        DD $ Set.fromList unsolved
-       ]
+  if not . null $ unsolved
+    then warn [DS "After checking an entry there are unsolved constraints",
+               DD $ Set.fromList unsolved
+              ]
+    else return ()
   where
     solveOne :: Disp1 c =>
                 Allsolver c ->
@@ -150,10 +152,10 @@ solveAllConstraintsTc = do
       case mid of
         Nothing -> return . Left $ c
         Just pid -> do
-          warn [DS "managed to solve constraint",
-                DD c,
-                DS "with plugin",
-                DD pid]
+--          warn [DS "managed to solve constraint",
+--                DD c,
+--                DS "with plugin",
+--                DD pid]
           return . Right $ ()
 
 instance MonadConstraints (TcMonad c) where

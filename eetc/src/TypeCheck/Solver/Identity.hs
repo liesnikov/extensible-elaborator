@@ -15,10 +15,7 @@ identityEqualityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 identityEqualityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint t1 t2 ty src) -> return $
-      if hasMetas t1 && hasMetas t2
-      then False
-      else Unbound.aeq t1 t2
+    Just (EqualityConstraint t1 t2 ty src) -> return $ Unbound.aeq t1 t2
     Nothing -> return False
 
 identityEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs

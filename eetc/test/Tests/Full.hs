@@ -10,6 +10,7 @@ import TypeCheck.State ( emptyElabEnv, emptyElabState,
                          emptyCoreEnv, emptyCoreState)
 import TypeCheck.TypeCheck ( tcModules)
 import TypeCheck.Constraints (BasicConstraintsF)
+import TypeCheck.Solver (allsolver)
 import Control.Monad.Except
 import Modules
 
@@ -22,7 +23,8 @@ testFile :: String -> TestTree
 testFile name = testCase name $ do
   v <- runExceptT (getModules ["pi"] name)
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))
-  ev <- runTcStateMonad emptyElabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  let elabState = emptyElabState allsolver
+  ev <- runTcStateMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
   (eval, constraints) <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
   d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules eval)
   defs <- d `exitWith` (\s -> assertFailure $ "Type error:" ++ render (disp s))

@@ -17,7 +17,7 @@ syntacticEqualityHandler constr = do
     Nothing -> return False
 
 syntacticEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
-syntacticEqualitySolver = undefined
+syntacticEqualitySolver s = return False
 
 syntacticPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 syntacticPlugin = Plugin {
