@@ -462,7 +462,7 @@ checkType (S.Contra p) typ = do
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
-
+  s <- fmap head $ Env.getSourceLocation
   CA.constrainTConAndFreeze ty
     $ case ty of
     -- FIXME
@@ -485,7 +485,6 @@ checkType t@(S.DCon c args) ty = do
             ]
         newTele <- substTele delta params deltai
         eargs <- elabArgTele args newTele
-        s <- fmap head $ Env.getSourceLocation
         CA.constrainEquality elabpromise (I.DCon c eargs) ty s
       _ ->
         Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
