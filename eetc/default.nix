@@ -11,3 +11,6 @@ in
 { compiler ? "ghc922",
   nixpkgs ? import defpkgs {config = (config compiler);} }:
 nixpkgs.pkgs.haskell.packages."${compiler}".callCabal2nix "eetc" ./. {}
+
+# to disable tests run
+# callCabal2nixWithOptions "eetc" ./. "--no-check" {}
