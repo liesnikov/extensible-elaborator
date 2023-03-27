@@ -1,10 +1,13 @@
 module TypeCheck.Solver.Allsolver where
 
 import Control.Monad.Extra (ifM)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe (fromMaybe)
 
-import TypeCheck.Monad.Typeclasses (MonadSolver)
-import TypeCheck.Constraints
-import TypeCheck.Solver.Base
+import           TypeCheck.Monad.Typeclasses (MonadSolver, getTc)
+import qualified TypeCheck.State as State
+import           TypeCheck.Constraints
+import           TypeCheck.Solver.Base
 
 type Allsolver c = [Plugin c]
 
@@ -52,12 +55,29 @@ compile (h : t) =
       -- otherwise it will be inserted at the right place
   in insert h rest
 
-solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
-solve [] cs = return Nothing
-solve (h : t) cs = do
-  let tailcall = solve t cs
+solveAndReport :: (MonadSolver c m) => Allsolver c ->
+                  (ConstraintF c) -> m (Maybe (ConstraintId, PluginId))
+solveAndReport [] cs = return Nothing
+solveAndReport (h : t) cs = do
+  let tailcall = solveAndReport t cs
   ifM (handler h cs)
     (ifM (solver h cs)
-         (return . Just . symbol $ h)
+         (let cid = getConstraintId cs
+          in return . Just $ (cid, symbol h))
          tailcall)
     tailcall
+
+solveAndUnfreeze :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
+solveAndUnfreeze as c = do
+  mid <- solveAndReport as c
+  case mid of
+    Nothing -> return Nothing
+    Just (cid, pid) -> do
+      allfrozen <- fmap State.frozen getTc
+      let mfrozen = Map.lookup cid allfrozen
+          frozen = fromMaybe [] mfrozen
+      _ <- sequence frozen
+      return $ Just pid
+
+solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
+solve a c = solveAndUnfreeze a c

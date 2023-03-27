@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeOperators, TypeApplications #-}
 module TypeCheck.Constraints ( ConstraintF
                              , ConstraintId
+                             , getConstraintId
                              , EmptyConstraint(..)
                              , EqualityConstraint(..)
                              , TypeConstructorConstraint(..)
@@ -34,6 +35,9 @@ instance Ord (ConstraintF f) where
   compare (In id1 _) (In id2 _) = compare id1 id2
 
 type ConstraintId = Integer
+
+getConstraintId :: ConstraintF f -> ConstraintId
+getConstraintId (In i _) = i
 
 data EmptyConstraint e = EmptyConstraint SourceLocation
   deriving Functor

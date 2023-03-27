@@ -68,7 +68,7 @@ data TcState tcaction c solver = TcS {
   , vars :: NameMap
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
-  , frozen :: Map ConstraintId tcaction
+  , frozen :: Map ConstraintId [tcaction]
   , solvers :: Maybe solver
   }
 

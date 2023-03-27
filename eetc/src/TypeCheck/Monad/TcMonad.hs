@@ -129,7 +129,8 @@ raiseConstraintMaybeFreezeTc cons freeze = do
     Nothing -> return ()
     Just frozenproblem -> do
       modifyTc (\s -> s { State.frozen =
-                            Map.insert constraintId frozenproblem (State.frozen s)})
+                            Map.insertWith (++) constraintId
+                                                [frozenproblem] (State.frozen s)})
 
 solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do
