@@ -1,4 +1,3 @@
-{- pi-forall language -}
 -- | Compare two terms for equality
 module TypeCheck.Equal (whnf, equate, ensurePi,
                         ensureTyEq,

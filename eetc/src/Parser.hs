@@ -1,4 +1,3 @@
-{- pi-forall language -}
 -- | A parsec-based parser for the concrete syntax
 module Parser
   (

@@ -1,4 +1,3 @@
-{- pi-forall language -}
 -- | A Pretty Printer.
 module PrettyPrint ( Disp (..), Disp1 (..), D (..)
                    , Display(..) , DispInfo(..)

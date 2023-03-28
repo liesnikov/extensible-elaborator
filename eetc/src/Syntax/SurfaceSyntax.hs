@@ -1,4 +1,3 @@
-{- pi-forall language -}
 -- | The abstract syntax of the simple dependently typed language
 -- See comment at the top of 'Parser' for the concrete syntax of this language
 module Syntax.SurfaceSyntax where
