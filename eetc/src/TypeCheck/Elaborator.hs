@@ -464,7 +464,7 @@ checkType (S.Contra p) typ = do
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
-  -- FIXME
+  -- FIXME issue #1
   -- pack Env localisation into the freeze
   e <- askEnv
   CA.constrainTConAndFreeze ty
@@ -500,13 +500,15 @@ checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
   -- FIXME
   escrut' <- whnf escrut
-  let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-      ensureTCon (I.TCon c args) = return $ (c, args)
-      ensureTCon term = Env.err $ [DS "can't verify that",
-                                   DD term,
-                                   DS "has TCon as head-symbol"]
   elabpromise <- createMetaTerm
-  CA.constrainTConAndFreeze ty $ do
+  -- FIXME issue #1
+  e <- askEnv
+  CA.constrainTConAndFreeze ty $ localEnv e $ do
+    let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
+        ensureTCon (I.TCon c args) = return $ (c, args)
+        ensureTCon term = Env.err $ [DS "can't verify that",
+                                     DD term,
+                                     DS "has TCon as head-symbol"]
     (c, args) <- ensureTCon sty
     let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
         checkAlt (S.Match bnd) = do
