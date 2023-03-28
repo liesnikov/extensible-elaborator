@@ -24,6 +24,8 @@ import qualified TypeCheck.ConstraintsActions as CA
 import           TypeCheck.Monad ( MonadElab
                                  , createMetaVar
                                  , asksTcNames
+                                 , askEnv
+                                 , localEnv
                                  , modifyTcNames
                                  , solveAllConstraints
                                  )
@@ -462,9 +464,11 @@ checkType (S.Contra p) typ = do
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
-  s <- fmap head $ Env.getSourceLocation
+  -- FIXME
+  -- pack Env localisation into the freeze
+  e <- askEnv
   CA.constrainTConAndFreeze ty
-    $ case ty of
+    $ localEnv (const e) $ case ty of
     -- FIXME
     -- take whnf here ^^?
       (I.TCon tname params) -> do
@@ -485,6 +489,7 @@ checkType t@(S.DCon c args) ty = do
             ]
         newTele <- substTele delta params deltai
         eargs <- elabArgTele args newTele
+        s <- fmap head $ Env.getSourceLocation
         CA.constrainEquality elabpromise (I.DCon c eargs) ty s
       _ ->
         Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
