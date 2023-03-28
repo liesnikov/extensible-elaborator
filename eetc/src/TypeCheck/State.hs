@@ -3,6 +3,7 @@ module TypeCheck.State ( SourceLocation(..)
                        , emptyCoreEnv, emptyElabEnv
                        , Err(..)
                        , TcState(..)
+                       , fmapState
                        , emptyCoreState, emptyElabState
                        , NameMap
                        ) where
@@ -71,6 +72,9 @@ data TcState tcaction c solver = TcS {
   , frozen :: Map ConstraintId [tcaction]
   , solvers :: Maybe solver
   }
+
+fmapState :: (a -> b) -> TcState a c s -> TcState b c s
+fmapState f s = s {frozen = fmap (fmap f) (frozen s)}
 
 emptyCoreState :: TcState tca c s
 emptyCoreState = TcS { metas = Map.empty

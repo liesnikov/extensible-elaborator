@@ -4,6 +4,7 @@ module TypeCheck.Monad.TcReader ( MonadTcReader(..)
                                 , asksTcNames, localTcNames) where
 
 import TypeCheck.Monad.Prelude
+import TypeCheck.State (fmapState)
 
 -- Monad with read access to TcState
 
@@ -15,12 +16,19 @@ class Monad m => MonadTcReader m where
               TcState m (RConstr m) (RSolver m)) ->
              m a -> m a
 
---  default askTc :: (MonadTrans t, MonadTcReader n, t n ~ m) => m (TcState (RConstr m) (RSolver m))
---  askTc = lift askTc
---
+--  default askTc :: (MonadTrans t, MonadTcReader n,
+--                    RConstr (t n) ~ RConstr n, RSolver (t n) ~ RSolver n,
+--                    RConstr (t n) ~ RConstr m, RSolver (t n) ~ RSolver m,
+--                    t n ~ m) => m (TcState m (RConstr m) (RSolver m))
+--  askTc = fmap (fmapState lift) $ lift askTc
+
 --  default localTc
---    :: (MonadTransControl t, MonadTcReader n, t n ~ m)
---    =>  (TcState (RConstr m) (RSolver m) -> TcState (RConstr m) (RSolver m)) -> m a -> m a
+--    :: (MonadTransControl t, MonadTcReader n,
+--        RConstr (t n) ~ RConstr n, RSolver (t n) ~ RSolver n,
+--        RConstr (t n) ~ RConstr m, RSolver (t n) ~ RSolver m,
+--        t n ~ m)
+--    => (TcState m (RConstr m) (RSolver m) -> TcState m (RConstr m) (RSolver m))
+--    -> m a -> m a
 --  localTc = liftThrough . localTc
 
 asksTc :: MonadTcReader m => (TcState m (RConstr m) (RSolver m) -> b) -> m b

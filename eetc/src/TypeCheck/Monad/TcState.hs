@@ -14,7 +14,7 @@ class Monad m => MonadTcState m where
   putTc :: (TcState m (SConstr m) (SSolver m)) -> m ()
   modifyTc :: (TcState m (SConstr m) (SSolver m) -> TcState m (SConstr m) (SSolver m)) -> m ()
 
---  default getTc :: (MonadTrans t, MonadTcState n, t n ~ m) => m (TcState c)
+--  default getTc :: (MonadTrans t, MonadTcState n, t n ~ m) => m (TcState m c)
 --  getTc = lift getTc
 --
 --  default putTc :: (MonadTrans t, MonadTcState n, t n ~ m) => TcState c -> m ()
