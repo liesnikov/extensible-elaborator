@@ -503,7 +503,7 @@ checkType (S.Case scrut alts) ty = do
   elabpromise <- createMetaTerm
   -- FIXME issue #3
   e <- askEnv
-  CA.constrainTConAndFreeze ty $ localEnv e $ do
+  CA.constrainTConAndFreeze ty $ localEnv (const e) $ do
     let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
         ensureTCon (I.TCon c args) = return $ (c, args)
         ensureTCon term = Env.err $ [DS "can't verify that",
