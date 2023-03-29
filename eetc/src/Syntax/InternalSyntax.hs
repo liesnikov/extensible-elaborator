@@ -424,7 +424,10 @@ instance CheckForMetas Term where
   collectAllMetas (MetaVar mid) = [mid]
 
 instance CheckForMetas Arg where
-  collectAllMetas = undefined
+  collectAllMetas (Arg ep unarg) = collectAllMetas unarg
 
 instance CheckForMetas Match where
-  collectAllMetas = undefined
+  collectAllMetas (Match u) = collectBoundMetas u
+
+instance CheckForMetas Sig where
+  collectAllMetas (Sig _ ep t) = collectAllMetas ep ++ collectAllMetas t
