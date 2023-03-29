@@ -9,10 +9,13 @@ module TypeCheck.StateActions ( lookupTy
                               , lookupDConAll
                               , extendGlobal
                               , extendCtxMods
+                              , isMetaSolved
+                              , solveMeta
                               ) where
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
 import           Data.Maybe ( listToMaybe )
+import qualified Data.Map.Strict as Map
 
 import           Syntax.ModuleStub ( TCName, DCName )
 import           Syntax.Internal   ( Term
@@ -20,6 +23,7 @@ import           Syntax.Internal   ( Term
                                    , ConstructorDef(..)
                                    , Telescope
                                    , Decl(..), Module
+                                   , MetaVarId
                                    )
 import           PrettyPrint ( D(..) )
 
@@ -31,24 +35,49 @@ import           TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
                                              , asksEnv
                                              )
 import           TypeCheck.State ( TcState(..), Err )
-
+import qualified Unbound.Generics.LocallyNameless as Unbound
 
 type Decls = [Decl]
 
 askDecls :: (MonadTcReader m) => m Decls
 askDecls = decls <$> askTc
 
-localState :: (MonadTcReader m) => (Decls -> Decls) -> m a -> m a
-localState f = localTc (\s -> s { decls = f . decls $ s})
+localDecl :: (MonadTcReader m) => (Decls -> Decls) -> m a -> m a
+localDecl f = localTc (\s -> s { decls = f . decls $ s})
 
-asksState :: (MonadTcReader m) => (Decls -> a) -> m a
-asksState f = asksTc (f . decls)
+asksDecl :: (MonadTcReader m) => (Decls -> a) -> m a
+asksDecl f = asksTc (f . decls)
+
+-- substitute all metas currently available as solutions
+substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
+substMetas t = do
+  solutions <- asksTc (metaSolutions)
+  return $ Unbound.substs (Map.toList solutions) t
+
+isMetaSolved :: (MonadTcReader m) => MetaVarId -> m Bool
+isMetaSolved mid = do
+  solutions <- asksTc (metaSolutions)
+  return $ mid `Map.member` solutions
+
+solveMeta :: (MonadError Err m, MonadTcReaderEnv m, MonadTcState m) => MetaVarId -> Term -> m ()
+solveMeta m t = do
+  solved <- isMetaSolved m
+  if solved
+    then do
+    solutions <- asksTc (metaSolutions)
+    Env.err [DS "trying to write a solution",
+             DD t,
+             DS "to a meta",
+             DD m,
+             DS "that already has a solution",
+             DD $ Map.lookup m solutions]
+    else modifyTc (\s -> s { metaSolutions = Map.insert m t (metaSolutions s) })
 
 -- | Find a name's user supplied type signature.
 lookupHint :: (MonadTcReader m, MonadTcReaderEnv m) => TName -> m (Maybe Sig)
 lookupHint v = do
-   hints <- Env.lookupHint v
-   return $ hints
+   mhints <- Env.lookupHint v
+   substMetas mhints
 
 -- | Find a name's type in the context.
 lookupTyMaybe ::
@@ -58,13 +87,16 @@ lookupTyMaybe ::
 lookupTyMaybe v = do
   globals <- askDecls
   ctx <- asksEnv Env.ctx
-  return $ go (ctx ++ globals) where
-    go [] = Nothing
-    go (TypeSig sig : ctx)
-      | v == sigName sig = Just sig
-      | otherwise = go ctx
-    go (Demote ep : ctx) = demoteSig ep <$> go ctx
-    go (_ : ctx) = go ctx
+  let msig = go (ctx ++ globals)
+  substMetas msig
+    where
+      go :: [Decl] -> Maybe Sig
+      go [] = Nothing
+      go (TypeSig sig : ctx)
+        | v == sigName sig = Just sig
+        | otherwise = go ctx
+      go (Demote ep : ctx) = demoteSig ep <$> go ctx
+      go (_ : ctx) = go ctx
 
 demoteSig :: Epsilon -> Sig -> Sig
 demoteSig ep s = s { sigEp = min ep (sigEp s) }
@@ -94,7 +126,8 @@ lookupDef ::
   m (Maybe Term)
 lookupDef v = do
   ctx <- askDecls
-  return $ listToMaybe [a | Def v' a <- ctx, v == v']
+  let mdef = listToMaybe [a | Def v' a <- ctx, v == v']
+  substMetas mdef
 
 lookupRecDef ::
   (MonadTcReader m) =>
@@ -102,7 +135,8 @@ lookupRecDef ::
   m (Maybe Term)
 lookupRecDef v = do
   ctx <- askDecls
-  return $ listToMaybe [a | RecDef v' a <- ctx, v == v']
+  let mdef = listToMaybe [a | RecDef v' a <- ctx, v == v']
+  substMetas mdef
 
 -- | Find a type constructor in the context
 lookupTCon ::
@@ -111,7 +145,8 @@ lookupTCon ::
   m (Telescope, Maybe [ConstructorDef])
 lookupTCon v = do
   g <- askDecls
-  scanGamma g
+  res <- scanGamma g
+  substMetas res
   where
     scanGamma [] = do
       currentEnv <- askDecls
@@ -140,7 +175,8 @@ lookupDConAll ::
   m [(TCName, (Telescope, ConstructorDef))]
 lookupDConAll v = do
   g <- askDecls
-  scanGamma g
+  dconlist <- scanGamma g
+  substMetas dconlist
   where
     scanGamma [] = return []
     scanGamma ((Data v' delta cs) : g) =

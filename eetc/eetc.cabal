@@ -98,7 +98,7 @@ library
 
     TypeCheck.Solver.Base
     TypeCheck.Solver.Identity
-    TypeCheck.Solver.Syntactic
+    TypeCheck.Solver.TrivialMetas
     TypeCheck.Solver.TypeConstructor
     TypeCheck.Solver.Allsolver
   build-depends:

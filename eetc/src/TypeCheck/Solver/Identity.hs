@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
-module TypeCheck.Solver.Identity (identityPlugin) where
+module TypeCheck.Solver.Identity (identityPlugin, identitySymbol) where
 
 import qualified Unbound.Generics.LocallyNameless as Unbound (aeq)
 
@@ -8,8 +8,7 @@ import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
                                        , match
                                        )
-
-import TypeCheck.Solver.Base
+import           TypeCheck.Solver.Base
 
 identityEqualityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 identityEqualityHandler constr = do
@@ -21,11 +20,13 @@ identityEqualityHandler constr = do
 identityEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 identityEqualitySolver constr = return True
 
+identitySymbol = "identity equality solver"
+
 identityPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 identityPlugin = Plugin {
   solver = identityEqualitySolver,
   handler = identityEqualityHandler,
-  symbol = "identity equality solver",
+  symbol = identitySymbol,
   pre = [],
   suc = []
   }
