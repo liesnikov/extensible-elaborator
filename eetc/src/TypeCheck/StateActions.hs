@@ -24,12 +24,12 @@ import           Syntax.Internal   ( Term
 import           PrettyPrint ( D(..) )
 
 import qualified TypeCheck.Environment as Env
-import           TypeCheck.Monad ( MonadTcReader(..)
-                                 , localTc, asksTc
-                                 , MonadTcState(..)
-                                 , MonadTcReaderEnv(..)
-                                 , asksEnv
-                                 )
+import           TypeCheck.Monad.TcReader ( MonadTcReader(..)
+                                          , localTc, asksTc)
+import           TypeCheck.Monad.TcState ( MonadTcState(..))
+import           TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
+                                             , asksEnv
+                                             )
 import           TypeCheck.State ( TcState(..), Err )
 
 
