@@ -25,8 +25,9 @@ testFile name = testCase name $ do
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))
   let elabState = emptyElabState allsolver
   ev <- runTcStateMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
-  (eval, constraints) <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
-  d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules eval)
+  (elab, constraints) <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
+  putStrLn $ render $ disp (last elab)
+  d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elab)
   defs <- d `exitWith` (\s -> assertFailure $ "Type error:" ++ render (disp s))
   putStrLn $ render $ disp (last defs)
 
