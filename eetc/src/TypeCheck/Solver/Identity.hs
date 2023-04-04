@@ -3,7 +3,6 @@ module TypeCheck.Solver.Identity (identityPlugin, identitySymbol) where
 
 import qualified Unbound.Generics.LocallyNameless as Unbound (aeq)
 
-import           Syntax.Internal (CheckForMetas(hasMetas))
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
                                        , match
