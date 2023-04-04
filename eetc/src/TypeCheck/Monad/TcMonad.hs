@@ -120,6 +120,7 @@ raiseConstraintMaybeFreezeTc :: (c :<: cs)
                              -> Maybe (TcMonad cs ())
                              -> TcMonad cs ()
 raiseConstraintMaybeFreezeTc cons freeze = do
+  e <- askEnv
   f <- Unbound.fresh (Unbound.string2Name "constraint")
   let constraintId = Unbound.name2Integer f
   modifyTc (\s -> s { State.constraints =
@@ -128,9 +129,10 @@ raiseConstraintMaybeFreezeTc cons freeze = do
   case freeze of
     Nothing -> return ()
     Just frozenproblem -> do
+      let localizedfrozenproblem = localEnv (const e) $ frozenproblem
       modifyTc (\s -> s { State.frozen =
                             Map.insertWith (++) constraintId
-                                                [frozenproblem] (State.frozen s)})
+                                                [localizedfrozenproblem] (State.frozen s)})
 
 solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do

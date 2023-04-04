@@ -463,11 +463,8 @@ checkType (S.Contra p) typ = do
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
-  -- FIXME issue #3
-  -- pack Env localisation into the freeze
-  e <- askEnv
   CA.constrainTConAndFreeze ty
-    $ localEnv (const e) $ case ty of
+    $ case ty of
     -- FIXME
     -- take whnf here ^^?
       (I.TCon tname params) -> do
@@ -500,9 +497,7 @@ checkType (S.Case scrut alts) ty = do
   -- FIXME
   escrut' <- whnf escrut
   elabpromise <- createMetaTerm
-  -- FIXME issue #3
-  e <- askEnv
-  CA.constrainTConAndFreeze ty $ localEnv (const e) $ do
+  CA.constrainTConAndFreeze ty $ do
     let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
         ensureTCon (I.TCon c args) = return $ (c, args)
         ensureTCon term = Env.err $ [DS "can't verify that",
