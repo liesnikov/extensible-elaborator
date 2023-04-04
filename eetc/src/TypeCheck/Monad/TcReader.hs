@@ -16,11 +16,11 @@ class Monad m => MonadTcReader m where
               TcState m (RConstr m) (RSolver m)) ->
              m a -> m a
 
---  default askTc :: (MonadTrans t, MonadTcReader n,
---                    RConstr (t n) ~ RConstr n, RSolver (t n) ~ RSolver n,
---                    RConstr (t n) ~ RConstr m, RSolver (t n) ~ RSolver m,
---                    t n ~ m) => m (TcState m (RConstr m) (RSolver m))
---  askTc = fmap (fmapState lift) $ lift askTc
+  default askTc :: (MonadTrans t, MonadTcReader n,
+                    RConstr (t n) ~ RConstr n, RSolver (t n) ~ RSolver n,
+                    RConstr (t n) ~ RConstr m, RSolver (t n) ~ RSolver m,
+                    t n ~ m) => m (TcState m (RConstr m) (RSolver m))
+  askTc = fmap (fmapState lift) $ lift askTc
 
 --  default localTc
 --    :: (MonadTransControl t, MonadTcReader n,
