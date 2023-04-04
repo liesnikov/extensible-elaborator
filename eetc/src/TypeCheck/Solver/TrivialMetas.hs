@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
-module TypeCheck.Solver.TrivialMetas where
+module TypeCheck.Solver.TrivialMetas ( leftMetaSymbol, leftMetaPlugin
+                                     , rightMetaSymbol, rightMetaPlugin) where
 
 import           Syntax.Internal (Term(MetaVar))
 import           TypeCheck.StateActions

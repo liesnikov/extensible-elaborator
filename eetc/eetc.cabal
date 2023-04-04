@@ -98,6 +98,7 @@ library
 
     TypeCheck.Solver.Base
     TypeCheck.Solver.Identity
+    TypeCheck.Solver.Injection
     TypeCheck.Solver.TrivialMetas
     TypeCheck.Solver.TypeConstructor
     TypeCheck.Solver.Allsolver
