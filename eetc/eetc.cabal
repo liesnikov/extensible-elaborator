@@ -5,7 +5,7 @@ license: BSD-3-Clause
 license-file: LICENSE
 copyright: (c) 2022-2022 TU Delft
 description: An implementation of a simple dependently typed language for OPLSS 2022
-author: Bohdan Liesnikov <B.Liesnikov@tudelft.nl>, based on on code by Stephanie Weirich <sweirich@seas.upenn.edu> and Trellys Team <trellys@...>
+author: Bohdan Liesnikov <B.Liesnikov@tudelft.nl>, based on pi-forall by Stephanie Weirich <sweirich@seas.upenn.edu> and Trellys Team <trellys@...>
 maintainer: Bohdan Liesnikov <B.Liesnikov@tudelft.nl>
 build-type: Simple
 tested-with: GHC == 9.2.2
