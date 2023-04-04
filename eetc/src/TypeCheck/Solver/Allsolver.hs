@@ -1,10 +1,12 @@
 module TypeCheck.Solver.Allsolver where
 
-import Control.Monad.Extra (ifM)
+import           Control.Monad.Extra (ifM)
 import qualified Data.Map.Strict as Map
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Maybe (fromMaybe)
 
-import           TypeCheck.Monad.Typeclasses (MonadSolver, getTc)
+import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc)
 import qualified TypeCheck.State as State
 import           TypeCheck.Constraints
 import           TypeCheck.Solver.Base
@@ -73,7 +75,7 @@ solveAndUnfreeze as c = do
   case mid of
     Nothing -> return Nothing
     Just (cid, pid) -> do
-      allfrozen <- fmap State.frozen getTc
+      allfrozen <- getsTc State.frozen
       let mfrozen = Map.lookup cid allfrozen
           frozen = fromMaybe [] mfrozen
       _ <- sequence frozen
@@ -81,3 +83,37 @@ solveAndUnfreeze as c = do
 
 solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
 solve a c = solveAndUnfreeze a c
+
+-- call solveAllPossible' until two sets returned are the same
+solveAllPossible :: (MonadSolver c m) => Allsolver c -> m (Set (ConstraintF c))
+solveAllPossible a = do
+  sconstr <- getsTc State.constraints
+  res <- solveAllPossible' 0 a
+  sconstr' <- getsTc State.constraints
+  if (sconstr == sconstr') then return res
+  else solveAllPossible a
+
+
+solveAllPossible' :: (MonadSolver c m) => Int -> Allsolver c -> m (Set (ConstraintF c))
+solveAllPossible' n a = do
+  -- get a set of constraints
+  sconstr <- getsTc State.constraints
+  if (n >= Set.size sconstr) then return sconstr
+  else do
+    -- pick the one we're currently working on
+    let constr = Set.elemAt n sconstr
+    -- try solving it
+    res <- solve a constr
+    -- if it is solved remove from the set of constraints and return
+    case res of
+      Just _ -> do
+        -- get a potentially updated set of constraints
+        newsconstr <- getsTc State.constraints
+        -- remove the constraint from the set
+        let sconstr' = Set.delete constr newsconstr
+        -- update the set of constraints
+        modifyTc $ \s -> s { State.constraints = sconstr' }
+        return sconstr'
+      Nothing -> do
+        -- recurse with increased index
+        solveAllPossible' (n+1) a

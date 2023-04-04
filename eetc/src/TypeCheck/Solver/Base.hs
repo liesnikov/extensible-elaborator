@@ -4,9 +4,7 @@ module TypeCheck.Solver.Base ( SolverType
                              , Plugin(..)
                              ) where
 
-import           TypeCheck.Constraints ( ConstraintF
-                                       , (:<:)
-                                       )
+import           TypeCheck.Constraints ( ConstraintF)
 import           TypeCheck.Monad.Typeclasses (MonadSolver)
 
 type SolverType cs = forall m. (MonadSolver cs m) =>

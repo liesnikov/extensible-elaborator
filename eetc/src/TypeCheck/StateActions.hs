@@ -11,6 +11,7 @@ module TypeCheck.StateActions ( lookupTy
                               , extendCtxMods
                               , isMetaSolved
                               , solveMeta
+                              , substMetas
                               ) where
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)

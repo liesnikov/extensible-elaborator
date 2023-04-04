@@ -24,7 +24,7 @@ import           Syntax.Internal       ( Meta(..)
                                        , MetaTag(..)
                                        , MetaVarId )
 import qualified TypeCheck.State as State
-import           TypeCheck.Solver (Allsolver, solve)
+import           TypeCheck.Solver (Allsolver, solveAllPossible)
 
 import           TypeCheck.Monad.Prelude hiding (TcState)
 import           TypeCheck.Monad.Typeclasses
@@ -134,30 +134,32 @@ raiseConstraintMaybeFreezeTc cons freeze = do
 
 solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do
-  cons <- fmap State.constraints getTc
+  cons <- getsTc State.constraints
   (Just solver) <- fmap State.solvers getTc
-  traversed <- traverse (solveOne solver) $ Set.toList cons
-  let unsolved = concat $ fmap (\x -> case x of Left a -> [a]; Right _ -> []) traversed
+  unsolved <- solveAllPossible solver
+  solutions <- getsTc State.metaSolutions
+  warn [DS "metavariable solution dump in the solver",
+        DD $ show $ Map.toList solutions]
   if not . null $ unsolved
     then warn [DS "After checking an entry there are unsolved constraints",
-               DD $ Set.fromList unsolved
+               DD $ unsolved
               ]
     else return ()
-  where
-    solveOne :: Disp1 c =>
-                Allsolver c ->
-                ConstraintF c ->
-                TcMonad c (Either (ConstraintF c) ())
-    solveOne s c = do
-      mid <- solve s c
-      case mid of
-        Nothing -> return . Left $ c
-        Just pid -> do
+--  where
+--    solveOne :: Disp1 c =>
+--                Allsolver c ->
+--                ConstraintF c ->
+--                TcMonad c (Either (ConstraintF c) ())
+--    solveOne s c = do
+--      mid <- solve s c
+--      case mid of
+--        Nothing -> return . Left $ c
+--        Just pid -> do
 --          warn [DS "managed to solve constraint",
 --                DD c,
 --                DS "with plugin",
 --                DD pid]
-          return . Right $ ()
+--          return . Right $ ()
 
 instance MonadConstraints (TcMonad c) where
   type MConstr (TcMonad c) = c

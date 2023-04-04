@@ -59,7 +59,6 @@ transPattern (S.PatVar n) =
 elabTerm :: (MonadElab c m) => S.Term -> m I.Term
 elabTerm = (fmap fst) . inferType
 
-
 inferType :: forall c m. (MonadElab c m) => S.Term -> m (I.Term, I.Type)
 
 -- type has type type for now
@@ -796,13 +795,14 @@ elabEntry (S.Def n term) = do
                 elabterm <- Env.extendCtx (I.TypeSig sig) $
                   checkType term (I.sigType sig) `catchError` handler
                 solveAllConstraints
-                return $ if en `elem` Unbound.toListOf Unbound.fv elabterm
+                selabterm <- SA.substMetas elabterm
+                return $ if en `elem` Unbound.toListOf Unbound.fv selabterm
                          -- FIXME
                          -- this would be a RecDef, but currently core is erroring out
                          -- on RecDef (rightfully) claiming that this is an internal
                          -- construct
-                         then AddCtx [I.TypeSig sig, I.Def en elabterm]
-                         else AddCtx [I.TypeSig sig, I.Def en elabterm]
+                         then AddCtx [I.TypeSig sig, I.Def en selabterm]
+                         else AddCtx [I.TypeSig sig, I.Def en selabterm]
     die term' = do
       en <- transName n
       Env.extendSourceLocation (S.unPosFlaky term) term $
