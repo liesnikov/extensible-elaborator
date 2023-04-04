@@ -19,6 +19,7 @@ identityEqualityHandler constr = do
 identityEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 identityEqualitySolver constr = return True
 
+identitySymbol :: String
 identitySymbol = "identity equality solver"
 
 identityPlugin :: (EqualityConstraint :<: cs) => Plugin cs
