@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
-module TypeCheck.Solver.Injection where
+module TypeCheck.Solver.PiInjectivity where
 
 import           Syntax.Internal (Term(Pi, Type))
 import           TypeCheck.Constraints ( (:<:)(inj)
@@ -12,6 +12,8 @@ import           TypeCheck.Monad.Typeclasses (raiseConstraint)
 import           TypeCheck.Solver.Base
 import           TypeCheck.Solver.TrivialMetas (leftMetaSymbol, rightMetaSymbol)
 
+
+-- FIXME rename to injectivity
 
 -- match on the equality constraint and check that both sides are a Pi type
 piEqInjectionHandler :: (EqualityConstraint :<: cs) => HandlerType cs
