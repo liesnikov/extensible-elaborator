@@ -44,6 +44,7 @@ data Term
     App Term Arg
   | -- | function type   `(x : A) -> B`
     Pi Epsilon Type (Unbound.Bind TName Type)
+
   | -- | annotated terms `( a : A )`
     Ann Term Type
   | -- | marked source position, for error messages
@@ -55,22 +56,26 @@ data Term
   | -- | let expression, introduces a new (non-recursive) definition in the ctx
     -- | `let x = a in b`
     Let Term (Unbound.Bind TName Term)
+
   | -- | the type with a single inhabitant, called `Unit`
     TyUnit
   | -- | the inhabitant of `Unit`, written `()`
     LitUnit
   | -- | the type with two inhabitants (homework) `Bool`
     TyBool
+
   | -- | `True` and `False`
     LitBool Bool
   | -- | `if a then b1 else b2` expression for eliminating booleans
     If Term Term Term
   | -- | Sigma-type (homework), written `{ x : A | B }`
+
     Sigma Term (Unbound.Bind TName Term)
   | -- | introduction form for Sigma-types `( a , b )`
     Prod Term Term
   | -- | elimination form for Sigma-types `let (x,y) = a in b`
     LetPair Term (Unbound.Bind (TName, TName) Term)
+
   | -- | Equality type  `a = b`
     TyEq Term Term
   | -- | Proof of equality `Refl`
