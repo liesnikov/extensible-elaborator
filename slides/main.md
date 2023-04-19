@@ -2,7 +2,7 @@
 author: Bohdan Liesnikov
 institute: TU Delft
 title: Extensible elaborators
-date: November 22, 2022
+date: April 20, 2023
 classoption: "aspectratio=169"
 fontsize: 12pt
 navigation: empty
@@ -67,8 +67,8 @@ We can settle for extensible "on the surface".
 
 ## Problem statement
 
-* want to find a principled design for an extensible elaborator.
-* *don't want to* create a DSL to only express "correct" type theories
+* *want* to find a principled design for an extensible elaborator.
+* *don't want* to create a DSL to only express "correct" type theories
 
 # Going deeper into the elaborator
 
@@ -87,6 +87,7 @@ We can settle for extensible "on the surface".
 * do a search later
 * maybe block the problem if you need to reduce something that involves the instance
 
+
 ## Example: infer an argument
 
 ```
@@ -102,7 +103,6 @@ How do we go around typechecking it?
 * lookup `succ : Nat -> Nat`
 * constraint the type of implicit parameter `_` to `Type`
 * it has to be `Nat`
-* done
 
 
 ## Example: infer an argument
@@ -166,16 +166,28 @@ W = empty
 
 ## Core idea
 
-What if we open this constraint language to the "power users"?
+* split the constraints and solvers of the langauge into smaller pieces
+* open them up to "power users"
 
-## Why
+## Why (bother with splitting)
+
+* at the moment the biggest "usual" solver is a conversion checker
+* it typically ranges around 1.7kloc in Idris, Lean, Coq
+* in Agda also results in a lot of intricacies in the codebase
+* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
+* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
+
+## Why (open it up)
 
 * get a relatively compact core of the elaborator
 * build features around it as "extensions" or "plugins"
 * allow cheaper experiments with the language
 * main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
 
+. . .
+
 Bottom line: this is a design study
+
 
 # Gory implementation details
 
@@ -195,11 +207,11 @@ Bottom line: this is a design study
   for now aiming for a placeholder term `_` (maybe n-ary `_`?)
 * type classes
   * can we derive things?
-* subtyping by coercion
+* subtyping by coercion?
+* row types?
 * taking suggestions
 
 :::
-
 
 ## Design choices and implementation ideas
 
@@ -215,55 +227,11 @@ Bottom line: this is a design study
 * each constraint raised gets an opportunity to be solved/simplified immediately by the user-supplied solver
 * if it doesn't - we can freeze the problem and return a meta in place of the typechecked solution
 
-## Design overview
+## Where is it at the moment?
 
-![](./architecture-diagram.pdf)
-
-## Open questions
-
-::: incremental
-
-* how to encode solver patterns and order?
-* can we link dynamically?
-
-:::
-
-
-## how to encode solver priorities
-
-Current idea:
-
-* specify a (pre-) order in which the solvers should run  
-  i.e. type classes run after name disambiguation
-
-## how does dynamic linking interfere with what we can do
-
-* there is machinery in Haskell to declare interfaces [@pangPluggingHaskell2004]
-* what should the interface look like?
-```
-  data SolverTag = ...
-  
-  type Solver = ConstraintF c -> ( Set (ConstraintF c)
-                                 , Map MetaId Term )
-  
-  data PluginInterface = Plugin {
-    solvers :: Map SolverTag Solver,
-    solverTags :: [SolverTag],
-    priorities :: [(SolverTag, SolverTag)]
-  }
-```
-
-## how does dynamic linking interfere with what we can do
-
-```
-  instance ConstraintMap constraintTag ConstraintType where
-  ...
-  
-  data Constraints = Constraints {
-    constraintTags :: Set String,
-  }
-  ```
-
+* implementation of a unifier
+* fixing shortcuts
+* write-up
 
 ## Prior work
 
@@ -284,13 +252,41 @@ Current idea:
 
 ## Closing slide
 
-![](./dependent-types-general.pdf)
+[github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
 
+# Backup slides
+
+## Old architecture diagram
+
+![](./architecture-diagram.pdf)
+
+## How do you make sure the solvers run in the right order?
+
+specify a (pre-) order in which the solvers should run i.e. type classes run after name disambiguation
+
+## What does a plugin look like?
+
+```haskell
+  type PluginId = ...
+
+  type Solver cs = forall m. (MonadSolver cs m) =>
+                   (Constraint cs) ->
+                   m Bool
+
+  data Plugin cs = Plugin {
+    handler :: Handler cs,
+    solver :: Solver cs,
+    symbol :: PluginId,
+    pre :: [PluginId],
+    suc :: [PluginId]
+  }
+```
 
 ## References {.allowframebreaks}
 
 \bibliographytrue
 \printbibliography[heading=none]
+
 
 <!-- Local Variables: -->
 <!-- mode: markdown; reftex -->

@@ -16,6 +16,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       listings # for code snippets
       stmaryrd # for horizontal-bar rules
       ulem # for strikethrough
+      fancyvrb
       ; };
     extraTexInputs = [ ];
     extraBuildInputs = [ ];
