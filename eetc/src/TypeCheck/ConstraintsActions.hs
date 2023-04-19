@@ -4,11 +4,11 @@ module TypeCheck.ConstraintsActions ( constrainEquality
                                     ) where
 
 import           Syntax.Internal as Syntax
-import           Syntax.SourceLocation (SourceLocation)
 import           TypeCheck.Monad ( MonadConstraints
                                  , MConstr
                                  , raiseConstraint
                                  , raiseConstraintAndFreeze
+                                 , MonadTcReaderEnv
                                  )
 import           TypeCheck.Constraints ( BasicConstraintsF
                                        , EqualityConstraint(..)
@@ -16,15 +16,17 @@ import           TypeCheck.Constraints ( BasicConstraintsF
                                        , (:<:)(..)
                                        )
 
-constrainEquality :: (MonadConstraints m, BasicConstraintsF :<: (MConstr m))
+constrainEquality :: (MonadTcReaderEnv m,
+                      MonadConstraints m, BasicConstraintsF :<: (MConstr m))
                   => Syntax.Term -> Syntax.Term -> Syntax.Type
-                  -> SourceLocation -> m ()
-constrainEquality t1 t2 ty s =
+                  -> m ()
+constrainEquality t1 t2 ty = do
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint t1 t2 ty s
+                  $ EqualityConstraint t1 t2 ty
 
 
-constrainTConAndFreeze :: (MonadConstraints m, BasicConstraintsF :<: (MConstr m))
+constrainTConAndFreeze :: (MonadTcReaderEnv m,
+                           MonadConstraints m, BasicConstraintsF :<: (MConstr m))
                        => Syntax.Type -> m () -> m ()
 constrainTConAndFreeze ty frozen =
   raiseConstraintAndFreeze

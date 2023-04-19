@@ -109,7 +109,6 @@ data Meta c where
   Meta :: MetaId -> Meta c
   MetaTerm :: Telescope -> MetaVarId -> Meta Term
 
-type MetaTerm = Meta Term
 
 instance Show (Meta c) where
   show (Meta i) = show "?_" ++ show i

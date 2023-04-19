@@ -43,11 +43,11 @@ type Decls = [Decl]
 askDecls :: (MonadTcReader m) => m Decls
 askDecls = decls <$> askTc
 
-localDecl :: (MonadTcReader m) => (Decls -> Decls) -> m a -> m a
-localDecl f = localTc (\s -> s { decls = f . decls $ s})
+-- localDecl :: (MonadTcReader m) => (Decls -> Decls) -> m a -> m a
+-- localDecl f = localTc (\s -> s { decls = f . decls $ s})
 
-asksDecl :: (MonadTcReader m) => (Decls -> a) -> m a
-asksDecl f = asksTc (f . decls)
+-- asksDecl :: (MonadTcReader m) => (Decls -> a) -> m a
+-- asksDecl f = asksTc (f . decls)
 
 -- substitute all metas currently available as solutions
 substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a

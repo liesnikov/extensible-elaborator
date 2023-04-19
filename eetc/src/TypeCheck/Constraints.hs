@@ -26,38 +26,36 @@ import PrettyPrint (Disp, Disp1(..), disp)
 data ConstraintF f = In ConstraintId (f (ConstraintF f))
 
 instance (Disp1 f) => Disp (ConstraintF f) where
-  disp (In i fv) = PP.text "constraint" <+> (PP.integer i <> PP.text ":") <+> liftdisp (disp) fv
+  disp (In i f) = PP.text "constraint" <+> (PP.integer i <> PP.text ":") <+> liftdisp (disp) f
 
 instance Eq (ConstraintF f) where
-  (In id1 _) == (In id2 _) = id1 == id2
+  c1 == c2 = getConstraintId c1 == getConstraintId c2
 
 instance Ord (ConstraintF f) where
-  compare (In id1 _) (In id2 _) = compare id1 id2
+  compare c1 c2 = compare (getConstraintId c1) (getConstraintId c2)
 
 type ConstraintId = Integer
 
 getConstraintId :: ConstraintF f -> ConstraintId
 getConstraintId (In i _) = i
 
-data EmptyConstraint e = EmptyConstraint SourceLocation
+data EmptyConstraint e = EmptyConstraint
   deriving Functor
 
 instance Disp1 EmptyConstraint where
-  liftdisp _ (EmptyConstraint s) = PP.text "empty_constraint" <+> raisedat s
+  liftdisp _ (EmptyConstraint) = PP.text "empty_constraint"
 
 
 -- The two terms t1 and t2 of type typ should be unified
-data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term
-                                               Syntax.Type SourceLocation
+data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
   deriving Functor
 
 instance Disp1 EqualityConstraint where
-  liftdisp _ (EqualityConstraint t1 t2 ty s) = (PP.parens $
-                                                disp t1 <+>
-                                                PP.text "~" <+>
-                                                disp t2) <+>
-                                               PP.text ":" <+> disp ty <+>
-                                               raisedat s
+  liftdisp _ (EqualityConstraint t1 t2 ty) = (PP.parens $
+                                              disp t1 <+>
+                                              PP.text "~" <+>
+                                              disp t2) <+>
+                                             PP.text ":" <+> disp ty
 
 
 -- the term passed to the constraint should be a type cosntructor
@@ -70,15 +68,14 @@ instance Disp1 TypeConstructorConstraint where
 
 
 -- both constraints must be satisfied
-data ConjunctionConstraint e = ConjunctionConstraint e e SourceLocation
+data ConjunctionConstraint e = ConjunctionConstraint e e
   deriving Functor
 
 instance Disp1 ConjunctionConstraint where
-  liftdisp f (ConjunctionConstraint c1 c2 s) = PP.parens (
-                                                 (f c1) <+>
-                                                 PP.text " , " <+>
-                                                 (f c2)) <+>
-                                               raisedat s
+  liftdisp f (ConjunctionConstraint c1 c2) = PP.parens (
+                                               (f c1) <+>
+                                               PP.text " , " <+>
+                                               (f c2))
 
 
 type BasicConstraintsF =   EqualityConstraint
@@ -169,7 +166,3 @@ inject cid = In cid . inj
 
 match :: (g :<: f) => ConstraintF f -> Maybe (g (ConstraintF f ))
 match (In _ t) = prj t
-
--- Pretty-printing boilerplate
-raisedat :: SourceLocation -> PP.Doc
-raisedat s = PP.text "raised at" <+> (disp . getPosition $ s)

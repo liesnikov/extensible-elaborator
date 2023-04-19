@@ -16,7 +16,7 @@ leftMetaHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 leftMetaHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint t1 t2 ty src) -> do
+    Just (EqualityConstraint t1 t2 ty) -> do
       case t1 of
         MetaVar m1 -> do
           -- check if the meta is already solved
@@ -27,7 +27,7 @@ leftMetaHandler constr = do
 
 leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
-  let (Just (EqualityConstraint t1 t2 ty src)) = match @EqualityConstraint constr
+  let (Just (EqualityConstraint t1 t2 _)) = match @EqualityConstraint constr
       (MetaVar m1) = t1
   solveMeta m1 t2
   return True
@@ -48,7 +48,7 @@ rightMetaHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 rightMetaHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint t1 t2 ty src) -> do
+    Just (EqualityConstraint t1 t2 ty) -> do
       case t2 of
         MetaVar m2 -> do
           -- check if the meta is already solved
@@ -59,7 +59,7 @@ rightMetaHandler constr = do
 
 rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
-  let (Just (EqualityConstraint t1 t2 ty src)) = match @EqualityConstraint constr
+  let (Just (EqualityConstraint t1 t2 _)) = match @EqualityConstraint constr
       (MetaVar m2) = t2
   solveMeta m2 t1
   return True

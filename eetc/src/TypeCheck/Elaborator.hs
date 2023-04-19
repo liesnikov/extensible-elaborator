@@ -24,8 +24,6 @@ import qualified TypeCheck.ConstraintsActions as CA
 import           TypeCheck.Monad ( MonadElab
                                  , createMetaVar
                                  , asksTcNames
-                                 , askEnv
-                                 , localEnv
                                  , modifyTcNames
                                  , solveAllConstraints
                                  )
@@ -93,9 +91,8 @@ inferType (S.App t1 t2) = do
   tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) (createMetaTerm)
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
-  s <- fmap head $ Env.getSourceLocation
 
-  CA.constrainEquality nty1 metaPi I.Type s
+  CA.constrainEquality nty1 metaPi I.Type
 
   unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
     [DS "In application, expected",
@@ -272,9 +269,8 @@ checkType (S.Lam ep1 lam) ty = do
   mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) (createMetaTerm)
   let mbnd = Unbound.bind mtx mtyB
   let metaPi = I.Pi mep mtyA mbnd
-  s <- fmap head $ Env.getSourceLocation
 
-  CA.constrainEquality ty metaPi I.Type s
+  CA.constrainEquality ty metaPi I.Type
 
   (x, body) <- Unbound.unbind lam
   (_, tyB) <- Unbound.unbind mbnd
@@ -382,8 +378,7 @@ checkType (S.LetPair p bnd) typ = do
   mtyB <- Env.extendCtx (I.mkSig tx tyA) (createMetaTerm)
   let tybnd = Unbound.bind tx mtyB
   let sigmaPi = I.Sigma tyA tybnd
-  s <- fmap head $ Env.getSourceLocation
-  CA.constrainEquality pty sigmaPi I.Type s
+  CA.constrainEquality pty sigmaPi I.Type
 
 
   let tyB = Unbound.instantiate tybnd [I.Var tx]
@@ -402,8 +397,7 @@ checkType (S.Refl) typ@(I.TyEq a b) = do
   -- FIXME
   -- Is creating a meta term the right thing to do here?
   unknownType <- createMetaTerm
-  s <- fmap head $ Env.getSourceLocation
-  CA.constrainEquality a b unknownType s
+  CA.constrainEquality a b unknownType
   return $ I.Refl
 checkType (S.Refl) typ =
   Env.err [DS "Refl annotated with ", DD typ]
@@ -415,8 +409,7 @@ checkType (S.Subst a b) typ = do
   m <- createMetaTerm
   n <- createMetaTerm
   let metaeq = I.TyEq m n
-  s <- fmap head $ Env.getSourceLocation
-  CA.constrainEquality tp metaeq I.Type s
+  CA.constrainEquality tp metaeq I.Type
 
 
   --FIXME
@@ -432,9 +425,8 @@ checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
   a <- createMetaTerm
   b <- createMetaTerm
-  s <- fmap head $ Env.getSourceLocation
   let metaEq = I.TyEq a b
-  CA.constrainEquality typ metaEq I.Type s
+  CA.constrainEquality typ metaEq I.Type
 
   -- FIXME
   -- This relies on a and b being in whnf
@@ -463,8 +455,9 @@ checkType (S.Contra p) typ = do
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
-  CA.constrainTConAndFreeze ty
-    $ case ty of
+  CA.constrainTConAndFreeze ty $ do
+    mty <- SA.substMetas ty
+    case mty of
     -- FIXME
     -- take whnf here ^^?
       (I.TCon tname params) -> do
@@ -485,8 +478,7 @@ checkType t@(S.DCon c args) ty = do
             ]
         newTele <- substTele delta params deltai
         eargs <- elabArgTele args newTele
-        s <- fmap head $ Env.getSourceLocation
-        CA.constrainEquality elabpromise (I.DCon c eargs) ty s
+        CA.constrainEquality elabpromise (I.DCon c eargs) ty
       _ ->
         Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
   return elabpromise
@@ -503,7 +495,7 @@ checkType (S.Case scrut alts) ty = do
         ensureTCon term = Env.err $ [DS "can't verify that",
                                      DD term,
                                      DS "has TCon as head-symbol"]
-    (c, args) <- ensureTCon sty
+    (c, args) <- ensureTCon =<< SA.substMetas sty
     let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
         checkAlt (S.Match bnd) = do
           (pat, body) <- Unbound.unbind bnd
@@ -531,15 +523,13 @@ checkType (S.Case scrut alts) ty = do
     -- FIXME
     -- exhaustivityCheck is currently non-functional in terms of empty cases
     exhaustivityCheck escrut' sty epats
-    s <- fmap head $ Env.getSourceLocation
-    CA.constrainEquality elabpromise (I.Case escrut ealts) ty s
+    CA.constrainEquality elabpromise (I.Case escrut ealts) ty
   return elabpromise
 
 -- c-infer
 checkType tm ty = do
   (etm, ty') <- inferType tm
-  s <- fmap head $ Env.getSourceLocation
-  CA.constrainEquality ty' ty I.Type s
+  CA.constrainEquality ty' ty I.Type
   return $ etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
@@ -684,7 +674,7 @@ declarePat (I.PatCon dc pats) I.Rel ty = do
       ensureTCon term = Env.err $ [DS "can't verify that",
                                    DD term,
                                    DS "has TCon as head-symbol"]
-  (tc,params) <- ensureTCon ty
+  (tc,params) <- ensureTCon =<< SA.substMetas ty
   (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon dc tc
   tele <- substTele delta params deltai
   declarePats dc pats tele
@@ -877,7 +867,7 @@ exhaustivityCheck scrut ty pats = do
       ensureTCon term = Env.err $ [DS "can't verify that",
                                    DD term,
                                    DS "has TCon as head-symbol"]
-  (tcon, tys) <- ensureTCon ty
+  (tcon, tys) <- ensureTCon =<< SA.substMetas ty
   (I.Telescope delta, mdefs) <- SA.lookupTCon tcon
   case mdefs of
     Just datacons -> do

@@ -4,6 +4,8 @@ module PrettyPrint ( Disp (..), Disp1 (..), D (..)
                    , SourcePos, PP.Doc, PP.render
                    ) where
 
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import           Text.ParserCombinators.Parsec.Error ( ParseError )
 import           Text.ParserCombinators.Parsec.Pos ( SourcePos
@@ -96,6 +98,13 @@ instance (Disp a) => Disp (S.Set a) where
   disp l =  PP.text "[ "
         <+> PP.hsep (PP.punctuate (PP.text ",") $ fmap disp $ S.toList l)
         <+> PP.text " ]"
+
+instance (Disp a, Disp b) => Disp (Map a b) where
+  disp m = PP.text "{ "
+        <+> PP.hsep (PP.punctuate (PP.text ",") $
+                     fmap (\(k,v) -> disp k <+> PP.text ":" <+> disp v) $
+                     Map.toList m)
+        <+> PP.text " }"
 
 -------------------------------------------------------------------------
 

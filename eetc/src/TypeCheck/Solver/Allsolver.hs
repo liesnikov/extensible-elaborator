@@ -2,11 +2,9 @@ module TypeCheck.Solver.Allsolver where
 
 import           Control.Monad.Extra (ifM)
 import qualified Data.Map.Strict as Map
-import           Data.Set (Set)
-import qualified Data.Set as Set
 import           Data.Maybe (fromMaybe)
 
-import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc)
+import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc, localEnv)
 import qualified TypeCheck.State as State
 import           TypeCheck.Constraints
 import           TypeCheck.Solver.Base
@@ -81,27 +79,27 @@ solveAndUnfreeze as c = do
       _ <- sequence frozen
       return $ Just pid
 
-solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
-solve a c = solveAndUnfreeze a c
+solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c, State.Env) -> m (Maybe PluginId)
+solve a (c, e) = localEnv (const e) $ solveAndUnfreeze a c
 
 -- call solveAllPossible' until two sets returned are the same
-solveAllPossible :: (MonadSolver c m) => Allsolver c -> m (Set (ConstraintF c))
+solveAllPossible :: (MonadSolver c m) => Allsolver c -> m [ConstraintId]
 solveAllPossible a = do
-  sconstr <- getsTc State.constraints
+  sconstr <- getsTc (Map.keys . State.constraints)
   res <- solveAllPossible' 0 a
-  sconstr' <- getsTc State.constraints
+  sconstr' <- getsTc (Map.keys . State.constraints)
   if (sconstr == sconstr') then return res
   else solveAllPossible a
 
 
-solveAllPossible' :: (MonadSolver c m) => Int -> Allsolver c -> m (Set (ConstraintF c))
+solveAllPossible' :: (MonadSolver c m) => Int -> Allsolver c -> m [ConstraintId]
 solveAllPossible' n a = do
   -- get a set of constraints
   sconstr <- getsTc State.constraints
-  if (n >= Set.size sconstr) then return sconstr
+  if (n >= Map.size sconstr) then return $ Map.keys sconstr
   else do
     -- pick the one we're currently working on
-    let constr = Set.elemAt n sconstr
+    let (cid, constr) = Map.elemAt n sconstr
     -- try solving it
     res <- solve a constr
     -- if it is solved remove from the set of constraints and return
@@ -110,10 +108,10 @@ solveAllPossible' n a = do
         -- get a potentially updated set of constraints
         newsconstr <- getsTc State.constraints
         -- remove the constraint from the set
-        let sconstr' = Set.delete constr newsconstr
+        let sconstr' = Map.delete cid newsconstr
         -- update the set of constraints
         modifyTc $ \s -> s { State.constraints = sconstr' }
-        return sconstr'
+        return $ Map.keys sconstr'
       Nothing -> do
         -- recurse with increased index
         solveAllPossible' (n+1) a

@@ -3,6 +3,7 @@ module TypeCheck.State ( SourceLocation(..)
                        , emptyCoreEnv, emptyElabEnv
                        , Err(..)
                        , TcState(..)
+                       , TcConstraint
                        , fmapState
                        , emptyCoreState, emptyElabState
                        , NameMap
@@ -10,7 +11,6 @@ module TypeCheck.State ( SourceLocation(..)
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Set as Set
 
 import Syntax.Surface as S
 import Syntax.Internal as I
@@ -59,13 +59,16 @@ emptyElabEnv = Env { ctx = []
 
 type NameMap = Map S.TName I.TName
 
+type TcConstraint c = (ConstraintF c, Env)
+
 data TcState tcaction c solver = TcS {
   -- FIXME
   -- previously was an existential forall a. Map .. (Meta a)
   -- but that can't be matched without ImpredicativeTypes
     metas :: Map MetaVarId (Meta I.Term)
   , metaSolutions :: Map MetaVarId I.Term
-  , constraints :: Set.Set (ConstraintF c)
+  -- storing the environment in which the constraint was created
+  , constraints :: Map ConstraintId (TcConstraint c)
   , vars :: NameMap
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
@@ -79,7 +82,7 @@ fmapState f s = s {frozen = fmap (fmap f) (frozen s)}
 emptyCoreState :: TcState tca c s
 emptyCoreState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
-                     , constraints = Set.empty
+                     , constraints = Map.empty
                      , vars = Map.empty
                      , decls = []
                      , udecls = []
@@ -90,7 +93,7 @@ emptyCoreState = TcS { metas = Map.empty
 emptyElabState :: s -> TcState tca c s
 emptyElabState s = TcS { metas = Map.empty
                        , metaSolutions = Map.empty
-                       , constraints = Set.empty
+                       , constraints = Map.empty
                        , vars = Map.empty
                        , decls = I.preludeDataDecls
                        , udecls = []

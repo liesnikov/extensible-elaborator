@@ -124,27 +124,27 @@ raiseConstraintMaybeFreezeTc cons freeze = do
   f <- Unbound.fresh (Unbound.string2Name "constraint")
   let constraintId = Unbound.name2Integer f
   modifyTc (\s -> s { State.constraints =
-                        Set.insert (inject constraintId cons) (State.constraints s)
+                        Map.insert constraintId (inject constraintId cons, e) (State.constraints s)
                     })
   case freeze of
     Nothing -> return ()
     Just frozenproblem -> do
-      let localizedfrozenproblem = localEnv (const e) $ frozenproblem
       modifyTc (\s -> s { State.frozen =
                             Map.insertWith (++) constraintId
-                                                [localizedfrozenproblem] (State.frozen s)})
+                                                [frozenproblem] (State.frozen s)})
 
 solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do
   cons <- getsTc State.constraints
   (Just solver) <- fmap State.solvers getTc
-  unsolved <- solveAllPossible solver
+  _ <- solveAllPossible solver
+  unsolved <- getsTc State.constraints
   solutions <- getsTc State.metaSolutions
   warn [DS "metavariable solution dump in the solver",
         DD $ show $ Map.toList solutions]
   if not . null $ unsolved
     then warn [DS "After checking an entry there are unsolved constraints",
-               DD $ unsolved
+               DD $ Map.map fst $ unsolved
               ]
     else return ()
 --  where

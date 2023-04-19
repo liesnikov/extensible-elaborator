@@ -7,6 +7,7 @@ import TypeCheck.Solver.Base
 import TypeCheck.Solver.Identity
 import TypeCheck.Solver.TrivialMetas
 import TypeCheck.Solver.TypeConstructor
+import TypeCheck.Solver.PiInjectivity
 
 import TypeCheck.Solver.Allsolver
 
@@ -15,6 +16,8 @@ allSolvers = [ identityPlugin
              , leftMetaPlugin
              , rightMetaPlugin
              , typeConstructorPlugin
+             , typeConstructorWithMetasPlugin
+             , piEqInjectivityPlugin
              ]
 
 allsolver :: Allsolver BasicConstraintsF
