@@ -1,6 +1,5 @@
 ---
 author: Bohdan Liesnikov
-institute: TU Delft
 title: Extensible elaborators
 date: April 20, 2023
 classoption: "aspectratio=169"
@@ -51,7 +50,6 @@ We can settle for extensible "on the surface".
 
 * parsing is an old and hard problem
 * in modern DT languages one either has a custom syntax declarations or proper macros
-* let's not go there today
 
 ## Can we tackle the core?
 
@@ -59,7 +57,6 @@ We can settle for extensible "on the surface".
 
 * core rules correspond to the encoded logic
 * modifying core can violate soundness
-* generally speaking, not something you want to mess with
 
 ## Elaborator under attack
 
@@ -74,8 +71,8 @@ We can settle for extensible "on the surface".
 
 ## How does an elaborator work
 
-* essentially do type-checking
-* more liberal
+* type-checking
+* a bit more liberal
 * if something isn't immediately obvious  
   constrain the unknowns such that it typechecks
 
@@ -150,13 +147,10 @@ W = ValueCmp t1 t2 # eq comparison
 * aiming for something in-between in the core + your extensions
 
 ```
-W = empty
-  | W1, W2
-  | IsDatatypeConstructor
-  | EqualityComparison
-  | MetaSolved
-  ...
-  # more to come?
+CoreW = EqualityComparison
+      | IsDatatypeConstructor
+      | FillInMeta
+      ...
 ```
 
 ## How do constraints work
