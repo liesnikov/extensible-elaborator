@@ -1,6 +1,6 @@
 ---
 author: Bohdan Liesnikov
-title: Extensible elaborators
+title: Extensible elaborators (WIP)
 date: April 20, 2023
 classoption: "aspectratio=169"
 fontsize: 12pt
@@ -213,7 +213,6 @@ Bottom line: this is a design study
 * metas are communication channels for async computations
 * we have metas for terms  
   but not for modalities or other language constructs just yet
-* in the process of solver implementation
 
 ## Design choices and implementation ideas
 
@@ -221,11 +220,23 @@ Bottom line: this is a design study
 * each constraint raised gets an opportunity to be solved/simplified immediately by the user-supplied solver
 * if it doesn't - we can freeze the problem and return a meta in place of the typechecked solution
 
-## Where is it at the moment?
+## WIP
 
-* implementation of a unifier
-* fixing shortcuts
-* write-up
+Current state:
+
+* implementing the unifier
+
+Still to do:
+
+* implementing extensions
+
+## Open questions
+
+* How much can such a unifier scale?
+* How far can you push these kinds of extensions? Can you model erasure inference?
+* Can you prove anything interesting about such a system?
+* Can we make the solver parallel?
+
 
 ## Prior work
 
