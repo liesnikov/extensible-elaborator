@@ -12,6 +12,7 @@ module TypeCheck.StateActions ( lookupTy
                               , isMetaSolved
                               , solveMeta
                               , substMetas
+                              , substAllMetas
                               ) where
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
@@ -30,7 +31,7 @@ import           PrettyPrint ( D(..) )
 
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad.TcReader ( MonadTcReader(..)
-                                          , localTc, asksTc)
+                                          , asksTc)
 import           TypeCheck.Monad.TcState ( MonadTcState(..))
 import           TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
                                              , asksEnv
@@ -49,11 +50,20 @@ askDecls = decls <$> askTc
 -- asksDecl :: (MonadTcReader m) => (Decls -> a) -> m a
 -- asksDecl f = asksTc (f . decls)
 
--- substitute all metas currently available as solutions
+-- perform one substitution of metas
+-- (if the solutions have metas themselves this will leave them in the term)
 substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
 substMetas t = do
   solutions <- asksTc (metaSolutions)
   return $ Unbound.substs (Map.toList solutions) t
+
+-- perform recursive substitution of metas
+substAllMetas :: (MonadTcReader m, Unbound.Subst Term a, Unbound.Alpha a) => a -> m a
+substAllMetas t = do
+  subst <- substMetas t
+  if Unbound.aeq t subst
+  then return t
+  else substAllMetas subst
 
 isMetaSolved :: (MonadTcReader m) => MetaVarId -> m Bool
 isMetaSolved mid = do

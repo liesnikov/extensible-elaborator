@@ -780,7 +780,7 @@ elabEntry (S.Def n term) = do
                 elabterm <- Env.extendCtx (I.TypeSig sig) $
                   checkType term (I.sigType sig) `catchError` handler
                 solveAllConstraints
-                selabterm <- SA.substMetas elabterm
+                selabterm <- SA.substAllMetas elabterm
                 return $ if en `elem` Unbound.toListOf Unbound.fv selabterm
                          -- FIXME
                          -- this would be a RecDef, but currently core is erroring out
