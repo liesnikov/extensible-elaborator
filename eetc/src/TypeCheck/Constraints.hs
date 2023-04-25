@@ -14,7 +14,6 @@ module TypeCheck.Constraints ( ConstraintF
                              ) where
 
 import qualified Syntax.Internal as Syntax
-import           Syntax.SourceLocation (SourceLocation, getPosition)
 import           Text.PrettyPrint ( (<+>) )
 import qualified Text.PrettyPrint as PP
 import PrettyPrint (Disp, Disp1(..), disp)
