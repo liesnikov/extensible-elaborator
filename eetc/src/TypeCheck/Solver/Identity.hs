@@ -7,7 +7,7 @@ module TypeCheck.Solver.Identity ( identityPlugin
 
 import qualified Unbound.Generics.LocallyNameless as Unbound (aeq)
 
-import           Syntax.Internal (isMeta)
+import           Syntax.Internal (Term(MetaVar))
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)(inj)
                                        , EqualityConstraint(..)
@@ -43,7 +43,11 @@ identityAfterSubstHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
     Just (EqualityConstraint mt1 mt2 ty) ->
-      return $ isMeta mt1 || isMeta mt2
+      let solved t =
+            case t of
+              MetaVar v1 -> isMetaSolved v1
+              _ -> return False
+      in (||) <$> solved mt1 <*> solved mt2
     Nothing -> return False
 
 identityAfterSubstSolver :: (EqualityConstraint :<: cs) => SolverType cs
