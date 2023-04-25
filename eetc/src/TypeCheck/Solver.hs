@@ -13,6 +13,7 @@ import TypeCheck.Solver.Allsolver
 
 allSolvers:: [Plugin BasicConstraintsF]
 allSolvers = [ identityPlugin
+             , identityAfterSubstPlugin
              , leftMetaPlugin
              , rightMetaPlugin
              , typeConstructorPlugin

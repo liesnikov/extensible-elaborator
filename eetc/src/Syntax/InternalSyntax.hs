@@ -382,6 +382,11 @@ internalPos = initialPos "internal"
 
 -- * Metavariables
 
+
+isMeta :: Term -> Bool
+isMeta (MetaVar _) = True
+isMeta _ = False
+
 class CheckForMetas a where
   collectAllMetas :: a -> [MetaVarId]
   hasMetas :: a -> Bool
