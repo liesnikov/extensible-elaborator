@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module TypeCheck.Monad.TcReader ( MonadTcReader(..)
                                 , asksTc
-                                , asksTcNames, localTcNames) where
+                                , askTcNames, localTcNames) where
 
 import TypeCheck.Monad.Prelude
 import TypeCheck.State (fmapState)
@@ -34,8 +34,8 @@ class Monad m => MonadTcReader m where
 asksTc :: MonadTcReader m => (TcState m (RConstr m) (RSolver m) -> b) -> m b
 asksTc f = f <$> askTc
 
-asksTcNames :: (MonadTcReader m) => (NameMap -> a) -> m a
-asksTcNames f = f <$> vars <$> askTc
+askTcNames :: (MonadTcReader m) => m NameMap
+askTcNames = vars <$> askTc
 
 localTcNames :: (MonadTcReader m) => (NameMap -> NameMap) -> m a -> m a
 localTcNames f = localTc (\s -> s {vars = f $ vars s})

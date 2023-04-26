@@ -23,7 +23,7 @@ import qualified TypeCheck.StateActions as SA
 import qualified TypeCheck.ConstraintsActions as CA
 import           TypeCheck.Monad ( MonadElab
                                  , createMetaVar
-                                 , asksTcNames
+                                 , askTcNames
                                  , modifyTcNames
                                  , solveAllConstraints
                                  )
@@ -34,7 +34,7 @@ transEpsilon S.Irr = I.Irr
 
 transName :: (MonadElab c m) => S.TName -> m I.TName
 transName n = do
-  namemap <- asksTcNames id
+  namemap <- askTcNames
   case (Map.lookup n namemap) of
     Nothing -> do
       let s = Unbound.name2String n

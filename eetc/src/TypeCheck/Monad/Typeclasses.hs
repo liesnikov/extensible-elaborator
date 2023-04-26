@@ -1,7 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 module TypeCheck.Monad.Typeclasses ( MonadTcReader(..)
                                    , asksTc
-                                   , asksTcNames, localTcNames
+                                   , askTcNames, localTcNames
 
                                    , MonadTcReaderEnv(..)
                                    , asksEnv, getSourceLocation
