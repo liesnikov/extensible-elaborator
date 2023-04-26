@@ -53,7 +53,11 @@ instance Disp ModuleImport where
   disp (ModuleImport i) = PP.text "import" <+> disp i
 
 instance Disp Sig where
-  disp (Sig n ep  ty) = brackets True (disp n) <+> PP.text ":" <+> disp ty
+  disp (Sig n ep  ty) = brackets (isIrr ep) (disp n) <+> PP.text ":" <+> disp ty
+    where
+      isIrr :: Epsilon -> Bool
+      isIrr Irr = True
+      isIrr Rel = False
 
 instance Disp Decl where
   disp (Def n term)  = disp n <+> PP.text "=" <+> disp term
