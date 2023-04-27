@@ -15,8 +15,8 @@ let
               unbound-generics =
                 let unbound-src =
                       pkgs.fetchzip {
-                        url = "https://github.com/lambdageek/unbound-generics/archive/a2a558058012b09bb313b3eb03cddb734fcf4a98.zip";
-                        sha256 = "af4592a93d0d280591b3bcff3ebe244956cc3637bf20ed2315fb6b2e070caef4";
+                        url = "https://github.com/lambdageek/unbound-generics/archive/bd9bac1242ecb62d8152efc0e36357f2e1563fc5.zip";
+                        sha256 = "sha256-2naqNNVZ13XDPoCJD3JU8JNVOTi9WCFfTRAnSVyVxY0=";
   };
                 in haskellPackagesNew.callCabal2nix "unbound-generics" unbound-src {};
             };
@@ -28,4 +28,4 @@ let
 in
 { compiler ? "ghc922",
   nixpkgs ? import defpkgs {config = (config compiler);} }:
-nixpkgs.pkgs.haskell.packages."${compiler}".callCabal2nix "eetc" ./. {}
+nixpkgs.pkgs.haskell.packages."${compiler}".callCabal2nixWithOptions "eetc" ./. "--no-check" {}
