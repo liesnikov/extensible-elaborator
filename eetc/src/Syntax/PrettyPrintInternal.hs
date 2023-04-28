@@ -13,6 +13,7 @@ import Syntax.ModuleStub
 
 instance Disp (Unbound.Name Term) where
   disp = PP.text . Unbound.name2String
+--    disp = PP.text . show
 
   -------------------------------------------------------------------------
 
@@ -367,7 +368,7 @@ gatherBinders :: Term -> DispInfo -> ([Doc], Doc)
 gatherBinders (Lam ep b) =
   Unbound.lunbind b $ \(n, body) -> do
     dn <- display n
-    let db = bindParens ep  dn
+    let db = bindParens ep dn
     (rest, body') <- gatherBinders body
     return (db : rest, body')
 gatherBinders body = do

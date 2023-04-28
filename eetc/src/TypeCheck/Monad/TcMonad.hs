@@ -140,8 +140,8 @@ solveAllConstraintsTc = do
   _ <- solveAllPossible solver
   unsolved <- getsTc State.constraints
   solutions <- getsTc State.metaSolutions
-  warn [DS "metavariable solution dump in the solver",
-        DD $ show $ Map.toList solutions]
+  -- warn [DS "metavariable solution dump in the solver",
+  --       DD $ show $ Map.toList solutions]
   if not . null $ unsolved
     then warn [DS "After checking an entry there are unsolved constraints",
                DD $ Map.map fst $ unsolved
