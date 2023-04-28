@@ -94,7 +94,7 @@ data Term
 
   | -- | meta variables done in contextual style
     MetaVar MetaVarId
-  deriving (Show, Generic)
+  deriving (Show, Generic, Typeable)
 
 type MetaVarId = Unbound.Name Term
 
