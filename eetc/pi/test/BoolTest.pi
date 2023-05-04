@@ -1,4 +1,4 @@
-module Bool where
+module BoolTest where
 
 b1 : Bool
 b1 = True

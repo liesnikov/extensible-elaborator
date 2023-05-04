@@ -1,9 +1,12 @@
-{- pi-forall language -}
 -- | A Pretty Printer.
-module PrettyPrint (Disp (..), D (..), Display(..), DispInfo(..), SourcePos, PP.Doc, PP.render) where
+module PrettyPrint ( Disp (..), Disp1 (..), D (..)
+                   , Display(..) , DispInfo(..)
+                   , SourcePos, PP.Doc, PP.render
+                   ) where
 
-import Data.Set qualified as S
-
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as S
 import           Text.ParserCombinators.Parsec.Error ( ParseError )
 import           Text.ParserCombinators.Parsec.Pos ( SourcePos
                                                    , sourceColumn
@@ -11,7 +14,7 @@ import           Text.ParserCombinators.Parsec.Pos ( SourcePos
                                                    , sourceName )
 import           Text.PrettyPrint ( Doc, (<+>) )
 import qualified Text.PrettyPrint as PP
-import Unbound.Generics.LocallyNameless qualified as Unbound
+import qualified Unbound.Generics.LocallyNameless as Unbound
 
 -------------------------------------------------------------------------
 
@@ -25,6 +28,11 @@ class Disp d where
   disp :: d -> Doc
   default disp :: (Display d) => d -> Doc
   disp d = display d (DI {showAnnots = False, dispAvoid = S.empty, prec = 0})
+
+-- | The Disp1 class governs all functors which,
+-- given a Disp instance for the argument, would be able to become Disp themselves
+class Disp1 f where
+  liftdisp :: (a -> PP.Doc) -> (f a -> PP.Doc)
 
 -- | The 'Display' class is like the 'Disp' class. It qualifies
 --   types that can be turned into 'Doc'.  The difference is that the
@@ -86,6 +94,17 @@ instance (Disp a, Disp b) => Disp (Either a b) where
   disp (Left a) = PP.text "Left" <+> disp a
   disp (Right a) = PP.text "Right" <+> disp a
 
+instance (Disp a) => Disp (S.Set a) where
+  disp l =  PP.text "[ "
+        <+> PP.hsep (PP.punctuate (PP.text ",") $ fmap disp $ S.toList l)
+        <+> PP.text " ]"
+
+instance (Disp a, Disp b) => Disp (Map a b) where
+  disp m = PP.text "{ "
+        <+> PP.hsep (PP.punctuate (PP.text ",") $
+                     fmap (\(k,v) -> disp k <+> PP.text ":" <+> disp v) $
+                     Map.toList m)
+        <+> PP.text " }"
 
 -------------------------------------------------------------------------
 

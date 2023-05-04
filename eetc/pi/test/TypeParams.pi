@@ -1,0 +1,4 @@
+module TypeParams where
+
+data Vec (A : Type) [x = Nat] (x : Type) : Type where
+     VZero of [x = 0]

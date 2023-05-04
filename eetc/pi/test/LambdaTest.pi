@@ -1,4 +1,4 @@
-module Lambda where
+module LambdaTest where
 
 id : (x:Type) -> x -> x
 id = \x y . y

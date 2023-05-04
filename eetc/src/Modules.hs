@@ -1,9 +1,8 @@
-{- pi-forall language -}
 -- | Tools for working with multiple source files
 module Modules (getModules, ModuleInfo(..)) where
 
-import SurfaceSyntax as S
-import ModuleStub
+import Syntax.Surface as S
+import Syntax.ModuleStub
 import Parser(parseModuleFile, parseModuleImports)
 
 import Text.ParserCombinators.Parsec.Error ( ParseError )
@@ -20,7 +19,7 @@ import Data.List(nub,(\\))
 -- modules appearing after its dependencies.
 getModules
   :: (Functor m, MonadError ParseError m, MonadIO m) =>
-     [FilePath] -> String -> m [S.Module]
+     [FilePath] -> String -> m [Module]
 getModules prefixes top = do
   toParse <- gatherModules prefixes [ModuleImport top]
   flip evalStateT emptyConstructorNames $ mapM reparse toParse
@@ -74,7 +73,7 @@ getModuleFileName prefixes modul = do
 
 -- | Fully parse a module (not just the imports).
 reparse :: (MonadError ParseError m, MonadIO m, MonadState ConstructorNames m) =>
-            ModuleInfo -> m S.Module
+            ModuleInfo -> m Module
 reparse (ModuleInfo _ fileName _) = do
   cnames <- get
   modu <- parseModuleFile cnames fileName

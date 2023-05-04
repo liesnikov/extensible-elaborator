@@ -1,9 +1,9 @@
-module ModuleStub where
+module Syntax.ModuleStub where
 
-import Data.Set (Set)
-import Data.Set qualified as Set
-import Data.Typeable (Typeable)
-import GHC.Generics (Generic)
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           Data.Typeable (Typeable)
+import           GHC.Generics (Generic)
 
 -- | module names
 type MName = String

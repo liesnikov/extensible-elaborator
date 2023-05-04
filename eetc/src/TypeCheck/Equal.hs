@@ -1,4 +1,3 @@
-{- pi-forall language -}
 -- | Compare two terms for equality
 module TypeCheck.Equal (whnf, equate, ensurePi,
                         ensureTyEq,
@@ -6,12 +5,12 @@ module TypeCheck.Equal (whnf, equate, ensurePi,
 
 import Control.Monad.Except (MonadError(..), MonadPlus, unless, catchError, zipWithM, zipWithM_)
 
-import InternalSyntax
-import ModuleStub
+import Syntax.Internal
+import Syntax.ModuleStub
 import TypeCheck.Environment ( D(DS, DD))
 import qualified TypeCheck.Environment as Env
 import TypeCheck.State (Err)
-import TypeCheck.Monad (MonadTcReader(..))
+import TypeCheck.Monad (MonadTcReaderEnv(..))
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 
@@ -19,7 +18,7 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 -- first check if they are alpha equivalent then
 -- if not, weak-head normalize and compare
 -- throw an error if they cannot be matched up
-equate :: (MonadTcReader m, MonadError Err m, MonadPlus m, MonadFail m,
+equate :: (MonadTcReaderEnv m, MonadError Err m, MonadPlus m, MonadFail m,
            Unbound.Fresh m)
        => Term -> Term -> m ()
 equate t1 t2 | Unbound.aeq t1 t2 = return ()
@@ -106,7 +105,7 @@ equate t1 t2 = do
       zipWithM_ matchBr brs1 brs2
 
     (_,_) -> tyErr n1 n2
- where  tyErr :: (MonadTcReader m, MonadError Err m) => Term -> Term -> m ()
+ where  tyErr :: (MonadTcReaderEnv m, MonadError Err m) => Term -> Term -> m ()
         tyErr n1 n2 = do
           gamma <- Env.getLocalCtx
           Env.err [DS "Expected", DD n2,
@@ -115,7 +114,7 @@ equate t1 t2 = do
 
 
 -- | Match up args
-equateArgs :: (MonadTcReader m, MonadError Err m,
+equateArgs :: (MonadTcReaderEnv m, MonadError Err m,
                MonadPlus m, MonadFail m, Unbound.Fresh m)
            => [Arg] -> [Arg] -> m ()
 equateArgs (a1:t1s) (a2:t2s) = do
@@ -129,7 +128,7 @@ equateArgs a1 a2 = do
                    DS "in context:", DD gamma]
 
 -- | Ignore irrelevant arguments when comparing
-equateArg :: (MonadTcReader m, MonadError Err m,
+equateArg :: (MonadTcReaderEnv m, MonadError Err m,
               MonadPlus m, MonadFail m, Unbound.Fresh m)
           => Arg -> Arg -> m ()
 equateArg (Arg Rel t1) (Arg Rel t2) = equate t1 t2
@@ -137,7 +136,7 @@ equateArg (Arg Irr t1) (Arg Irr t2) = return ()
 equateArg a1 a2 =
   Env.err [DS "Arg stage mismatch",
               DS "Expected " , DD a2,
-              DS "Found ", DD a1]
+              DS "Found "    , DD a1]
 
 
 -------------------------------------------------------
@@ -146,7 +145,7 @@ equateArg a1 a2 =
 -- (or could be normalized to be such) and return the components of
 -- the type.
 -- Throws an error if this is not the case.
-ensurePi :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Type ->
+ensurePi :: (MonadTcReaderEnv m, MonadError Err m, Unbound.Fresh m) => Type ->
   m (Epsilon,  Type, (Unbound.Bind TName Type))
 ensurePi ty = do
   nf <- whnf ty
@@ -160,7 +159,7 @@ ensurePi ty = do
 -- (or could be normalized to be such) and return
 -- the LHS and RHS of that equality
 -- Throws an error if this is not the case.
-ensureTyEq :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Term -> m (Term,Term)
+ensureTyEq :: (MonadTcReaderEnv m, MonadError Err m, Unbound.Fresh m) => Term -> m (Term,Term)
 ensureTyEq ty = do
   nf <- whnf ty
   case nf of
@@ -171,7 +170,7 @@ ensureTyEq ty = do
 -- | Ensure that the given type 'ty' is some tycon applied to
 --  params (or could be normalized to be such)
 -- Throws an error if this is not the case
-ensureTCon :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Term -> m (TCName, [Arg])
+ensureTCon :: (MonadTcReaderEnv m, MonadError Err m, Unbound.Fresh m) => Term -> m (TCName, [Arg])
 ensureTCon aty = do
   nf <- whnf aty
   case nf of
@@ -182,7 +181,7 @@ ensureTCon aty = do
 
 -------------------------------------------------------
 -- | Convert a term to its weak-head normal form.
-whnf :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m) => Term -> m Term
+whnf :: (MonadTcReaderEnv m, MonadError Err m, Unbound.Fresh m) => Term -> m Term
 whnf (Var x) = do
   maybeDef <- Env.lookupDef x
   case maybeDef of
@@ -236,8 +235,14 @@ whnf (Case scrut mtchs) = do
           whnf (Unbound.substs ss br))
             `catchError` \ _ -> f alts
       f [] = Env.err $ [DS "Internal error: couldn't find a matching",
-                    DS "branch for", DD nf, DS "in"] ++ map DD mtchs
+                        DS "branch for", DD nf, DS "in"] ++ map DD mtchs
     _ -> return (Case nf mtchs)
+
+-- metavariables don't belong here
+whnf tm@(MetaVar _) =
+  Env.err [ DS "Internal error: can't compute a whnf of a metavariable"
+          , DD tm]
+
 -- all other terms are already in WHNF
 -- don't do anything special for them
 whnf tm = return tm
@@ -246,7 +251,7 @@ whnf tm = return tm
 -- | Determine whether the pattern matches the argument
 -- If so return the appropriate substitution
 -- otherwise throws an error
-patternMatches :: (MonadTcReader m, MonadError Err m, Unbound.Fresh m)
+patternMatches :: (MonadTcReaderEnv m, MonadError Err m, Unbound.Fresh m)
                => Arg -> Pattern -> m [(TName, Term)]
 patternMatches (Arg _ t) (PatVar x) = return [(x, t)]
 patternMatches (Arg Rel t) pat = do
@@ -263,7 +268,7 @@ patternMatches (Arg Irr _) pat = do
 -- | 'Unify' the two terms, producing a list of Defs
 -- If there is an obvious mismatch, this function produces an error
 -- If either term is "ambiguous" just fail instead.
-unify :: (MonadTcReader m, MonadError Err m, MonadPlus m, Unbound.Fresh m)
+unify :: (MonadTcReaderEnv m, MonadError Err m, MonadPlus m, Unbound.Fresh m)
       => [TName] -> Term -> Term -> m [Decl]
 unify ns tx ty = do
   txnf <- whnf tx
@@ -291,6 +296,14 @@ unify ns tx ty = do
         ds1 <- unify ns tyA1 tyA2
         ds2 <- unify (x:ns) tyB1 tyB2
         return (ds1 ++ ds2)
+      (m1@(MetaVar _), t2) -> Env.err [DS "Can't unify metavariable",
+                                       DD m1,
+                                       DS "with term",
+                                       DD t2]
+      (t1, m2@(MetaVar _)) -> Env.err [DS "Can't unify term",
+                                       DD t1,
+                                       DS "with metavariable",
+                                       DD m2]
       _ ->
         if amb txnf || amb tynf
           then return []

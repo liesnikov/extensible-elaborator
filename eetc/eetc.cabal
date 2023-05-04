@@ -26,13 +26,13 @@ common shared-properties
     DefaultSignatures
     DeriveAnyClass
     DeriveDataTypeable
+    DeriveFunctor
     DeriveGeneric
     DerivingStrategies
     FlexibleContexts
     FlexibleInstances
     GADTs
     GeneralizedNewtypeDeriving
-    ImportQualifiedPost
     KindSignatures
     MultiParamTypeClasses
     NamedFieldPuns
@@ -42,24 +42,17 @@ common shared-properties
     ScopedTypeVariables
     TupleSections
     TypeSynonymInstances
+    TypeOperators
     UndecidableInstances
     ViewPatterns
   build-depends:
     base >= 4 && < 5,
-    parsec >= 3.1.8 && < 3.2,
     mtl >= 2.2.1 && < 2.3,
+    filepath,
+    parsec >= 3.1.8 && < 3.2,
     pretty >= 1.0.1.0,
     unbound-generics >= 0.4.3,
-      -- method Unbound.Generics.LocallyNameless.Subst.Subst.substBvs was added in 0.4.3
-    transformers,
-    array >= 0.3.0.2 && < 0.6,
-    -- monad-control-1.0.1.0 is the first to contain liftThrough
-    monad-control >= 1.0.1.0 && < 1.1,
-    containers,
-    directory,
-    filepath,
-    HUnit,
-    QuickCheck
+    QuickCheck >= 2.13.2
   if !impl(ghc >= 8.0)
     build-depends: semigroups == 0.18.*
 
@@ -69,22 +62,54 @@ library
   hs-source-dirs: src
   exposed-modules:
     LayoutToken
-    Modules
-    ModuleStub
     Parser
+    Modules
     PrettyPrint
-    PrettyPrintInternal
-    PrettyPrintSurface
-    InternalSyntax
-    SurfaceSyntax
-    Arbitrary
+
+    Syntax.ModuleStub
+    Syntax.PrettyPrintInternal
+    Syntax.PrettyPrintSurface
+    Syntax.InternalSyntax
+    Syntax.Internal
+    Syntax.SurfaceSyntax
+    Syntax.Surface
+    Syntax.SourceLocation
+
     TypeCheck.Elaborator
     TypeCheck.Environment
     TypeCheck.Equal
     TypeCheck.TypeCheck
     TypeCheck.Monad
+    TypeCheck.Solver
     TypeCheck.State
+    TypeCheck.StateActions
+    TypeCheck.Constraints
+    TypeCheck.ConstraintsActions
 
+    Arbitrary
+  other-modules:
+    TypeCheck.Monad.Prelude
+    TypeCheck.Monad.TcReader
+    TypeCheck.Monad.TcReaderEnv
+    TypeCheck.Monad.TcState
+    TypeCheck.Monad.Constraints
+    TypeCheck.Monad.Typeclasses
+    TypeCheck.Monad.TcMonad
+
+    TypeCheck.Solver.Base
+    TypeCheck.Solver.Identity
+    TypeCheck.Solver.PiInjectivity
+    TypeCheck.Solver.TrivialMetas
+    TypeCheck.Solver.TypeConstructor
+    TypeCheck.Solver.Allsolver
+  build-depends:
+    array >= 0.3.0.2 && < 0.6,
+    containers,
+    directory,
+    -- monad-control-1.0.1.0 is the first to contain liftThrough
+    monad-control >= 1.0.1.0 && < 1.1,
+    transformers,
+    extra > 1 && < 2
 
 executable eetc
   import: shared-properties
@@ -95,7 +120,14 @@ executable eetc
 test-suite test-eetc
   import: shared-properties
   build-depends: eetc
-    , QuickCheck >= 2.13.2
+               , tasty
+               , tasty-hunit
+               , tasty-quickcheck
+               , HUnit
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Main.hs
+  other-modules:
+    Tests.Parsing
+    Tests.Solver
+    Tests.Full

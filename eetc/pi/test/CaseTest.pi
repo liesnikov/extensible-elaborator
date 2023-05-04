@@ -1,0 +1,29 @@
+module CaseTest where
+
+b1 : Bool
+b1 = True
+
+not : Bool -> Bool
+not = \ b .
+  case b of
+       True -> False
+       False -> True
+
+b2 : Bool
+b2 = not b1
+
+data TwoConstructors : Type where
+  FirstC
+  SecondC
+
+nb1 : TwoConstructors
+nb1 = FirstC
+
+nother : TwoConstructors -> TwoConstructors
+nother = \c .
+  case c of
+       FirstC -> SecondC
+       SecondC -> FirstC
+
+nb2 : TwoConstructors
+nb2 = nother nb1

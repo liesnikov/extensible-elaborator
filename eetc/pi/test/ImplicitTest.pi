@@ -1,0 +1,4 @@
+module ImplicitTest where
+
+t1 : Bool
+t1 = _

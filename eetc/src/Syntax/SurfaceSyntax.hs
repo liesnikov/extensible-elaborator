@@ -1,16 +1,15 @@
-{- pi-forall language -}
 -- | The abstract syntax of the simple dependently typed language
 -- See comment at the top of 'Parser' for the concrete syntax of this language
-module SurfaceSyntax where
+module Syntax.SurfaceSyntax where
 
-import Data.Maybe (fromMaybe)
-import Data.Typeable (Typeable)
-import GHC.Generics (Generic,from)
-import Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Data.Function (on)
+import           Data.Function (on)
+import           Data.Maybe (fromMaybe)
+import           Data.Typeable (Typeable)
+import           GHC.Generics (Generic,from)
+import           Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
+import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import ModuleStub as M
+import           Syntax.ModuleStub as MM
 
 -----------------------------------------
 
@@ -87,6 +86,8 @@ data Term
     DCon DCName [Arg]
   | -- | case analysis  `case a of matches`
     Case Term [Match]
+  | -- | implicit argument
+    Implicit
 
   deriving (Show, Generic)
 
@@ -129,7 +130,7 @@ data Pattern
 
 -----------------------------------------
 
-type Module = M.MModule Decl
+type Module = MM.MModule Decl
 
 -- | A type declaration (or type signature)
 data Sig = Sig {sigName :: TName , sigEp :: Epsilon  , sigType :: Type}

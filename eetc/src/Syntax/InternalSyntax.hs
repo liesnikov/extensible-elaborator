@@ -1,15 +1,24 @@
+{-# LANGUAGE StandaloneDeriving #-}
 -- | The abstract syntax of the simple dependently typed language
 -- See comment at the top of 'Parser' for the concrete syntax of this language
-module InternalSyntax where
+module Syntax.InternalSyntax where
 
-import Data.Maybe (fromMaybe)
-import Data.Typeable (Typeable)
-import GHC.Generics (Generic,from)
-import Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Data.Function (on)
+import           Data.Function (on)
+import           Data.Maybe (fromMaybe)
+import           Data.List (find)
 
-import ModuleStub as M
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+
+import           Data.Typeable (Typeable)
+import           GHC.Generics (Generic,from)
+
+import           Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
+import qualified Unbound.Generics.LocallyNameless as Unbound
+import qualified Unbound.Generics.LocallyNameless.Bind as Unbound
+import qualified Unbound.Generics.LocallyNameless.Ignore as Unbound
+
+import           Syntax.ModuleStub as MM
 
 -----------------------------------------
 
@@ -44,6 +53,7 @@ data Term
     App Term Arg
   | -- | function type   `(x : A) -> B`
     Pi Epsilon Type (Unbound.Bind TName Type)
+
   | -- | annotated terms `( a : A )`
     Ann Term Type
   | -- | marked source position, for error messages
@@ -55,22 +65,26 @@ data Term
   | -- | let expression, introduces a new (non-recursive) definition in the ctx
     -- | `let x = a in b`
     Let Term (Unbound.Bind TName Term)
+
   | -- | the type with a single inhabitant, called `Unit`
     TyUnit
   | -- | the inhabitant of `Unit`, written `()`
     LitUnit
   | -- | the type with two inhabitants (homework) `Bool`
     TyBool
+
   | -- | `True` and `False`
     LitBool Bool
   | -- | `if a then b1 else b2` expression for eliminating booleans
     If Term Term Term
   | -- | Sigma-type (homework), written `{ x : A | B }`
+
     Sigma Term (Unbound.Bind TName Term)
   | -- | introduction form for Sigma-types `( a , b )`
     Prod Term Term
   | -- | elimination form for Sigma-types `let (x,y) = a in b`
     LetPair Term (Unbound.Bind (TName, TName) Term)
+
   | -- | Equality type  `a = b`
     TyEq Term Term
   | -- | Proof of equality `Refl`
@@ -87,11 +101,45 @@ data Term
   | -- | case analysis  `case a of matches`
     Case Term [Match]
 
-  deriving (Show, Generic)
+  | -- | meta variables done in contextual style
+    MetaVar MetaClosure
+  deriving (Show, Eq, Ord, Generic, Typeable)
+
+type MetaVarId = Unbound.Name Term
+
+type Closure = [(Unbound.Ignore TName,Term)]
+
+data MetaTag where
+  MetaVarTag :: Telescope -> MetaTag
+
+data Meta c where
+  MetaTerm :: Telescope -> MetaVarId -> Meta Term
+
+data MetaClosure where
+  MetaVarClosure :: MetaVarId -> Closure -> MetaClosure
+  deriving ( Show, Eq, Ord, Generic, Typeable
+           , Unbound.Subst Term, Unbound.Alpha)
+
+unIgnore :: Unbound.Ignore a -> a
+unIgnore (Unbound.I a) = a
+
+closure2Subst :: Closure -> [(TName, Term)]
+closure2Subst = map (\(n,t) -> (unIgnore n, t))
+
+subst2Closure :: [(TName, Term)] -> Closure
+subst2Closure = map (\(n,t) -> (Unbound.I n, t))
+
+composeClosures :: Closure -> Closure -> Closure
+composeClosures a b =
+  let ma = Map.fromList a
+      mb = Map.fromList b
+      tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
+      aandb = Map.union ma mb
+  in Map.toList $ Map.union tranab aandb
 
 -- | An argument to a function
 data Arg = Arg {argEp :: Epsilon, unArg :: Term}
-  deriving (Show, Generic, Unbound.Alpha, Unbound.Subst Term)
+  deriving (Show, Eq, Ord, Generic, Unbound.Alpha, Unbound.Subst Term)
 
 -- | Epsilon annotates the stage of a variable
 data Epsilon
@@ -111,7 +159,7 @@ data Epsilon
 
 -- | A 'Match' represents a case alternative
 newtype Match = Match (Unbound.Bind Pattern Term)
-  deriving (Show, Generic, Typeable)
+  deriving (Show, Eq, Ord, Generic, Typeable)
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
 
 -- | The patterns of case expressions bind all variables
@@ -119,7 +167,8 @@ newtype Match = Match (Unbound.Bind Pattern Term)
 data Pattern
   = PatCon DCName [(Pattern, Epsilon)]
   | PatVar TName
-  deriving (Show, Eq, Generic, Typeable, Unbound.Alpha, Unbound.Subst Term)
+  deriving ( Show, Eq, Ord, Generic, Typeable
+           , Unbound.Alpha, Unbound.Subst Term)
 
 
 -----------------------------------------
@@ -128,7 +177,7 @@ data Pattern
 
 -----------------------------------------
 
-type Module = M.MModule Decl
+type Module = MM.MModule Decl
 
 -- | A type declaration (or type signature)
 data Sig = Sig {sigName :: TName , sigEp :: Epsilon  , sigType :: Type}
@@ -177,7 +226,13 @@ newtype Telescope = Telescope [Decl]
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
 
 
+
 -- * Auxiliary functions on syntax
+
+deriving instance Eq a => Eq (Unbound.Bind a Term)
+deriving instance Ord a => Ord (Unbound.Bind a Term)
+deriving instance Eq a => Eq (Unbound.Ignore a)
+deriving instance Ord a => Ord (Unbound.Ignore a)
 
 -- | Default name for '_' occurring in patterns
 wildcardName :: TName
@@ -309,6 +364,88 @@ instance Unbound.Subst Term Term where
   isvar (Var x) = Just (Unbound.SubstName x)
   isvar _ = Nothing
 
+--TODO: there is a way to write it with gsubst as unbound does
+--      but unbound doesn't expose the generics
+--      so it's either this or forking unbound
+--subst  :: Name b -> b -> a -> a
+  subst n u x
+    | Unbound.isFreeName n =
+      let rsub :: Unbound.Subst Term a => a -> a
+          rsub = Unbound.subst n u
+      in case x of
+          Type -> Type
+          Var m | m == n -> u
+                | otherwise -> Var m
+          Lam e b -> Lam e (rsub b)
+          App t arg -> App (rsub t) (rsub arg)
+          Pi e b1 b2 -> Pi e (rsub b1) (rsub b2)
+          Ann t1 t2 -> Ann (rsub t1) (rsub t2)
+          Pos s t -> Pos s (rsub t)
+          TrustMe -> TrustMe
+          PrintMe -> PrintMe
+          Let t b -> Let (rsub t) (rsub b)
+          TyUnit -> TyUnit
+          LitUnit -> LitUnit
+          TyBool -> TyBool
+          LitBool t -> LitBool t
+          If t1 t2 t3 -> If (rsub t1) (rsub t2) (rsub t3)
+          Sigma t b -> Sigma (rsub t) (rsub b)
+          Prod t1 t2 -> Prod (rsub t1) (rsub t2)
+          LetPair t1 t2 -> LetPair (rsub t1) (rsub t2)
+          TyEq t1 t2 -> TyEq (rsub t1) (rsub t2)
+          Refl -> Refl
+          Subst t1 t2 -> Subst (rsub t1) (rsub t2)
+          Contra t1 -> Contra (rsub t1)
+          TCon m ts -> TCon m (rsub ts)
+          DCon m ts -> DCon m (rsub ts)
+          Case t m -> Case (rsub t) (rsub m)
+          MetaVar (MetaVarClosure mid clos) ->
+            if mid == n
+            then Unbound.substs (closure2Subst clos) u
+            else MetaVar $ MetaVarClosure mid $
+                                          composeClosures clos $
+                                                          subst2Closure [(n, u)]
+    | otherwise = error $ "Cannot substitute for bound variable " ++ show n
+
+--substs :: [(Name b, b)] -> a -> a
+  substs ss x
+    | all (Unbound.isFreeName . fst) ss =
+      let
+        rsub :: Unbound.Subst Term a => a -> a
+        rsub = Unbound.substs ss
+      in case x of
+          Type -> Type
+          Var n | Just (_, u) <- find ((==n) . fst) ss -> u
+          Var m -> Var m
+          Lam e b -> Lam e (rsub b)
+          App t arg -> App (rsub t) (rsub arg)
+          Pi e b1 b2 -> Pi e (rsub b1) (rsub b2)
+          Ann t1 t2 -> Ann (rsub t1) (rsub t2)
+          Pos s t -> Pos s (rsub t)
+          TrustMe -> TrustMe
+          PrintMe -> PrintMe
+          Let t b -> Let (rsub t) (rsub b)
+          TyUnit -> TyUnit
+          LitUnit -> LitUnit
+          TyBool -> TyBool
+          LitBool t -> LitBool t
+          If t1 t2 t3 -> If (rsub t1) (rsub t2) (rsub t3)
+          Sigma t b -> Sigma (rsub t) (rsub b)
+          Prod t1 t2 -> Prod (rsub t1) (rsub t2)
+          LetPair t1 t2 -> LetPair (rsub t1) (rsub t2)
+          TyEq t1 t2 -> TyEq (rsub t1) (rsub t2)
+          Refl -> Refl
+          Subst t1 t2 -> Subst (rsub t1) (rsub t2)
+          Contra t1 -> Contra (rsub t1)
+          TCon n ts -> TCon n (rsub ts)
+          DCon n ts -> DCon n (rsub ts)
+          Case t m -> Case (rsub t) (rsub m)
+          MetaVar (MetaVarClosure mid clos) ->
+            maybe (MetaVar $ MetaVarClosure mid $ composeClosures clos $ subst2Closure ss)
+                  (Unbound.substs (closure2Subst clos))
+                  (snd <$> find ((==mid) . fst) ss)
+    | otherwise =
+      error $ "Cannot substitute for bound variable in: " ++ show ss ++ " in " ++ show x
 
 -- '(y : x) -> y'
 pi1 :: Term
@@ -321,7 +458,6 @@ pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
 -- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
 -- True
 --
-
 
 
 -----------------
@@ -351,3 +487,67 @@ instance Unbound.Subst b SourcePos where subst _ _ = id; substs _ = id; substBvs
 -- Internally generated source positions
 internalPos :: SourcePos
 internalPos = initialPos "internal"
+
+
+-------------------
+
+-- * Metavariables
+
+
+isMeta :: Term -> Maybe MetaClosure
+isMeta (MetaVar m) = Just m
+isMeta _ = Nothing
+
+class CheckForMetas a where
+  collectAllMetas :: a -> [MetaVarId]
+  hasMetas :: a -> Bool
+  hasMetas = null . collectAllMetas
+
+collectBoundMetas :: (Unbound.Alpha a, Unbound.Alpha t, CheckForMetas t) => Unbound.Bind a t -> [MetaVarId]
+collectBoundMetas bod = Unbound.runFreshM $ do
+  (_, b) <- Unbound.unbind bod
+  return $ collectAllMetas b
+
+instance CheckForMetas Epsilon where
+  collectAllMetas = const []
+
+instance CheckForMetas Term where
+  collectAllMetas (Type) = []
+  collectAllMetas (Var _) = []
+  collectAllMetas (Lam ep bod) = collectAllMetas ep ++ collectBoundMetas bod
+  collectAllMetas (App t arg) = collectAllMetas t ++ collectAllMetas arg
+  collectAllMetas (Pi ep typ bod) = collectAllMetas ep ++
+                                    collectAllMetas typ ++
+                                    collectBoundMetas bod
+  collectAllMetas (Ann term typ) = collectAllMetas term ++ collectAllMetas typ
+  collectAllMetas (Pos _ term) = collectAllMetas term
+  collectAllMetas (TrustMe) = []
+  collectAllMetas (PrintMe) = []
+  collectAllMetas (Let term bod) = collectAllMetas term ++ collectBoundMetas bod
+  collectAllMetas (TyUnit) = []
+  collectAllMetas (LitUnit) = []
+  collectAllMetas (TyBool) = []
+  collectAllMetas (LitBool _ ) = []
+  collectAllMetas (If cond thent elset) = collectAllMetas cond ++
+                                          collectAllMetas thent ++
+                                          collectAllMetas elset
+  collectAllMetas (Sigma term bod) = collectAllMetas term ++ collectBoundMetas bod
+  collectAllMetas (Prod term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
+  collectAllMetas (LetPair term bod) = collectAllMetas term ++ collectBoundMetas bod
+  collectAllMetas (TyEq term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
+  collectAllMetas (Refl) = []
+  collectAllMetas (Subst term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
+  collectAllMetas (Contra term) = collectAllMetas term
+  collectAllMetas (TCon _ args) = args >>= collectAllMetas
+  collectAllMetas (DCon _ args) = args >>= collectAllMetas
+  collectAllMetas (Case term ms) = collectAllMetas term ++ (ms >>= collectAllMetas)
+  collectAllMetas (MetaVar (MetaVarClosure mid _)) = [mid]
+
+instance CheckForMetas Arg where
+  collectAllMetas (Arg ep unarg) = collectAllMetas unarg
+
+instance CheckForMetas Match where
+  collectAllMetas (Match u) = collectBoundMetas u
+
+instance CheckForMetas Sig where
+  collectAllMetas (Sig _ ep t) = collectAllMetas ep ++ collectAllMetas t

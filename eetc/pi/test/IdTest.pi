@@ -1,0 +1,7 @@
+module IdTest where
+
+id : (x:Type) -> x -> x
+id = \x y . y
+
+id2 : (y:Type) -> y -> (id Type y)
+id2 = \x y . y

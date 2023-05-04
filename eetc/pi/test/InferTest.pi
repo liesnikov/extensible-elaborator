@@ -1,0 +1,12 @@
+module InferTest where
+
+b1 = True
+
+b2 = b1
+
+id : (x:Type) -> (y : x) -> x
+id = \x y. (y : x)
+
+-- t0 = id Bool True
+
+-- t1 = id Bool (id Bool True)

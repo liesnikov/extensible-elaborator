@@ -1,22 +1,29 @@
-{- pi-forall language -}
+{-# LANGUAGE TypeApplications #-}
 -- | The command line interface to the pi type checker.
 -- Also provides functions for type checking individual terms
 -- and files.
 module Main(goFilename,go,main) where
 
-import Modules (getModules)
-import PrettyPrint ( render, Disp(..) )
-import PrettyPrintSurface ()
-import TypeCheck.Monad (runTcMonad)
-import TypeCheck.Elaborator ( elabModules, elabTerm )
-import TypeCheck.Environment ( emptyEnv)
-import TypeCheck.TypeCheck ( tcModules, inferType )
-import Parser ( parseExpr )
-import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
-import Control.Monad.Except ( runExceptT )
+
+import Control.Monad.Except (runExceptT )
 import System.Environment(getArgs)
 import System.Exit (exitFailure,exitSuccess)
 import System.FilePath (splitFileName)
+
+import Parser ( parseExpr )
+import Text.ParserCombinators.Parsec.Error ( errorPos, ParseError )
+import PrettyPrint ( render, Disp(..) )
+import Syntax.Surface ()
+
+import Modules (getModules)
+
+import TypeCheck.State ( emptyElabEnv, emptyElabState,
+                         emptyCoreEnv, emptyCoreState)
+import TypeCheck.Monad (runTcMonad)
+import TypeCheck.Constraints (BasicConstraintsF)
+import TypeCheck.Solver (allsolver)
+import TypeCheck.Elaborator ( elabModules, elabTerm )
+import TypeCheck.TypeCheck ( tcModules, inferType )
 
 exitWith :: Either a b -> (a -> IO ()) -> IO b
 exitWith res f =
@@ -24,20 +31,21 @@ exitWith res f =
     Left x -> f x >> exitFailure
     Right y -> return y
 
+
 -- | Type check the given string in the empty environment
 go :: String -> IO ()
 go str = do
   case parseExpr str of
     Left parseError -> putParseError parseError
     Right term -> do
-      -- FIXME: declare a display instance for SurfaceSyntax
       putStrLn "parsed as"
       putStrLn $ render $ disp term
-      elabterm <- runTcMonad emptyEnv (elabTerm term)
+      let elabState = emptyElabState allsolver
+      elabterm <- runTcMonad elabState emptyElabEnv (elabTerm @BasicConstraintsF term)
       case elabterm of
         Left elaberror -> putElabError elaberror
         Right elabt -> do
-          res <- runTcMonad emptyEnv (inferType elabt)
+          res <- runTcMonad emptyCoreState emptyCoreEnv (inferType elabt)
           case res of
             Left typeError -> putTypeError typeError
             Right ty -> do
@@ -72,17 +80,17 @@ goFilename pathToMainFile = do
   v <- runExceptT (getModules prefixes name)
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
-  e <- runTcMonad emptyEnv (elabModules val)
-  elabs <- e `exitWith` putTypeError
+  let elabState = emptyElabState allsolver
+  e <- runTcMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  elabs <- e `exitWith` putElabError
   putStrLn "type checking..."
-  d <- runTcMonad emptyEnv (tcModules elabs)
+  d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError
   putStrLn $ render $ disp (last defs)
 
 
 
-
--- | 'pi <filename>' invokes the type checker on the given
+-- | 'eetc <filename>' invokes the type checker on the given
 -- file and either prints the types of all definitions in the module
 -- or prints an error message.
 main :: IO ()

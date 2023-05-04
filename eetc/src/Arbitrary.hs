@@ -3,40 +3,15 @@
 --     * if we generate a random AST term and print it, then it should parse back to an alpha-equivalent term
 module Arbitrary where
 
--- FIXME
--- This broke because now round-trip isn't possible
--- there's no printing for surface and no translation from internal to surface
-
-
 import qualified Data.Set as Set
 import Test.QuickCheck
     ( elements, frequency, sized, Arbitrary(arbitrary), Gen )
 import qualified Test.QuickCheck as QC
 import qualified Unbound.Generics.LocallyNameless as Unbound
-import Text.Parsec.Error ( ParseError )
+import Syntax.ModuleStub
+import Syntax.Surface
 
 
-import ModuleStub
-import SurfaceSyntax
-import PrettyPrint ( render, Disp(disp) )
-import PrettyPrintSurface ()
-import Parser ( testParser, expr )
-
--- | Round trip property: a given term prints then parses to the same term.
-prop_roundtrip :: Term -> QC.Property
-prop_roundtrip tm =
-    let str = render (disp tm) in
-    case test_parseExpr str  of
-        Left _ -> QC.counterexample ("*** Could not parse:\n" ++ str) False
-        Right tm' -> QC.counterexample ("*** Round trip failure! Parsing:\n" ++ str ++ "\n*** results in\n" ++ show tm') (Unbound.aeq tm tm')
-
-test_parseExpr :: String -> Either Text.Parsec.Error.ParseError Term
-test_parseExpr = testParser arbConstructorNames expr
-
--- View random terms
-sampleTerms :: IO ()
-sampleTerms = QC.sample' (arbitrary :: Gen Term) >>=
-    mapM_ (putStrLn . render . disp)
 
 ---------------------------------------------------------------------------------------------------
 -- Generators for the pi-forall expression AST

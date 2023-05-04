@@ -1,15 +1,15 @@
-module PrettyPrintInternal where
+module Syntax.PrettyPrintSurface where
 
-import Control.Monad.Reader (MonadReader (ask, local), asks)
-import Data.Set qualified as S
-import Text.PrettyPrint (($$), (<+>))
+import           Control.Monad.Reader (MonadReader (ask, local), asks)
+import qualified Data.Set as S
+import           Text.PrettyPrint (($$), (<+>))
 import qualified Text.PrettyPrint as PP
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
+import qualified Unbound.Generics.LocallyNameless as Unbound
+import           Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
-import PrettyPrint
-import InternalSyntax
-import ModuleStub
+import           PrettyPrint
+import           Syntax.SurfaceSyntax
+import           Syntax.ModuleStub
 
 instance Disp (Unbound.Name Term) where
   disp = PP.text . Unbound.name2String
@@ -57,7 +57,6 @@ instance Disp Sig where
 
 instance Disp Decl where
   disp (Def n term)  = disp n <+> PP.text "=" <+> disp term
-  disp (RecDef n r)  = disp (Def n r)
   disp (TypeSig sig) = disp sig
   disp (Demote ep)   = mempty
 
@@ -70,9 +69,6 @@ instance Disp Decl where
       )
       2
       (PP.vcat $ map disp constructors)
-  disp (DataSig t delta) =
-    PP.text "data" <+> disp t <+> disp delta <+> PP.colon
-      <+> PP.text "Type"
 
 instance Disp ConstructorDef where
   disp (ConstructorDef _ c (Telescope [])) = PP.text c
@@ -297,6 +293,7 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
+  display (Implicit) = return $ PP.text "_"
 
 
 

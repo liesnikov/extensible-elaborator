@@ -1,4 +1,4 @@
--- | The main routines for type-checking
+-- | The main routines for core type-checking
 module TypeCheck.TypeCheck (tcModules, inferType, checkType) where
 import Control.Monad.Except
 import Data.List (nub)
@@ -7,18 +7,17 @@ import Data.Maybe ( catMaybes )
 
 import TypeCheck.Monad (MonadTcCore)
 import TypeCheck.Environment (D (..))
-import TypeCheck.Environment qualified as Env
-import TypeCheck.Equal qualified as Equal
+import qualified TypeCheck.Environment as Env
+import qualified TypeCheck.Equal as Equal
 import PrettyPrint (Disp (disp))
-import PrettyPrintInternal ()
-import InternalSyntax
-import ModuleStub
+import Syntax.Internal
+import Syntax.ModuleStub
 -- import Debug.Trace
 
 import Text.PrettyPrint.HughesPJ (($$))
 
-import Unbound.Generics.LocallyNameless qualified as Unbound
-import Unbound.Generics.LocallyNameless.Internal.Fold qualified as Unbound
+import qualified Unbound.Generics.LocallyNameless as Unbound
+import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
 import Unbound.Generics.LocallyNameless.Unsafe (unsafeUnbind)
 
 
@@ -320,6 +319,10 @@ tcTerm tm (Just ty) = do
 
   return ty'
 
+-- metavariables don't belong in the whnf computations
+tcTerm tm@(MetaVar m) _ = do
+  Env.err [DS "Internal error: can't have metavariables in the core", DD tm]
+
 tcTerm tm Nothing =
   Env.err [DS "Must have a type annotation to check ", DD tm]
 
@@ -572,6 +575,9 @@ tcEntry (Data t (Telescope delta) cs) =
       Env.err [DS "Datatype definition", DD t, DS "contains duplicated constructors"]
     -- finally, add the datatype to the env and perform action m
     return $ AddCtx [Data t (Telescope delta) ecs]
+-- FIXME
+-- we can produce RecDefs in the elaborator when dealing with a recursive function
+-- so it also makes sense to accept them in the core
 tcEntry (DataSig _ _) = Env.err [DS "internal construct"]
 tcEntry (RecDef _ _) = Env.err [DS "internal construct"]
 

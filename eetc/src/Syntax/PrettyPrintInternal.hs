@@ -1,18 +1,19 @@
-module PrettyPrintSurface where
+module Syntax.PrettyPrintInternal where
 
 import Control.Monad.Reader (MonadReader (ask, local), asks)
-import Data.Set qualified as S
+import qualified Data.Set as S
 import Text.PrettyPrint (($$), (<+>))
 import qualified Text.PrettyPrint as PP
-import Unbound.Generics.LocallyNameless qualified as Unbound
+import qualified Unbound.Generics.LocallyNameless as Unbound
 import Unbound.Generics.LocallyNameless.Internal.Fold (toListOf)
 
 import PrettyPrint
-import SurfaceSyntax
-import ModuleStub
+import Syntax.InternalSyntax
+import Syntax.ModuleStub
 
 instance Disp (Unbound.Name Term) where
   disp = PP.text . Unbound.name2String
+--    disp = PP.text . show
 
   -------------------------------------------------------------------------
 
@@ -53,12 +54,17 @@ instance Disp ModuleImport where
   disp (ModuleImport i) = PP.text "import" <+> disp i
 
 instance Disp Sig where
-  disp (Sig n ep  ty) = disp n <+> PP.text ":" <+> disp ty
+  disp (Sig n ep  ty) = brackets (isIrr ep) (disp n) <+> PP.text ":" <+> disp ty
+    where
+      isIrr :: Epsilon -> Bool
+      isIrr Irr = True
+      isIrr Rel = False
 
 instance Disp Decl where
   disp (Def n term)  = disp n <+> PP.text "=" <+> disp term
+  disp (RecDef n r)  = disp (Def n r)
   disp (TypeSig sig) = disp sig
-  disp (Demote ep)   = mempty
+  disp (Demote ep)   = PP.text "demote"
 
   disp (Data n params constructors) =
     PP.hang
@@ -69,6 +75,10 @@ instance Disp Decl where
       )
       2
       (PP.vcat $ map disp constructors)
+  disp (DataSig t delta) =
+    PP.text "data" <+> disp t <+> disp delta <+> PP.colon
+      <+> PP.text "Type"
+
 
 instance Disp ConstructorDef where
   disp (ConstructorDef _ c (Telescope [])) = PP.text c
@@ -293,7 +303,11 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
-
+  display (MetaVar (MetaVarClosure m _)) = do
+    p <- asks prec
+    let number = Unbound.name2Integer m
+    dnumber <- display number
+    return $ PP.text "?_" <> dnumber
 
 
 instance Display Arg where
@@ -326,6 +340,13 @@ instance Display Pattern where
 instance Disp Telescope where
   disp (Telescope t) = PP.sep $ map (PP.parens . disp) t
 
+-- instance Display Telescope where
+--   display (Telescope t) = do
+--     -- needs a Display instance for Decl
+--     -- feels like going against the design
+--     dt <- mapM display t
+--     return $ PP.sep $ map (PP.parens . disp) dt
+
 instance Display a => Display (a, Epsilon) where
   display (t, ep) = bindParens ep <$> display t
 
@@ -347,7 +368,7 @@ gatherBinders :: Term -> DispInfo -> ([Doc], Doc)
 gatherBinders (Lam ep b) =
   Unbound.lunbind b $ \(n, body) -> do
     dn <- display n
-    let db = bindParens ep  dn
+    let db = bindParens ep dn
     (rest, body') <- gatherBinders body
     return (db : rest, body')
 gatherBinders body = do
@@ -367,8 +388,6 @@ bindParens Irr d = PP.brackets d
 mandatoryBindParens :: Epsilon -> Doc -> Doc
 mandatoryBindParens Rel d = PP.parens d
 mandatoryBindParens Irr d = PP.brackets d
-
-
 
 -------------------------------------------------------------------------
 
@@ -394,4 +413,3 @@ instance Unbound.LFresh ((->) DispInfo) where
           { dispAvoid =
               S.fromList names `S.union` dispAvoid di
           }
-
