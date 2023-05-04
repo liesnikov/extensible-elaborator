@@ -7,7 +7,7 @@ module TypeCheck.Solver.Identity ( identityPlugin
 
 import qualified Unbound.Generics.LocallyNameless as Unbound (aeq)
 
-import           Syntax.Internal (Term(MetaVar))
+import           Syntax.Internal (Term(MetaVar), MetaClosure(..))
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)(inj)
                                        , EqualityConstraint(..)
@@ -45,7 +45,7 @@ identityAfterSubstHandler constr = do
     Just (EqualityConstraint mt1 mt2 ty) ->
       let solved t =
             case t of
-              MetaVar v1 -> isMetaSolved v1
+              MetaVar (MetaVarClosure v1 _) -> isMetaSolved v1
               _ -> return False
       in (||) <$> solved mt1 <*> solved mt2
     Nothing -> return False

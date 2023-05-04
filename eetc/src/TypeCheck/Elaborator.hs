@@ -580,8 +580,9 @@ def t1 t2 = do
 createMetaTerm :: (MonadElab c m) => m I.Term
 createMetaTerm = do
   t <- Env.getCtx
-  i <- createMetaVar (I.MetaTermTag . I.Telescope $ t)
-  return $ I.MetaVar i
+  i <- createMetaVar (I.MetaVarTag . I.Telescope $ t)
+  let clos = ctx2Clos t
+  return $ I.MetaVar $ I.MetaVarClosure i clos
 
 createUnknownVar :: (MonadElab c m) => m I.TName
 createUnknownVar = Unbound.fresh (Unbound.string2Name "_")
@@ -708,6 +709,12 @@ pat2Term (I.PatCon dc pats) = I.DCon dc (pats2Terms pats)
     pats2Terms ((p, ep) : ps) = I.Arg ep t : ts where
       t = pat2Term p
       ts = pats2Terms ps
+
+-- | Convert a telescope into an identity closure
+ctx2Clos :: [I.Decl] -> I.Closure
+ctx2Clos tel = tel >>= \decl -> case decl of
+  I.TypeSig sig -> I.subst2Closure [(I.sigName sig, I.Var (I.sigName sig))]
+  _ -> []
 
 --------------------------------------------------------
 -- Using the typechecker for decls and modules and stuff

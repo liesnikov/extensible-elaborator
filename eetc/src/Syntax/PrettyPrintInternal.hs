@@ -303,7 +303,7 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
-  display (MetaVar m) = do
+  display (MetaVar (MetaVarClosure m _)) = do
     p <- asks prec
     let number = Unbound.name2Integer m
     dnumber <- display number

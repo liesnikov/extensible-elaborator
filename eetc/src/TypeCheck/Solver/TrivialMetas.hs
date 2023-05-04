@@ -2,7 +2,7 @@
 module TypeCheck.Solver.TrivialMetas ( leftMetaSymbol, leftMetaPlugin
                                      , rightMetaSymbol, rightMetaPlugin) where
 
-import           Syntax.Internal (Term(MetaVar))
+import           Syntax.Internal (Term(MetaVar), MetaClosure(MetaVarClosure))
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
@@ -18,7 +18,7 @@ leftMetaHandler constr = do
   case eqcm of
     Just (EqualityConstraint t1 t2 ty) -> do
       case t1 of
-        MetaVar m1 -> do
+        MetaVar (MetaVarClosure m1 _)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m1
           return $ not solved
@@ -28,7 +28,7 @@ leftMetaHandler constr = do
 leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _)) = match @EqualityConstraint constr
-      (MetaVar m1) = t1
+      (MetaVar (MetaVarClosure m1 _)) = t1
   solveMeta m1 t2
   return True
 
@@ -50,7 +50,7 @@ rightMetaHandler constr = do
   case eqcm of
     Just (EqualityConstraint t1 t2 ty) -> do
       case t2 of
-        MetaVar m2 -> do
+        MetaVar (MetaVarClosure m2 _)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m2
           return $ not solved
@@ -60,7 +60,7 @@ rightMetaHandler constr = do
 rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _)) = match @EqualityConstraint constr
-      (MetaVar m2) = t2
+      (MetaVar (MetaVarClosure m2 _)) = t2
   solveMeta m2 t1
   return True
 
