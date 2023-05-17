@@ -1,3 +1,22 @@
+@article{abelExplicitSubstitutionsContextual2010a,
+  title = {Explicit {{Substitutions}} for {{Contextual Type Theory}}},
+  author = {Abel, Andreas and Pientka, Brigitte},
+  date = {2010-09-11},
+  journaltitle = {Electronic Proceedings in Theoretical Computer Science},
+  shortjournal = {Electron. Proc. Theor. Comput. Sci.},
+  volume = {34},
+  eprint = {1009.2789},
+  eprinttype = {arxiv},
+  pages = {5--20},
+  issn = {2075-2180},
+  doi = {10.4204/EPTCS.34.3},
+  url = {http://arxiv.org/abs/1009.2789},
+  urldate = {2023-04-10},
+  abstract = {In this paper, we present an explicit substitution calculus which distinguishes between ordinary bound variables and meta-variables. Its typing discipline is derived from contextual modal type theory. We first present a dependently typed lambda calculus with explicit substitutions for ordinary variables and explicit meta-substitutions for meta-variables. We then present a weak head normalization procedure which performs both substitutions lazily and in a single pass thereby combining substitution walks for the two different classes of variables. Finally, we describe a bidirectional type checking algorithm which uses weak head normalization and prove soundness.},
+  keywords = {archived,Computer Science - Logic in Computer Science,Computer Science - Programming Languages,F.4.1,I.2.3},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Abel_Pientka/2010/Abel_Pientka_2010_Explicit Substitutions for Contextual Type Theory2.pdf}
+}
+
 @inproceedings{abelExtensionMartinLofType2016,
   title = {An {{Extension}} of {{Martin-Löf Type Theory}} with {{Sized Types}}},
   author = {Abel, Andreas and Winterhalter, Théo},
@@ -55,6 +74,7 @@
 }
 
 @inproceedings{allaisTypOSOperatingSystem2022a,
+  ids = {allaisTypOSOperatingSystem2022a; https://web.archive.org/web/20220627195901/https://types22.inria.fr/files/2022/06/TYPES_2022_paper_31.pdf},
   title = {{{TypOS}}: {{An Operating System}} for {{Typechecking Actors}}},
   author = {Allais, Guillaume and Altenmuller, Malin and McBride, Conor and Nakov, Georgi and Forsberg, Nordvall and Roy, Craig},
   date = {2022-06-22},
@@ -64,6 +84,7 @@
   abstract = {Introduction We report work in progress on TypOS, a domain-specific language for experi- menting with typecheckers and elaborators. Our remit is similar to those of other domain-specific languages such as Andromeda [1], PLT Redex [ 3], or Turnstyle+ [ 2]. However, we try to minimise demands on the order in which subproblems are encountered and constraints are solved: when programs contain holes, and constraints are complex, it helps to be flexible about where to make progress. TypOS tackles typing tasks by spawning a network of concurrent actors [4], each responsible for one node of the syntax tree, communicating with its parent and child nodes via channels. Constraints demanded by one actor may generate enough information (by solving metavariables) for other actors to unblock. Metavariables thus provide a secondary and asynchronous means of communication, creating subtle difficulties modelling actor resumptions as host-language functions, because metavariables unsolved at the time of a resumption’s creation may be solved by the time it is invoked. Thus forced into a more syntactic representation of suspended processes, we decided to explore what opportunities a new language could bring.},
   eventtitle = {{{TYPES}}},
   langid = {english},
+  keywords = {archived},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Allais et al/2022/Allais et al_2022_TypOS.pdf}
 }
 
@@ -124,6 +145,8 @@
 @unpublished{bauerDesignImplementationAndromeda2018,
   title = {Design and {{Implementation}} of the {{Andromeda Proof Assistant}}},
   author = {Bauer, Andrej and Gilbert, Gaëtan and Haselwarter, Philipp G. and Pretnar, Matija and Stone, Christopher A.},
+  editora = {Wagner, Michael},
+  editoratype = {collaborator},
   date = {2018},
   eprint = {1802.06217},
   eprinttype = {arxiv},
@@ -133,8 +156,6 @@
   url = {http://drops.dagstuhl.de/opus/volltexte/2018/9857/},
   urldate = {2022-07-22},
   abstract = {Andromeda is an LCF-style proof assistant where the user builds derivable judgments by writing code in a meta-level programming language AML. The only trusted component of Andromeda is a minimalist nucleus (an implementation of the inference rules of an object-level type theory), which controls construction and decomposition of type-theoretic judgments. Since the nucleus does not perform complex tasks like equality checking beyond syntactic equality, this responsibility is delegated to the user, who implements one or more equality checking procedures in the meta-language. The AML interpreter requests witnesses of equality from user code using the mechanism of algebraic operations and handlers. Dynamic checks in the nucleus guarantee that no invalid object-level derivations can be constructed.},
-  editora = {Wagner, Michael},
-  editoratype = {collaborator},
   langid = {english},
   keywords = {03B15,andromeda,Computer Science - Logic in Computer Science},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2018/Bauer et al_2018_Design and Implementation of the Andromeda Proof Assistant2.pdf}
@@ -157,6 +178,25 @@
   langid = {english},
   keywords = {Algorithmic equality checking,andromeda,Dependent type theory,Proof assistant},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Bauer et al/2020/Bauer et al_2020_Equality Checking for General Type Theories in Andromeda 2.pdf}
+}
+
+@article{boespflugMultilevelContextualType2011,
+  title = {Multi-Level {{Contextual Type Theory}}},
+  author = {Boespflug, Mathieu and Pientka, Brigitte},
+  date = {2011-10-31},
+  journaltitle = {Electronic Proceedings in Theoretical Computer Science},
+  shortjournal = {Electron. Proc. Theor. Comput. Sci.},
+  volume = {71},
+  eprint = {1111.0087},
+  eprinttype = {arxiv},
+  pages = {29--43},
+  issn = {2075-2180},
+  doi = {10.4204/EPTCS.71.3},
+  url = {http://arxiv.org/abs/1111.0087},
+  urldate = {2023-04-10},
+  abstract = {Contextual type theory distinguishes between bound variables and meta-variables to write potentially incomplete terms in the presence of binders. It has found good use as a framework for concise explanations of higher-order unification, characterize holes in proofs, and in developing a foundation for programming with higher-order abstract syntax, as embodied by the programming and reasoning environment Beluga. However, to reason about these applications, we need to introduce meta\^2-variables to characterize the dependency on meta-variables and bound variables. In other words, we must go beyond a two-level system granting only bound variables and meta-variables. In this paper we generalize contextual type theory to n levels for arbitrary n, so as to obtain a formal system offering bound variables, meta-variables and so on all the way to meta\^n-variables. We obtain a uniform account by collapsing all these different kinds of variables into a single notion of variabe indexed by some level k. We give a decidable bi-directional type system which characterizes beta-eta-normal forms together with a generalized substitution operation.},
+  keywords = {archived,Computer Science - Logic in Computer Science,Computer Science - Programming Languages},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Boespflug_Pientka/2011/Boespflug_Pientka_2011_Multi-level Contextual Type Theory.pdf}
 }
 
 @article{bradyIdrisGeneralpurposeDependently2013,
@@ -308,10 +348,11 @@
   title = {Nfrisby/Coxswain},
   author = {Frisby, Nicolas},
   date = {2022-04-07T16:47:40Z},
-  origdate = {2017-09-16T21:16:07Z},
+  origdate = {2017-09-16T21:16:07Z; https://web.archive.org/web/20230317104356/https://github.com/nfrisby/coxswain},
   url = {https://github.com/nfrisby/coxswain},
   urldate = {2023-01-09},
-  abstract = {A GHC type checker plugin for row types}
+  abstract = {A GHC type checker plugin for row types},
+  keywords = {archived}
 }
 
 @report{gasterPolymorphicTypeSystem1996,
@@ -555,9 +596,9 @@
   title = {Type Checking through Unification},
   author = {Mazzoli, Francesco and Abel, Andreas},
   date = {2016-09-30},
-  number = {arXiv:1609.09709},
-  eprint = {arXiv:1609.09709},
+  eprint = {1609.09709},
   eprinttype = {arxiv},
+  eprintclass = {cs},
   doi = {10.48550/arXiv.1609.09709},
   url = {http://arxiv.org/abs/1609.09709},
   urldate = {2023-02-09},
@@ -574,7 +615,6 @@
   author = {McBride, Conor},
   editor = {Vene, Varmo and Uustalu, Tarmo},
   date = {2005},
-  series = {Lecture {{Notes}} in {{Computer Science}}},
   volume = {3622},
   pages = {130--170},
   publisher = {{Springer Berlin Heidelberg}},
@@ -771,6 +811,24 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pientka_Pfenning/2003/Pientka_Pfenning_2003_Optimizing Higher-Order Pattern Unification.pdf}
 }
 
+@inproceedings{prottEmbeddingFunctionalLogic2023,
+  title = {Embedding {{Functional Logic Programming}} in~{{Haskell}} via~a~{{Compiler Plugin}}},
+  booktitle = {Practical {{Aspects}} of {{Declarative Languages}}},
+  author = {Prott, Kai-Oliver and Teegen, Finn and Christiansen, Jan},
+  editor = {Hanus, Michael and Inclezan, Daniela},
+  date = {2023},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  pages = {37--55},
+  publisher = {{Springer Nature Switzerland}},
+  location = {{Cham}},
+  doi = {10.1007/978-3-031-24841-2_3},
+  abstract = {We present a technique to embed a functional logic language in Haskell using a GHC plugin. Our approach is based on a monadic lifting that models the functional logic semantics explicitly. Using a GHC plugin, we get many language extensions that GHC provides for free in the embedded language. As a result, we obtain a seamless embedding of a functional logic language, without having to implement a full compiler. We briefly show that our approach can be used to embed other domain-specific languages as well. Furthermore, we can use such a plugin to build a full blown compiler for our language.},
+  isbn = {978-3-031-24841-2},
+  langid = {english},
+  keywords = {DSL,Functional programming,GHC plugin,Haskell,Logic programming,Monadic transformation},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Prott et al/2023/Prott et al_2023_Embedding Functional Logic Programming in Haskell via a Compiler Plugin.pdf}
+}
+
 @online{ptoopTypeInferenceThought2022,
   type = {Tweet},
   title = {Type Inference Is a Thought Trap. {{Write}} More Types and Fewer Programs.},
@@ -781,6 +839,14 @@
   langid = {english},
   organization = {{Twitter}},
   annotation = {archived at https://web.archive.org/web/20220207012758/https://twitter.com/PTOOP/status/1490496253276340227}
+}
+
+@article{reedHybridMetalogicalFramework,
+  title = {A {{Hybrid Metalogical Framework}}},
+  author = {Reed, Jason},
+  abstract = {The methodology by which deductive systems and metatheorems about them are encoded in the logical framework LF is well understood. Many (but not all) of these ideas have already been successfully extended to the case of encoding stateful deductive systems in the linear logical framework LLF.},
+  langid = {english},
+  file = {/home/bohdan/Zotero/storage/N9ARXKFG/Reed - A Hybrid Metalogical Framework.pdf}
 }
 
 @article{ringerQEDLargeSurvey2019,
@@ -819,7 +885,6 @@
   author = {Selsam, Daniel and Ullrich, Sebastian and de Moura, Leonardo},
   options = {useprefix=true},
   date = {2020-01-21},
-  number = {arXiv:2001.04301},
   eprint = {2001.04301},
   eprinttype = {arxiv},
   eprintclass = {cs},

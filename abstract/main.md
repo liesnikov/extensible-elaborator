@@ -61,7 +61,7 @@ header-includes: |
     }
 ---
 
-Dependently-typed languages proved to be very useful for for statically enforcing properties of programs and for enabling type-driven development.
+Dependently-typed languages proved to be very useful for statically enforcing properties of programs and for enabling type-driven development.
 However their implementations have been studied to a smaller extent than their theoretical properties.
 Theoretical models of these languages do not consider the plethora of features that exist in a bigger language like Agda, leading to issues in the implementation of the unifier and the elaborator.
 We present work-in-progress on a new design for elaboration of dependently-typed languages based on the idea of an open datatype for constraints to tackle these issues.
@@ -82,7 +82,7 @@ In order to provide the most powerful inference to users, compiler writers often
 This code is also heavily used throughout the compiler: either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions, `ValueCmpOnFace` from `equalTermOnFace` again while checking applications.
 This makes it sensitive towards changes and hard to maintain and debug.
 
-An example from Agda's conversion checker is the `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-direced unification and yet the vast majority of it is special cases for metavariables.
+An example from Agda's conversion checker is the `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-directed unification and yet the vast majority of it are special cases for metavariables.
 This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
 Each of the above functions implements part of the "business logic" of the conversion checker with the total line count above 400 lines.
 But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints: they have to throw and catch exceptions, driving the control flow of the unification, compute blocking tags that determine when a postponed constraint is retried, and deal with cases where either or both of the sides equation or its type are either metavariables or the reduction is blocked on one.
@@ -96,7 +96,7 @@ The sizes of modules with unifiers are as follows: Idris ([1.5kloc](https://gith
 For Haskell, which is not a dependently-typed language yet but does have a constraints system [@jonesTypeInferenceConstraint2019], this number is at [2kloc](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs).
 
 **How do we solve this?**
-While Agda relies on constraints heavily, the design at large does not put at them the centre of the picture and instead frames them as a gadget.
+While Agda relies on constraints heavily, the design at large does not put them in the centre of the picture and instead frames them as a gadget.
 To give a concrete example, functions `noConstraints` or `dontAssignMetas` rely on specific behaviour of the constraint solver system and are used throughout the codebase.
 `abortIfBlocked`, `reduce` and `catchConstraint`/`patternViolation` force the programmer to make a choice between letting the constraint system handle blockers or doing it manually.
 These things are known to be brittle and pose an increased mental overhead when writing a type-checker.
@@ -105,7 +105,7 @@ Our idea for a new design is to shift focus more towards the constraints themsel
 First we give a stable API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
 This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, ch. 4.4] or communication between actors [@allaisTypOSOperatingSystem2022a].
 Second, to make the language more modular we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
-Our prototype is implemented in Haskell as is available at [github.com/liesnikov/extensible-elaborators](https://github.com/liesnikov/extensible-elaborators).\todo{make the repo public}
+Our prototype is implemented in Haskell as is available at [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator).
 
 For example, to solve unification problems we need to define a constraint that models them:
 ```haskell
