@@ -15,6 +15,7 @@ header-includes: |
     \authorrunning{Bohdan Liesnikov, Jesper Cockx}
     \titlerunning{Building an elaborator using extensible constraints}
     \usepackage{upquote}
+    \usepackage{nopageno}
     \institute{TU Delft, Delft, Netherlands}
     \usepackage[disable]{todonotes}
     \definecolor{darkblue}{rgb}{0,0,0.5}

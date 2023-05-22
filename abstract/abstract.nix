@@ -20,6 +20,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       lastpage
       eso-pic # for debug
       upquote # for straight apostrophes in code
+      nopageno
     ; };
     extraTexInputs = [ ];
     extraBuildInputs = [ librsvg biber];
