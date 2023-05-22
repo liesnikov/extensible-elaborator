@@ -14,9 +14,10 @@ header-includes: |
     \author{Bohdan Liesnikov\inst{1}, Jesper Cockx\inst{1}}
     \authorrunning{Bohdan Liesnikov, Jesper Cockx}
     \titlerunning{Building an elaborator using extensible constraints}
+    \institute{TU Delft, Delft, Netherlands}
     \usepackage{upquote}
     \usepackage{nopageno}
-    \institute{TU Delft, Delft, Netherlands}
+    \usepackage[urldate=iso]{biblatex}
     \usepackage[disable]{todonotes}
     \definecolor{darkblue}{rgb}{0,0,0.5}
     \definecolor{darkgreen}{rgb}{0,0.3,0}
