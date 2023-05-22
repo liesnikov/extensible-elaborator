@@ -74,7 +74,7 @@ The usual design of a compiler for a dependently-typed language consist of four 
 Some languages omit some parts, such as Agda which lacks a full core type-checker.
 The elaborator can further be divided into two parts: traversal of the terms with collection of the constraints and solving of the constraints [@n.g.debruijnPleaWeakerFrameworks1991].
 These can be found in all major dependently-typed languages like Idris, Coq, Lean, and Agda, though they are at times interleaved.
-Agda perhaps pushes the idea of constraints the furthest and uses a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092).
+Agda perhaps pushes the idea of constraints the furthest and uses a family of [17 kinds of constraints](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Monad/Base.hs#L1112-L1146).
 We will focus on it specifically below since the problems are most prominent there.
 
 **Problems with unifiers.**
@@ -83,13 +83,13 @@ In order to provide the most powerful inference to users, compiler writers often
 This code is also heavily used throughout the compiler: either as direct functions `leqType` when type-checking terms, `compareType` when type-checking applications, or as raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions, `ValueCmpOnFace` from `equalTermOnFace` again while checking applications.
 This makes it sensitive towards changes and hard to maintain and debug.
 
-An example from Agda's conversion checker is the `compareAs` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218) which provides type-directed unification and yet the vast majority of it are special cases for metavariables.
-This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675).
+An example from Agda's conversion checker is the `compareAs` [function](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Conversion.hs#L151-L229) which provides type-directed unification and yet the vast majority of it are special cases for metavariables.
+This function calls the `compareTerm'` [function](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Conversion.hs#L267-L430) which then calls the `compareAtom` [function](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Conversion.hs#L464-L691).
 Each of the above functions implements part of the "business logic" of the conversion checker with the total line count above 400 lines.
 But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints: they have to throw and catch exceptions, driving the control flow of the unification, compute blocking tags that determine when a postponed constraint is retried, and deal with cases where either or both of the sides equation or its type are either metavariables or the reduction is blocked on one.
-As a result this code is unintuitive and full of intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431) [comments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529) in the source code.
+As a result this code is unintuitive and full of intricacies as indicated by [multiple](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Conversion.hs#L479-L480) [comments](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Conversion.hs#L536-L544) in the source code.
 
-Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579) of simplified code.
+Zooming in on the `compareAtom` function, the actual logic can be expressed in about [20 lines](https://github.com/agda/agda/blob/v2.6.3/src/full/Agda/TypeChecking/Conversion.hs#L545-L594) of simplified code.
 This is precisely what we would like the compiler developer to write, not to worry about the dance around the constraint system.
 
 The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large modules that are hard to understand.
@@ -133,7 +133,7 @@ Refactoring the unifier into smaller solvers results in a compact elaborator for
 Moreover, making the constraint datatype open and allowing users to register new solvers allows us to extend the language without affecting the core.
 For example, to add implicit arguments to the language it is enough to extend the parser, add one case to the elaborator to add a new meta for every implicit and register a solver.
 For a simple implicit every such metavariable will be instantiated by the unifier.
-Once we have implicits as a case in the elaborator we believe that the design can accommodate type classes [@hallTypeClassesHaskell1996] and tactic arguments [@theagdateamAgdaUserManual2022, ch. 3.16.1] with just additional solvers and parsing rules.
+Once we have implicits as a case in the elaborator we believe that the design can accommodate type classes [@hallTypeClassesHaskell1996] and tactic arguments [@theagdateamAgdaUserManual2023, ch. 3.17.1] with just additional solvers and parsing rules.
 We hope to also implement coercive subtyping (akin to [@aspertiCraftingProofAssistant2007]) and, perhaps, row types [@gasterPolymorphicTypeSystem1996].
 
 \newpage
