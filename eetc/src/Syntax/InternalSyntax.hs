@@ -105,37 +105,24 @@ data Term
     MetaVar MetaClosure
   deriving (Show, Eq, Ord, Generic, Typeable)
 
-type MetaVarId = Unbound.Name Term
-
-type Closure = [(Unbound.Ignore TName,Term)]
-
+-- used to communicate to the typechecker what kind of meta you want created
 data MetaTag where
   MetaVarTag :: Telescope -> MetaTag
 
+-- identifiers for metas
+type MetaVarId = Unbound.Name Term
+
+-- metas themselves
 data Meta c where
   MetaTerm :: Telescope -> MetaVarId -> Meta Term
 
+-- metas as they appear in terms
 data MetaClosure where
   MetaVarClosure :: MetaVarId -> Closure -> MetaClosure
   deriving ( Show, Eq, Ord, Generic, Typeable
            , Unbound.Subst Term, Unbound.Alpha)
 
-unIgnore :: Unbound.Ignore a -> a
-unIgnore (Unbound.I a) = a
-
-closure2Subst :: Closure -> [(TName, Term)]
-closure2Subst = map (\(n,t) -> (unIgnore n, t))
-
-subst2Closure :: [(TName, Term)] -> Closure
-subst2Closure = map (\(n,t) -> (Unbound.I n, t))
-
-composeClosures :: Closure -> Closure -> Closure
-composeClosures a b =
-  let ma = Map.fromList a
-      mb = Map.fromList b
-      tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
-      aandb = Map.union ma mb
-  in Map.toList $ Map.union tranab aandb
+type Closure = [(Unbound.Ignore TName,Term)]
 
 -- | An argument to a function
 data Arg = Arg {argEp :: Epsilon, unArg :: Term}
@@ -489,6 +476,28 @@ internalPos :: SourcePos
 internalPos = initialPos "internal"
 
 
+------------------
+
+-- * Closures
+
+unIgnore :: Unbound.Ignore a -> a
+unIgnore (Unbound.I a) = a
+
+closure2Subst :: Closure -> [(TName, Term)]
+closure2Subst = map (\(n,t) -> (unIgnore n, t))
+
+subst2Closure :: [(TName, Term)] -> Closure
+subst2Closure = map (\(n,t) -> (Unbound.I n, t))
+
+composeClosures :: Closure -> Closure -> Closure
+composeClosures a b =
+  let ma = Map.fromList a
+      mb = Map.fromList b
+      tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
+      aandb = Map.union ma mb
+  in Map.toList $ Map.union tranab aandb
+
+
 -------------------
 
 -- * Metavariables
@@ -497,6 +506,9 @@ internalPos = initialPos "internal"
 isMeta :: Term -> Maybe MetaClosure
 isMeta (MetaVar m) = Just m
 isMeta _ = Nothing
+
+identityClosure :: MetaVarId -> Term
+identityClosure mid = MetaVar $ MetaVarClosure mid []
 
 class CheckForMetas a where
   collectAllMetas :: a -> [MetaVarId]
