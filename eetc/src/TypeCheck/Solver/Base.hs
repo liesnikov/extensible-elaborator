@@ -1,11 +1,26 @@
+{-# LANGUAGE TypeApplications #-}
 module TypeCheck.Solver.Base ( SolverType
                              , HandlerType
                              , PluginId
                              , Plugin(..)
+                             , constrainEquality
+                             , constrainEqualityMeta
                              ) where
 
-import           TypeCheck.Constraints ( ConstraintF)
-import           TypeCheck.Monad.Typeclasses (MonadSolver)
+import           TypeCheck.Constraints ( ConstraintF
+                                       , EqualityConstraint(..)
+                                       , (:<:)(..)
+                                       )
+
+import           TypeCheck.Environment as Env
+import           Syntax.Internal as Syntax
+import           TypeCheck.Monad.Typeclasses ( MonadSolver
+                                             , MonadTcReaderEnv
+                                             , MonadConstraints
+                                             , MConstr
+                                             , raiseConstraint
+                                             , createMetaVar
+                                             )
 
 type SolverType cs = forall m. (MonadSolver cs m) =>
                      (ConstraintF cs) ->
@@ -26,3 +41,25 @@ data Plugin cs = Plugin { solver  :: SolverType cs
 
 instance Show (Plugin cs) where
   show p = "Plugin " ++ symbol p
+
+
+constrainEquality :: (MonadTcReaderEnv m,
+                      MonadConstraints m, EqualityConstraint :<: (MConstr m))
+                  => Syntax.Term -> Syntax.Term -> Syntax.Type
+                  -> m Syntax.MetaVarId
+constrainEquality t1 t2 ty = do
+  t <- Env.getCtx
+  m <- createMetaVar (Syntax.MetaVarTag . Syntax.Telescope $ t)
+  raiseConstraint $ inj @_ @EqualityConstraint
+                  $ EqualityConstraint t1 t2 ty m
+  return m
+
+
+constrainEqualityMeta :: (MonadTcReaderEnv m,
+                          MonadConstraints m, EqualityConstraint :<: (MConstr m))
+                      => Syntax.Term -> Syntax.Term -> Syntax.Type -> Syntax.MetaVarId
+                      -> m ()
+constrainEqualityMeta t1 t2 ty m = do
+  t <- Env.getCtx
+  raiseConstraint $ inj @_ @EqualityConstraint
+                  $ EqualityConstraint t1 t2 ty m
