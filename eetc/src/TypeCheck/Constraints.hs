@@ -45,16 +45,17 @@ instance Disp1 EmptyConstraint where
   liftdisp _ (EmptyConstraint) = PP.text "empty_constraint"
 
 
--- The two terms t1 and t2 of type typ should be unified
-data EqualityConstraint e = EqualityConstraint Syntax.Term Syntax.Term Syntax.Type
+data EqualityConstraint e =
+  EqualityConstraint Syntax.Term Syntax.Term Syntax.Type Syntax.MetaVarId
+--                   ^ t1        ^ t2        ^ typ       ^ anti-unification meta
   deriving Functor
 
 instance Disp1 EqualityConstraint where
-  liftdisp _ (EqualityConstraint t1 t2 ty) = (PP.parens $
-                                              disp t1 <+>
-                                              PP.text "~" <+>
-                                              disp t2) <+>
-                                             PP.text ":" <+> disp ty
+  liftdisp _ (EqualityConstraint t1 t2 ty _ ) = (PP.parens $
+                                                 disp t1 <+>
+                                                 PP.text "~" <+>
+                                                 disp t2) <+>
+                                                PP.text ":" <+> disp ty
 
 
 -- the term passed to the constraint should be a type cosntructor

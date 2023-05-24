@@ -8,8 +8,10 @@ import           TypeCheck.Monad ( MonadConstraints
                                  , MConstr
                                  , raiseConstraint
                                  , raiseConstraintAndFreeze
+                                 , createMetaVar
                                  , MonadTcReaderEnv
                                  )
+import           TypeCheck.Environment as Env
 import           TypeCheck.Constraints ( BasicConstraintsF
                                        , EqualityConstraint(..)
                                        , TypeConstructorConstraint(..)
@@ -21,8 +23,10 @@ constrainEquality :: (MonadTcReaderEnv m,
                   => Syntax.Term -> Syntax.Term -> Syntax.Type
                   -> m ()
 constrainEquality t1 t2 ty = do
+  t <- Env.getCtx
+  m <- createMetaVar (Syntax.MetaVarTag . Syntax.Telescope $ t)
   raiseConstraint $ inj @_ @BasicConstraintsF
-                  $ EqualityConstraint t1 t2 ty
+                  $ EqualityConstraint t1 t2 ty m
 
 
 constrainTConAndFreeze :: (MonadTcReaderEnv m,

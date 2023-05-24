@@ -20,11 +20,14 @@ identityEqualityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 identityEqualityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint t1 t2 ty) -> return $ Unbound.aeq t1 t2
+    Just (EqualityConstraint t1 t2 ty _) -> return $ Unbound.aeq t1 t2
     Nothing -> return False
 
 identityEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
-identityEqualitySolver constr = return True
+identityEqualitySolver constr = do
+  let (Just (EqualityConstraint t _ _ m)) = match @EqualityConstraint constr
+  solveMeta m t
+  return True
 
 identitySymbol :: String
 identitySymbol = "identity equality solver"
@@ -42,7 +45,7 @@ identityAfterSubstHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 identityAfterSubstHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint mt1 mt2 ty) ->
+    Just (EqualityConstraint mt1 mt2 ty _) ->
       let solved t =
             case t of
               MetaVar (MetaVarClosure v1 _) -> isMetaSolved v1
@@ -52,11 +55,10 @@ identityAfterSubstHandler constr = do
 
 identityAfterSubstSolver :: (EqualityConstraint :<: cs) => SolverType cs
 identityAfterSubstSolver constr = do
-  let Just (EqualityConstraint mt1 mt2 ty) = match @EqualityConstraint constr
+  let Just (EqualityConstraint mt1 mt2 ty m) = match @EqualityConstraint constr
   t1 <- substMetas mt1
   t2 <- substMetas mt2
-  raiseConstraint $ inj @_ @EqualityConstraint
-                  $ EqualityConstraint t1 t2 ty
+  constrainEqualityMeta t1 t2 ty m
   return True
 
 identityAfterSubstSymbol :: String
