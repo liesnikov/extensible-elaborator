@@ -270,7 +270,7 @@ checkType (S.Lam ep1 lam) ty = do
   mtx <- createUnknownVar
   mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) (createMetaTerm)
   let mbnd = Unbound.bind mtx mtyB
-  let metaPi = I.Pi mep mtyA mbnd
+      metaPi = I.Pi mep mtyA mbnd
 
   CA.constrainEquality ty metaPi I.Type
 
