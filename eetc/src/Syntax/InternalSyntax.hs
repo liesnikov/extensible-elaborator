@@ -110,7 +110,14 @@ data MetaTag where
   MetaVarTag :: Telescope -> MetaTag
 
 -- identifiers for metas
-type MetaVarId = Unbound.Name Term
+newtype MetaVarId = MetaVarId {unMapVarId :: Unbound.Name Term}
+  deriving (Eq, Ord, Generic, Typeable)
+  deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
+
+instance Show MetaVarId where
+  show (MetaVarId m) =
+    let n = Unbound.name2Integer m
+    in "?_" ++ show n
 
 -- metas themselves
 data Meta c where
@@ -119,8 +126,8 @@ data Meta c where
 -- metas as they appear in terms
 data MetaClosure where
   MetaVarClosure :: MetaVarId -> Closure -> MetaClosure
-  deriving ( Show, Eq, Ord, Generic, Typeable
-           , Unbound.Subst Term, Unbound.Alpha)
+  deriving (Show, Eq, Ord, Generic, Typeable)
+  deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
 
 type Closure = [(Unbound.Ignore TName,Term)]
 
@@ -386,10 +393,10 @@ instance Unbound.Subst Term Term where
           TCon m ts -> TCon m (rsub ts)
           DCon m ts -> DCon m (rsub ts)
           Case t m -> Case (rsub t) (rsub m)
-          MetaVar (MetaVarClosure mid clos) ->
+          MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
             if mid == n
             then Unbound.substs (closure2Subst clos) u
-            else MetaVar $ MetaVarClosure mid $
+            else MetaVar $ MetaVarClosure (MetaVarId mid) $
                                           composeClosures clos $
                                                           subst2Closure [(n, u)]
     | otherwise = error $ "Cannot substitute for bound variable " ++ show n
@@ -427,8 +434,8 @@ instance Unbound.Subst Term Term where
           TCon n ts -> TCon n (rsub ts)
           DCon n ts -> DCon n (rsub ts)
           Case t m -> Case (rsub t) (rsub m)
-          MetaVar (MetaVarClosure mid clos) ->
-            maybe (MetaVar $ MetaVarClosure mid $ composeClosures clos $ subst2Closure ss)
+          MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
+            maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $ composeClosures clos $ subst2Closure ss)
                   (Unbound.substs (closure2Subst clos))
                   (snd <$> find ((==mid) . fst) ss)
     | otherwise =
