@@ -1,4 +1,4 @@
 module PiInjectivityTest where
 
-idr : (x:Type) -> (y : x) -> x
+idr : (z:Type) -> z -> z
 idr = \x y. (y : x)
