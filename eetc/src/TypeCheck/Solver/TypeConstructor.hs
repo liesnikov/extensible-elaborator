@@ -32,7 +32,7 @@ typeConstructorSolver constr = do
         _ -> return False
     Nothing -> return False
 
-typeConstructorSymbol :: String
+typeConstructorSymbol :: PluginId
 typeConstructorSymbol = "type constructor resolver"
 
 typeConstructorPlugin :: TypeConstructorConstraint :<: cs => Plugin cs
@@ -61,7 +61,7 @@ typeConstructorWithMetasSolver constr = do
         _ -> return False
     Nothing -> return False
 
-typeConstructorWithMetasSymbol :: String
+typeConstructorWithMetasSymbol :: PluginId
 typeConstructorWithMetasSymbol = "type constructor resolver with metas"
 
 typeConstructorWithMetasPlugin :: TypeConstructorConstraint :<: cs => Plugin cs

@@ -87,7 +87,7 @@ equate t1 t2 = do
       equate a1 a2
 
     (TCon c1 ts1, TCon c2 ts2) | c1 == c2 ->
-      zipWithM_ equateArgs [ts1] [ts2]
+      equateArgs ts1 ts2
     (DCon d1 a1, DCon d2 a2) | d1 == d2 -> do
       equateArgs a1 a2
     (Case s1 brs1, Case s2 brs2)

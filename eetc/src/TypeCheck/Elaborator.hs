@@ -263,6 +263,8 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) ty = do
+  -- FIXME
+  -- we're defaulting to relevant arguments for now
   let mep = I.Rel
   mtyA <- createMetaTerm
   mtx <- createUnknownVar
