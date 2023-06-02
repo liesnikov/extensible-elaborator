@@ -20,14 +20,7 @@ identityEqualityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 identityEqualityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint t1 t2 ty _) -> do
-      Env.warn [ DS "identity solver"
-         , DD t1
-         , DS $ "or literally " ++ show t1
-         , DD t2
-         , DS $ "or literally " ++ show t2
-         ]
-      return $ Unbound.aeq t1 t2
+    Just (EqualityConstraint t1 t2 ty _) -> return $ Unbound.aeq t1 t2
     Nothing -> return False
 
 identityEqualitySolver :: (EqualityConstraint :<: cs) => SolverType cs
