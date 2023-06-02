@@ -1,6 +1,7 @@
 module Syntax.PrettyPrintInternal where
 
 import Control.Monad.Reader (MonadReader (ask, local), asks)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import Text.PrettyPrint (($$), (<+>))
 import qualified Text.PrettyPrint as PP
@@ -150,6 +151,9 @@ brackets b = if b then PP.brackets else id
 
 instance Display (Unbound.Name Term) where
   display = return . disp
+
+instance (Display a) => Display (Unbound.Ignore a) where
+  display ia = display $ unIgnore ia
 
 instance Display Term where
   display Type = return $ PP.text "Type"
@@ -303,12 +307,39 @@ instance Display Term where
     return $
       parens (levelCase < p) $
         if null dalts then top <+> PP.text "{ }" else top $$ PP.nest 2 (PP.vcat dalts)
-  display (MetaVar (MetaVarClosure m _)) = do
+  display (MetaVar (MetaVarClosure m c)) = do
     p <- asks prec
-    let number = Unbound.name2Integer m
-    dnumber <- display number
-    return $ PP.text "?_" <> dnumber
+    md <- display m
+    mc <- displayClosure c
+    return $ md <+> mc
 
+displayTName :: TName -> DispInfo -> Doc
+displayTName m = do
+  let number = Unbound.name2Integer m
+      name = Unbound.name2String m
+  dnumber <- display number
+  if name /= "?"
+  then display m
+  else return $ PP.text ("?_") <> dnumber
+
+displayClosure :: Closure -> DispInfo -> Doc
+displayClosure kvl = do
+  dkvl <- traverse (\(k,v) -> do
+                       dk <- displayTName $ unIgnore k
+                       dv <- display v
+                       return (dk,dv))
+                   kvl
+  return $  PP.text "["
+        <+> PP.hsep (PP.punctuate (PP.text ",") $
+                     fmap (\(k,v) -> k PP.<+> PP.text " → " PP.<+> v) $
+                     dkvl)
+        <+> PP.text "]"
+
+instance Disp (MetaVarId) where
+  disp m = PP.text $ show m
+
+instance Display (MetaVarId) where
+  display m = return $ PP.text $ show m
 
 instance Display Arg where
   display arg =

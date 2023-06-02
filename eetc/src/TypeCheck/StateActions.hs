@@ -25,7 +25,7 @@ import           Syntax.Internal   ( Term
                                    , ConstructorDef(..)
                                    , Telescope
                                    , Decl(..), Module
-                                   , MetaVarId
+                                   , MetaVarId(..)
                                    )
 import           PrettyPrint ( D(..) )
 
@@ -55,7 +55,7 @@ askDecls = decls <$> askTc
 substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
 substMetas t = do
   solutions <- asksTc (metaSolutions)
-  return $ Unbound.substs (Map.toList solutions) t
+  return $ Unbound.substs (Map.toList $ Map.mapKeys (unMapVarId) solutions) t
 
 -- perform recursive substitution of metas
 substAllMetas :: (MonadTcReader m, Unbound.Subst Term a, Unbound.Alpha a) => a -> m a

@@ -22,7 +22,7 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Syntax.Internal as I
 import           Syntax.Internal       ( Meta(..)
                                        , MetaTag(..)
-                                       , MetaVarId )
+                                       , MetaVarId(..) )
 import qualified TypeCheck.State as State
 import           TypeCheck.Solver (Allsolver, solveAllPossible)
 
@@ -102,7 +102,8 @@ instance MonadTcState (TcMonad c) where
 createMetaVarFresh :: (Unbound.Fresh m, MonadTcState m) => MetaTag -> m MetaVarId
 createMetaVarFresh (MetaVarTag tel) = do
   dict <- State.metas <$> getTc
-  newMetaVarId <- Unbound.fresh $ Unbound.string2Name "?"
+  newMetaVarId' <- Unbound.fresh $ Unbound.string2Name "?"
+  let newMetaVarId = MetaVarId newMetaVarId'
   let newMeta = MetaTerm tel newMetaVarId
   modifyTc (\s -> s {State.metas = Map.insert newMetaVarId newMeta (State.metas s)})
   return $ newMetaVarId
