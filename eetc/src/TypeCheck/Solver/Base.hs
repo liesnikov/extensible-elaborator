@@ -1,10 +1,19 @@
 {-# LANGUAGE TypeApplications #-}
 module TypeCheck.Solver.Base ( SolverType
+                             , SolverReturnType
                              , HandlerType
                              , PluginId
                              , Plugin(..)
                              , constrainEquality
                              , constrainEqualityMeta
+
+                             , unificationStartMarkerSymbol
+                             , unificationStartMarker
+
+                             , unificationEndMarkerSymbol
+                             , unificationEndMarker
+
+                             , checkArgEq
                              ) where
 
 import           TypeCheck.Constraints ( ConstraintF
@@ -21,6 +30,8 @@ import           TypeCheck.Monad.Typeclasses ( MonadSolver
                                              , raiseConstraint
                                              , createMetaVar
                                              )
+
+type SolverReturnType cs r = forall m. (MonadSolver cs m) => m r
 
 type SolverType cs = forall m. (MonadSolver cs m) =>
                      (ConstraintF cs) ->
@@ -63,3 +74,87 @@ constrainEqualityMeta t1 t2 ty m = do
   t <- Env.getCtx
   raiseConstraint $ inj @_ @EqualityConstraint
                   $ EqualityConstraint t1 t2 ty m
+
+-- markers of different solvers
+
+dummyHandler :: HandlerType cs
+dummyHandler _ = return False
+
+dummySolver :: SolverType cs
+dummySolver _ = return False
+
+unificationStartMarkerSymbol :: PluginId
+unificationStartMarkerSymbol = "unificationStartMarker"
+
+unificationStartMarker :: Plugin cs
+unificationStartMarker = Plugin { solver = dummySolver
+                                 , handler = dummyHandler
+                                 , symbol = unificationStartMarkerSymbol
+                                 , pre = [unificationEndMarkerSymbol]
+                                 , suc = []
+                                 }
+
+unificationEndMarkerSymbol :: PluginId
+unificationEndMarkerSymbol = "unificationEndMarker"
+
+unificationEndMarker :: Plugin cs
+unificationEndMarker = Plugin { solver = dummySolver
+                               , handler = dummyHandler
+                               , symbol = unificationEndMarkerSymbol
+                               , pre = []
+                               , suc = [unificationStartMarkerSymbol]
+                               }
+
+
+-- utilities
+
+checkArgEq :: (EqualityConstraint :<: cs) =>
+              [Syntax.Arg] -> [Syntax.Arg] -> SolverReturnType cs (Maybe [Syntax.Arg])
+checkArgEq nargs margs
+  | length nargs == length margs = go $ zip nargs margs
+  | otherwise = return Nothing
+  where
+    go :: (EqualityConstraint :<: cs) =>
+          [(Syntax.Arg, Syntax.Arg)] -> SolverReturnType cs (Maybe [Syntax.Arg])
+    go [] = return $ Just []
+    go ((Syntax.Arg Rel t1, Syntax.Arg Rel t2) : tl) = do
+      mh <- constrainEquality t1 t2 undefined
+      let mt = Syntax.identityClosure mh
+          marg = Syntax.Arg Rel mt
+      mr <- go tl
+      return $ fmap (\t -> marg : t) mr
+    go ((Syntax.Arg Irr t1, Syntax.Arg Irr t2) : tl) = do
+      -- don't check equality for irrelevant arguments
+      let rarg = Syntax.Arg Irr t1
+      mr <- go tl
+      return $ fmap (\t -> rarg : t) mr
+    go _ = return Nothing
+
+
+
+-- checkArgEqTyDi (EqualityConstraint :<: cs) =>
+--               [Syntax.Arg] -> [Syntax.Arg] -> [Syntax.Decl] ->
+--               SolverReturnType cs (Maybe [Syntax.Arg])
+-- checkArgEqTyDi nargs margs decls
+--   | length nargs == length margs = go (zip nargs margs) decls
+--   | otherwise = return Nothing
+--   where
+--     go :: (EqualityConstraint :<: cs) =>
+--           [(Syntax.Arg, Syntax.Arg)] -> [Syntax.Decl] ->
+--           SolverReturnType cs (Maybe [Syntax.Arg])
+--     go [] [] = return $ Just []
+--     go ((Syntax.Arg Rel t1, Syntax.Arg Rel t2) : tl)
+--        (Syntax.TypeSig (I.Sig x Rel ty) : decls)
+--       = do
+--       mh <- constrainEquality t1 t2 ty
+--       let mt = Syntax.identityClosure mh
+--           marg = Syntax.Arg Rel mt
+--       Unbound.subst 
+--       mr <- go tl decls
+--       return $ fmap (\t -> marg : t) mr
+--     go ((Syntax.Arg Irr t1, Syntax.Arg Irr t2) : tl) = do
+--       -- don't check equality for irrelevant arguments
+--       let rarg = Syntax.Arg Irr t1
+--       mr <- go tl
+--       return $ fmap (\t -> rarg : t) mr
+--     go _ = return Nothing

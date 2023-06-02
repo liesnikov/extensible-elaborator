@@ -8,6 +8,7 @@ import TypeCheck.Solver.Identity
 import TypeCheck.Solver.TrivialMetas
 import TypeCheck.Solver.TypeConstructor
 import TypeCheck.Solver.PiInjectivity
+import TypeCheck.Solver.ConstructorInjectivity
 
 import TypeCheck.Solver.Allsolver
 
@@ -19,6 +20,10 @@ allSolvers = [ identityPlugin
              , typeConstructorPlugin
              , typeConstructorWithMetasPlugin
              , piEqInjectivityPlugin
+             , consInjectivityPlugin
+             , typeInjectivityPlugin
+             , unificationStartMarker
+             , unificationEndMarker
              ]
 
 allsolver :: Allsolver BasicConstraintsF

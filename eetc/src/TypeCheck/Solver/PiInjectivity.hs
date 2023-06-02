@@ -4,12 +4,11 @@ module TypeCheck.Solver.PiInjectivity (piEqInjectivityTag, piEqInjectivityPlugin
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import qualified Syntax.Internal as I
-import           TypeCheck.Constraints ( (:<:)(inj)
+import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
                                        , match
                                        )
 import           TypeCheck.StateActions
-import           TypeCheck.Monad.Typeclasses (raiseConstraint)
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Solver.Base
 import           TypeCheck.Solver.TrivialMetas (leftMetaSymbol, rightMetaSymbol)
@@ -48,14 +47,14 @@ piEqInjectivitySolver constr = do
     else do
       return False
 
-piEqInjectivityTag :: String
-piEqInjectivityTag = "match on the equality constraint and check that both sides are a Pi type"
+piEqInjectivityTag :: PluginId
+piEqInjectivityTag = "injectivity of Pi constructors"
 
 piEqInjectivityPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 piEqInjectivityPlugin = Plugin {
   solver = piEqInjectivitySolver,
   handler = piEqInjectivityHandler,
   symbol = piEqInjectivityTag,
-  pre = [],
-  suc = [leftMetaSymbol, rightMetaSymbol]
+  pre = [unificationEndMarkerSymbol],
+  suc = [leftMetaSymbol, rightMetaSymbol, unificationStartMarkerSymbol]
   }

@@ -33,14 +33,15 @@ leftMetaSolver constr = do
   solveMeta m t2
   return True
 
+leftMetaSymbol :: PluginId
 leftMetaSymbol = "solver for equalities where left side is an unsolved meta"
 
 leftMetaPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 leftMetaPlugin = Plugin { handler = leftMetaHandler
                         , solver  = leftMetaSolver
                         , symbol  = leftMetaSymbol
-                        , pre = [rightMetaSymbol]
-                        , suc = [identitySymbol]
+                        , pre = [rightMetaSymbol, unificationEndMarkerSymbol]
+                        , suc = [identitySymbol, unificationStartMarkerSymbol]
                         }
 
 -- solve an equality constraint where right side is an unsolved meta
@@ -66,12 +67,13 @@ rightMetaSolver constr = do
   solveMeta m t1
   return True
 
+rightMetaSymbol :: PluginId
 rightMetaSymbol = "solver for equalities where right side is an unsolved meta"
 
 rightMetaPlugin :: (EqualityConstraint :<: cs) => Plugin cs
 rightMetaPlugin = Plugin { handler = rightMetaHandler
                          , solver  = rightMetaSolver
                          , symbol  = rightMetaSymbol
-                         , pre = []
-                         , suc = [leftMetaSymbol]
+                         , pre = [unificationEndMarkerSymbol]
+                         , suc = [leftMetaSymbol, unificationStartMarkerSymbol]
                          }
