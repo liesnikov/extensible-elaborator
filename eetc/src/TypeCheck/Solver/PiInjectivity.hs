@@ -19,10 +19,7 @@ piEqInjectivityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
 piEqInjectivityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
-    Just (EqualityConstraint mpi1 mpi2 _ _) -> do
-      -- substitute potential solutions to pi1 and pi2 and then check they're indeed Pi
-      pi1 <- substMetas mpi1
-      pi2 <- substMetas mpi2
+    Just (EqualityConstraint pi1 pi2 _ _) ->
       case (pi1, pi2) of
         (I.Pi _ _ _, I.Pi _ _ _) -> return True
         _ -> return False
@@ -30,9 +27,7 @@ piEqInjectivityHandler constr = do
 
 piEqInjectivitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 piEqInjectivitySolver constr = do
-  let (Just (EqualityConstraint mpi1 mpi2 _ m)) = match @EqualityConstraint constr
-  (I.Pi e1 a1 b1) <- substMetas mpi1
-  (I.Pi e2 a2 b2) <- substMetas mpi2
+  let (Just (EqualityConstraint (I.Pi e1 a1 b1) (I.Pi e2 a2 b2) _ m)) = match @EqualityConstraint constr
   if (e1 == e2)
     then do
       ma <- constrainEquality a1 a2 I.Type
