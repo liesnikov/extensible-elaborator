@@ -118,7 +118,7 @@ inferType (S.Pi ep tyA bnd) = do
 inferType (S.Ann tm ty) = do
   ety <- elabType ty
   etm <- checkType tm ety
-  return (I.Ann etm ety, etm)
+  return (I.Ann etm ety, ety)
 
 -- practicalities
 -- remember the current position in the type checking monad
