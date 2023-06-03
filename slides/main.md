@@ -15,21 +15,21 @@ sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
 ---
 
-So, you want to build a compiler.
+Phrase as a conversation:
 
-\pause
+A: You want to implement a dependently-typed language
 
-A compiler for a dependently-typed language.
+B: It's hard and error-prone!
 
-\pause
+A: Why not split it up into modular components?
 
-You don't want to bake everything in just yet.
-Great, let's make it extensible and figure things out as we go!
+B: But making the core modular is _very_ hard
 
-\pause
+A: Let's leave the core alone and work on the elaborator then!
 
-Well, maybe not _completely_ extensible.  
-We can settle for extensible "on the surface".
+---
+
+More concrete problem setting and contributions
 
 # Bit of background
 
