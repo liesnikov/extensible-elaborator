@@ -31,8 +31,7 @@ piEqInjectivitySolver constr = do
   if (e1 == e2)
     then do
       ma <- constrainEquality a1 a2 I.Type
-      (x, tyB1) <- Unbound.unbind b1
-      (_, tyB2) <- Unbound.unbind b2
+      (x, tyB1, _, tyB2) <- Unbound.unbind2Plus b1 b2
       let mat = I.identityClosure ma
       mb <- Env.extendCtx (I.TypeSig (I.Sig x e1 mat)) $
         constrainEquality tyB1 tyB2 I.Type
