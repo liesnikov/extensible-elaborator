@@ -1,7 +1,8 @@
 ---
-author: Bohdan Liesnikov
-title: Extensible elaborators (WIP)
-date: April 20, 2023
+author: Bohdan Liesnikov and Jesper Cockx
+title: Building an elaborator using extensible constraints
+institute: TU Delft, Delft, Netherlands
+date: June 12th, 2023
 classoption: "aspectratio=169"
 fontsize: 12pt
 navigation: empty
@@ -15,107 +16,32 @@ sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
 ---
 
-Phrase as a conversation:
+\faceA I want to implement a _dependently-typed_ language!
 
-A: You want to implement a dependently-typed language
+\pause \raggedleft
+But do you know what it'll look like? \faceB
 
-B: It's hard and error-prone!
+\pause \raggedright
+\faceA Not completely, but I'll build it in a modular way!
 
-A: Why not split it up into modular components?
+\pause \raggedleft
+Making the core modular is _very_ hard... \faceB
 
-B: But making the core modular is _very_ hard
+\pause \raggedright
+\faceA I won't mess with the core then, just the elaborator!
 
-A: Let's leave the core alone and work on the elaborator then!
+## Slightly more formal
 
----
-
-More concrete problem setting and contributions
-
-# Bit of background
-
-## How is your compiler structured
-
-![](./dependent-types-compiler.pdf)
-
-## How is the typechecker structured
-
-![](./dependent-types-typechecker.pdf)
-
-* not interested in the compilation part
-* talking dependently-typed (DT) languages in particular
-
-## Can we tackle the parser?
-
-![](./dependent-types-typechecker.pdf)
-
-* parsing is an old and hard problem
-* in modern DT languages one either has a custom syntax declarations or proper macros
-
-## Can we tackle the core?
-
-![](./dependent-types-typechecker.pdf)
-
-* core rules correspond to the encoded logic
-* modifying core can violate soundness
+* Can we build an elaborator that is extensible?
+* Core type-checker and language have stay the same
+* Parsing is a solved problem
+* Allow the developers and power-users to add new features to the source
 
 ## Elaborator under attack
 
 ![](./dependent-types-general.pdf)
 
-## Problem statement
-
-* *want* to find a principled design for an extensible elaborator.
-* *don't want* to create a DSL to only express "correct" type theories
-
-# Going deeper into the elaborator
-
-## How does an elaborator work
-
-* type-checking
-* a bit more liberal
-* if something isn't immediately obvious  
-  constrain the unknowns such that it typechecks
-
-## Example: type classes
-
-* during initial typechecking of the body you don't care about a particular instance
-* just that it does exist
-* create a constraint to look for one
-* do a search later
-* maybe block the problem if you need to reduce something that involves the instance
-
-
-## Example: infer an argument
-
-```
-f : ∀ (A : Type) (a : A) (n : Nat) -> Vec A n
-
-f _ (zero) (succ zero)
-```
-
-How do we go around typechecking it?
-
-* lookup `f`
-* lookup `zero : Nat`
-* lookup `succ : Nat -> Nat`
-* constraint the type of implicit parameter `_` to `Type`
-* it has to be `Nat`
-
-
-## Example: infer an argument
-
-```
-f : ∀ (k : Nat) (A : F k) (a : A) (n : Nat) -> Vec A n
-
-f k _¹ (C _² _³) (succ zero)
-```
-
-* replace `_¹` with `?¹`
-* we know that `?¹ : F k`
-* elaborating `(C _² _³)` yields type `T ?² ?³`
-* produce a constraint `?¹ ~ T ?² ?³`
-
-## How do constraints work
+## Constraints as a technique in Haskell
 
 * typically a compiler has a constraint language
 * Haskell has a "simple" one:
@@ -127,7 +53,7 @@ f k _¹ (C _² _³) (succ zero)
     | ∀a1..an. W1 => W2 # implication constraint
   ```
 
-## How do constraints work
+## Constraints as a technique in Agda
 
 * Agda has a more complex one
 ```
@@ -142,101 +68,60 @@ W = ValueCmp t1 t2 # eq comparison
   ... # plenty more
 ```
 
-## How do constraints work
+## Graph of constraints constructors over the years
+
+![](./agda-constraints.pdf)
+
+## Show elaboration of a small example
+
+# What concretely are we suggesting
+
+## Our constraints design
 
 * aiming for something in-between in the core + your extensions
 
 ```
-CoreW = EqualityComparison
-      | IsDatatypeConstructor
-      | FillInMeta
+CoreW = EqualityComparison t1 t2 ty m
+      | IsDatatypeConstructor t
+      | BlockedOnMeta m tc
+      | FillInMeta m
       ...
 ```
 
-## How do constraints work
 
-* create and collect constraints while typechecking
-* solve them one by one in the process or afterwards
-
-## Core idea
-
-* split the constraints and solvers of the langauge into smaller pieces
-* open them up to "power users"
-
-## Why (bother with splitting)
-
-* at the moment the biggest "usual" solver is a conversion checker
-* it typically ranges around 1.7kloc in Idris, Lean, Coq
-* in Agda also results in a lot of intricacies in the codebase
-* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
-* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
-
-## Why (open it up)
-
-* get a relatively compact core of the elaborator
-* build features around it as "extensions" or "plugins"
-* allow cheaper experiments with the language
-* main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
-
-. . .
-
-Bottom line: this is a design study
-
-
-# Gory implementation details
-
-## Baseline language
+## Base language
 
 * DT language
 * Pi, Sigma types
-* inductive types
+* inductive types with indexes
 * case-constructs for elimination (not case-trees)
-* some other extra features, ignored for now
 
 ## Additions
 
 ::: incremental
 
-* implicit arguments  
-  for now aiming for a placeholder term `_` (maybe n-ary `_`?)
+* implicit arguments with placeholder terms
 * type classes
-  * can we derive things?
+* tactic arguments?
 * subtyping by coercion?
 * row types?
-* taking suggestions
 
 :::
 
-## Design choices and implementation ideas
+## Current state
 
-* constraints are async procedure calls
-* metas are communication channels for async computations
-* we have metas for terms  
-  but not for modalities or other language constructs just yet
+[github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
 
-## Design choices and implementation ideas
-
-* the extension writer communicates whether the problem is blocking or not by freezing the rest of the typechecking
-* each constraint raised gets an opportunity to be solved/simplified immediately by the user-supplied solver
-* if it doesn't - we can freeze the problem and return a meta in place of the typechecked solution
-
-## WIP
-
-Current state:
-
-* implementing the unifier
-
-Still to do:
-
-* implementing extensions
+* there's a simple unifier implemented
+* working on implicit arguments
 
 ## Open questions
 
 * How much can such a unifier scale?
-* How far can you push these kinds of extensions? Can you model erasure inference?
-* Can you prove anything interesting about such a system?
+* How far can you push these kinds of extensions?
+  i.e. can you model erasure inference?
+* What if we allow plugins to have a custom store in the monad?
 * Can we make the solver parallel?
-
 
 ## Prior work
 
@@ -286,6 +171,26 @@ specify a (pre-) order in which the solvers should run i.e. type classes run aft
     suc :: [PluginId]
   }
 ```
+
+
+## Why (bother with splitting)
+
+* at the moment the biggest "usual" solver is a conversion checker
+* it typically ranges around 1.7kloc in Idris, Lean, Coq
+* in Agda also results in a lot of intricacies in the codebase
+* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
+* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
+
+## Why (open it up)
+
+* get a relatively compact core of the elaborator
+* build features around it as "extensions" or "plugins"
+* allow cheaper experiments with the language
+* main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
+
+. . .
+
+Bottom line: this is a design study
 
 ## References {.allowframebreaks}
 

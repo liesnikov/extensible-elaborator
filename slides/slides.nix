@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: MPL-2.0
 
 { stdenv, lib, pandoc, texlive, biber,
-  makeFontsConf, source-serif, source-sans, source-code-pro, inkscape}:
+  makeFontsConf, source-serif, source-sans, source-code-pro, noto-fonts-emoji,
+  inkscape}:
 let texlive-combined = texlive.combine { inherit (texlive)
       scheme-basic xetex latexmk
       fontspec koma-script  # ??
@@ -39,7 +40,7 @@ in stdenv.mkDerivation ({
     mv main.pdf $out/main.pdf
   '';
 
-  FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-serif source-sans source-code-pro]; };
+  FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-serif source-sans source-code-pro noto-fonts-emoji]; };
 
   TEXINPUTS =
     builtins.concatStringsSep ":" ([ "." ] ++ extraTexInputs ++ [ "" ]);
