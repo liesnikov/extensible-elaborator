@@ -25,7 +25,7 @@ in stdenv.mkDerivation ({
 
   name = "extensible-elaborator-slides";
   src = builtins.filterSource
-    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result" "fonts.patch"]))
+    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result" "agda-constraints-plot"]))
     ./.;
 
   nativeBuildInputs =

@@ -28,23 +28,21 @@ But do you know what it'll look like? \faceB
 Making the core modular is _very_ hard... \faceB
 
 \pause \raggedright
-\faceA I won't mess with the core then, just the elaborator!
+\faceA Then you write the base of the elaborator and I'll extend it!
 
 ## Slightly more formal
 
-* Can we build an elaborator that is extensible?
+* Can we build an elaborator that is extensible by plugins?
 * Core type-checker and language have stay the same
 * Parsing is a solved problem
-* Allow the developers and power-users to add new features to the source
 
 ## Elaborator under attack
 
 ![](./dependent-types-general.pdf)
 
-## Constraints as a technique in Haskell
+## Constraints in Haskell
 
-* typically a compiler has a constraint language
-* Haskell has a "simple" one:
+* Haskell has a "simple" and stable constraint language:
   ```
   W = empty
     | W1, W2 # conjunction
@@ -53,60 +51,145 @@ Making the core modular is _very_ hard... \faceB
     | ∀a1..an. W1 => W2 # implication constraint
   ```
 
-## Constraints as a technique in Agda
+## Constraints in Agda
 
-* Agda has a more complex one
-```
-W = ValueCmp t1 t2 # eq comparison
-  | ElimCmp typ t1 e1 e2 # elim comparison
-  | SortCmp s1 s2 # (type) sort comparisons
-  | LevelCmp l1 l2 # (type) level comparisons
-  | UnBlock m1 # Meta created for a term blocked
-  | FindInstance m1 c # type class instances
-  | CheckFunDef ... # couldn't check a function def because
-  | UnquoteTactic ...
-  ... # plenty more
-```
+* Agda has a more complex one:
+  ```
+  W = ValueCmp t1 t2 # eq comparison
+    | ElimCmp typ t1 e1 e2 # elim comparison
+    | SortCmp s1 s2 # (type) sort comparisons
+    | LevelCmp l1 l2 # (type) level comparisons
+    | UnBlock m1 # Meta created for a term blocked
+    | FindInstance m1 c # type class instances
+    | CheckFunDef ... # couldn't check a function def because
+    | UnquoteTactic ...
+    ... # plenty more
+  ```
 
-## Graph of constraints constructors over the years
+## Constraints in Agda
 
-![](./agda-constraints.pdf)
+![](./agda-constraints.pdf){height=80%}
 
-## Show elaboration of a small example
+## Constraints in Agda {.noframenumbering}
 
-# What concretely are we suggesting
+![](./agda-constraints.pdf){height=80%}\ ![](./xkcd.png){height=50%}\ [^xkcd-source]
+
+[^xkcd-source]: [xkcd.com/605/](https://xkcd.com/605/)
 
 ## Our constraints design
 
-* aiming for something in-between in the core + your extensions
+* aiming for something in-between in the core \faceB + your \faceA extensions
+  ```
+  CoreW = EqualityComparison t1 t2 ty m
+        | IsDatatypeConstructor t
+        | BlockedOnMeta m tc
+        | FillInMeta m
+        ...
+  ```
+* both we \faceB and you \faceA supply the solvers
+
+## Type classes: what's in the core \faceB
+
+``` haskell
+inferType (App t1 t2) = do
+  (et1, Pi tyA tyB) <- inferType t1
+  et2 <- checkType t2 tyA
+  return (App et1 et2, subst tyB et2)
+```
+
+```haskell
+checkType (Implicit) ty = do
+  m <- createMetaTerm
+  raiseConstraint $ FillInTheMeta m ty
+  return m
+```
+
+
+## Type clasess: what does the user write
 
 ```
-CoreW = EqualityComparison t1 t2 ty m
-      | IsDatatypeConstructor t
-      | BlockedOnMeta m tc
-      | FillInMeta m
-      ...
+plus : {A : Type} -> {{PlusOperation A}}
+    -> (a : A) -> (b : A) -> A
+
+instance PlusNat : PlusOperation Nat where
+  plus = plusNat
+
+two = plus 1 1
+```
+
+## Type classes: desugaring user input
+
+```
+plus : (impA : Implicit Type)
+    -> TypeClass PlusOperation (deImp impA)
+    -> (a : deImp impA) -> (b :  deImp impA)
+    ->  deImp impA
+
+PlusNat = Instance {
+    class = PlusOperation Nat,
+    body = {plus = plusNat}}
+
+two = plus _ _ 1 1
+```
+
+## Type classes: elaborating the program
+
+1. Create the metas:
+   ```
+   two = plus ?_1 ?_2 1 1
+   ```
+
+2. Raise the constraints:
+   ```
+   C1: FillInTheTerm ?_1 (Implicit Type)
+   C2: FillInTheTerm ?_2 (TypeClass PlusOperation (deImp ?_1))`
+   C3: EqualityConstraint ?_1 Nat Type`
+   C4: EqualityConstraint ?_1 Nat Type`
+   ```
+
+
+## Type classes: writing the plugin \faceA
+
+```haskell
+tcHandler :: Constraint c -> MonadElab Bool
+tcSolver :: Constraint c -> MonadElab Bool
+tcSymbol = "type class instance search"
+tc = Plugin { handler = tcHandler
+            , solver  = tcSolver
+            , symbol  = tcSymbol
+            , pre = []
+            , suc = []
+            }
+```
+
+## Type classes: writing the plugin \faceA
+
+```haskell
+tcHandler :: Constraint c -> MonadElab Bool
+tcHandler constr = do
+  f <- match @FillInTheTerm constr
+  case f of
+    Just (FillInTheTerm _ (App (TCon "TypeClass") ...)) ->
+      return True
+    _ ->
+      return False
 ```
 
 
-## Base language
+## What is this language: base \faceB
 
 * DT language
 * Pi, Sigma types
 * inductive types with indexes
 * case-constructs for elimination (not case-trees)
 
-## Additions
-
-::: incremental
+##  What is this language: additions \faceA
 
 * implicit arguments with placeholder terms
 * type classes
 * tactic arguments?
 * subtyping by coercion?
 * row types?
-
-:::
 
 ## Current state
 
@@ -115,9 +198,11 @@ CoreW = EqualityComparison t1 t2 ty m
 * there's a simple unifier implemented
 * working on implicit arguments
 
+
+# Backup slides
+
 ## Open questions
 
-* How much can such a unifier scale?
 * How far can you push these kinds of extensions?
   i.e. can you model erasure inference?
 * What if we allow plugins to have a custom store in the monad?
@@ -139,12 +224,6 @@ CoreW = EqualityComparison t1 t2 ty m
 * TypOS
   * you have to buy into a whole new discipline
   * we hope to keep things a bit more conventional engineering-wise
-
-## Closing slide
-
-[github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
-
-# Backup slides
 
 ## Old architecture diagram
 
@@ -187,8 +266,6 @@ specify a (pre-) order in which the solvers should run i.e. type classes run aft
 * build features around it as "extensions" or "plugins"
 * allow cheaper experiments with the language
 * main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
-
-. . .
 
 Bottom line: this is a design study
 

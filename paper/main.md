@@ -114,8 +114,8 @@ inferType (App t1 t2) = do
 
 ```haskell
 checkType (Implicit) ty = do
-  m <- createMeta
-  raiseConstraint $ FillInTheTerm m ty
+  m <- createMetaTerm
+  raiseConstraint $ FillInTheMeta m ty
   return m
 ```
 
