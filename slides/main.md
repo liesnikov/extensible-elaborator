@@ -1,5 +1,5 @@
 ---
-author: Bohdan Liesnikov and Jesper Cockx
+author: __Bohdan Liesnikov__ and Jesper Cockx
 title: Building an elaborator using extensible constraints
 institute: TU Delft, Delft, Netherlands
 date: June 12th, 2023
@@ -16,55 +16,68 @@ sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
 ---
 
+\faceA \faceB
+
+---
+
 \faceA I want to implement a _dependently-typed_ language!
 
 \pause \raggedleft
 But do you know what it'll look like? \faceB
 
 \pause \raggedright
-\faceA Not completely, but I'll build it in a modular way!
+\faceA Not yet, but I'll make it modular so I can build it step by step!
 
 \pause \raggedleft
-Making the core modular is _very_ hard... \faceB
+But we want the core to be stable! Figuring it out is hard enough \faceB
 
 \pause \raggedright
-\faceA Then you write the base of the elaborator and I'll extend it!
-
-## Slightly more formal
-
-* Can we build an elaborator that is extensible by plugins?
-* Core type-checker and language have stay the same
-* Parsing is a solved problem
+\faceA Then we'll fix the core language but make the elaborator modular!
 
 ## Elaborator under attack
 
 ![](./dependent-types-general.pdf)
 
+# How do we design the elaborator?
+
+## How do we design the elaborator?
+
+Elaborators typically consists of  
+\hspace{1em} - a syntax traversal  
+\hspace{1em} - unifier  
+\hspace{1em} - constraints machinery
+
+\
+
+\pause
+
+* Which parts can we make more modular?
+
+* Can we mediate the interaction between different parts?
+
 ## Constraints in Haskell
 
-* Haskell has a "simple" and stable constraint language:
-  ```
-  W = empty
-    | W1, W2 # conjunction
-    | C t1 .. tn # type class constraint
-    | t1 ~ t2 # equality constraint
-    | ∀a1..an. W1 => W2 # implication constraint
-  ```
+```
+W = empty
+  | W1, W2 # conjunction
+  | C t1 .. tn # type class constraint
+  | t1 ~ t2 # equality constraint
+  | ∀a1..an. W1 => W2 # implication constraint
+```
 
 ## Constraints in Agda
 
-* Agda has a more complex one:
-  ```
-  W = ValueCmp t1 t2 # eq comparison
-    | ElimCmp typ t1 e1 e2 # elim comparison
-    | SortCmp s1 s2 # (type) sort comparisons
-    | LevelCmp l1 l2 # (type) level comparisons
-    | UnBlock m1 # Meta created for a term blocked
-    | FindInstance m1 c # type class instances
-    | CheckFunDef ... # couldn't check a function def because
-    | UnquoteTactic ...
-    ... # plenty more
-  ```
+```
+W = ValueCmp t1 t2 # eq comparison
+  | ElimCmp typ t1 e1 e2 # elim comparison
+  | SortCmp s1 s2 # (type) sort comparisons
+  | LevelCmp l1 l2 # (type) level comparisons
+  | UnBlock m1 # Meta created for a term blocked
+  | FindInstance m1 c # type class instances
+  | CheckFunDef ... # couldn't check a function def because
+  | UnquoteTactic ...
+  ... # plenty more
+```
 
 ## Constraints in Agda
 
@@ -72,21 +85,34 @@ Making the core modular is _very_ hard... \faceB
 
 ## Constraints in Agda {.noframenumbering}
 
-![](./agda-constraints.pdf){height=80%}\ ![](./xkcd.png){height=50%}\ [^xkcd-source]
+![](./agda-constraints.pdf){height=80%}\ ![](./xkcd.png){heig
+ht=50%}\ [^xkcd-source]
 
 [^xkcd-source]: [xkcd.com/605/](https://xkcd.com/605/)
 
-## Our constraints design
+# Our solution
+
+## Main contribution:
+
+- Typechecker traverses the syntax and generates constraints
+
+- Solvers identify constraints that they can handle and solve them
+
+- Metavariables are communication channels between solvers
+
+## Our constraints
 
 * aiming for something in-between in the core \faceB + your \faceA extensions
   ```
   CoreW = EqualityComparison t1 t2 ty m
         | IsDatatypeConstructor t
         | BlockedOnMeta m tc
-        | FillInMeta m
+        | FillInMeta m ty
         ...
   ```
 * both we \faceB and you \faceA supply the solvers
+
+# Example: type classes
 
 ## Type classes: what's in the core \faceB
 
@@ -105,7 +131,7 @@ checkType (Implicit) ty = do
 ```
 
 
-## Type clasess: what does the user write
+## Type classes: what does the user write
 
 ```
 plus : {A : Type} -> {{PlusOperation A}}
@@ -152,8 +178,11 @@ two = plus _ _ 1 1
 
 ```haskell
 tcHandler :: Constraint c -> MonadElab Bool
+
 tcSolver :: Constraint c -> MonadElab Bool
+
 tcSymbol = "type class instance search"
+
 tc = Plugin { handler = tcHandler
             , solver  = tcSolver
             , symbol  = tcSymbol
@@ -166,6 +195,7 @@ tc = Plugin { handler = tcHandler
 
 ```haskell
 tcHandler :: Constraint c -> MonadElab Bool
+
 tcHandler constr = do
   f <- match @FillInTheTerm constr
   case f of
@@ -175,23 +205,31 @@ tcHandler constr = do
       return False
 ```
 
+# Implementation
 
 ## What is this language: base \faceB
 
-* DT language
-* Pi, Sigma types
-* inductive types with indexes
-* case-constructs for elimination (not case-trees)
+* DT language with Pi, Sigma types
+
+* inductive types with indeces
+
+* case-constructs for elimination
 
 ##  What is this language: additions \faceA
 
 * implicit arguments with placeholder terms
+
 * type classes
+
 * tactic arguments?
+
 * subtyping by coercion?
+
 * row types?
 
-## Current state
+# Conclusions and questions
+
+## Conclusions and questions
 
 [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
 
