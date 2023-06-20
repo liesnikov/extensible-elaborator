@@ -1,6 +1,6 @@
 ---
 author: __Bohdan Liesnikov__ and Jesper Cockx
-title: Building an elaborator using extensible constraints
+title: Building an elaborator \newline using extensible constraints
 institute: TU Delft, Delft, Netherlands
 date: June 12th, 2023
 classoption: "aspectratio=169"
@@ -16,7 +16,7 @@ sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
 ---
 
-\faceA \faceB
+\centering \faceA \faceB
 
 ---
 
@@ -53,7 +53,7 @@ Elaborators typically consists of
 
 * Which parts can we make more modular?
 
-* Can we mediate the interaction between different parts?
+* Can we mediate the interactions?
 
 ## Constraints in Haskell
 
@@ -85,27 +85,27 @@ W = ValueCmp t1 t2 # eq comparison
 
 ## Constraints in Agda {.noframenumbering}
 
-![](./agda-constraints.pdf){height=80%}\ ![](./xkcd.png){heig
-ht=50%}\ [^xkcd-source]
+![](./agda-constraints.pdf){height=80%}\ ![](./xkcd.png){height=50%}\ [^xkcd-source]
 
 [^xkcd-source]: [xkcd.com/605/](https://xkcd.com/605/)
 
 # Our solution
 
-## Main contribution:
+## Our design
 
 - Typechecker traverses the syntax and generates constraints
 
-- Solvers identify constraints that they can handle and solve them
+- The constraint datatype open (as in Data types à la carte [@swierstraDataTypesCarte2008])
 
-- Metavariables are communication channels between solvers
+- Solvers are provided by the plug-ins
+
+Mantra: constraints are async function calls, metavariables are "promises".
 
 ## Our constraints
 
 * aiming for something in-between in the core \faceB + your \faceA extensions
   ```
   CoreW = EqualityComparison t1 t2 ty m
-        | IsDatatypeConstructor t
         | BlockedOnMeta m tc
         | FillInMeta m ty
         ...
@@ -114,7 +114,7 @@ ht=50%}\ [^xkcd-source]
 
 # Example: type classes
 
-## Type classes: what's in the core \faceB
+## Type classes: what's in the base \faceB
 
 ``` haskell
 inferType (App t1 t2) = do
@@ -168,9 +168,9 @@ two = plus _ _ 1 1
 2. Raise the constraints:
    ```
    C1: FillInTheTerm ?_1 (Implicit Type)
-   C2: FillInTheTerm ?_2 (TypeClass PlusOperation (deImp ?_1))`
-   C3: EqualityConstraint ?_1 Nat Type`
-   C4: EqualityConstraint ?_1 Nat Type`
+   C2: FillInTheTerm ?_2 (TypeClass PlusOperation (deImp ?_1))
+   C3: EqualityConstraint ?_1 Nat Type
+   C4: EqualityConstraint ?_1 Nat Type
    ```
 
 
@@ -195,6 +195,21 @@ tc = Plugin { handler = tcHandler
 
 ```haskell
 tcHandler :: Constraint c -> MonadElab Bool
+
+tcHandler constr = do
+  f <- match @FillInTheTerm constr
+  case f of
+    Just (FillInTheTerm _ (App (TCon "TypeClass") ...)) ->
+      return True
+    _ ->
+      return False
+```
+
+## Type classes: writing the plugin \faceA {.noframenumbering}
+
+```haskell
+tcHandler :: (FillInTheTerm :<: c)
+          => Constraint c -> MonadElab Bool
 
 tcHandler constr = do
   f <- match @FillInTheTerm constr
@@ -234,6 +249,7 @@ tcHandler constr = do
 [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
 
 * there's a simple unifier implemented
+
 * working on implicit arguments
 
 
