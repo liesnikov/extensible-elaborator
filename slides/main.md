@@ -1,7 +1,8 @@
 ---
-author: Bohdan Liesnikov
-title: Extensible elaborators (WIP)
-date: April 20, 2023
+author: __Bohdan Liesnikov__ and Jesper Cockx
+title: Building an elaborator \newline using extensible constraints
+institute: TU Delft, Delft, Netherlands
+date: June 12th, 2023
 classoption: "aspectratio=169"
 fontsize: 12pt
 navigation: empty
@@ -15,121 +16,57 @@ sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
 ---
 
-So, you want to build a compiler.
+\centering \faceA \faceB
 
-\pause
+---
 
-A compiler for a dependently-typed language.
+\faceA I want to implement a _dependently-typed_ language!
 
-\pause
+\pause \raggedleft
+But do you know what it'll look like? \faceB
 
-You don't want to bake everything in just yet.
-Great, let's make it extensible and figure things out as we go!
+\pause \raggedright
+\faceA Not yet, but I'll make it modular so I can build it step by step!
 
-\pause
+\pause \raggedleft
+But we want the core to be stable! Figuring it out is hard enough \faceB
 
-Well, maybe not _completely_ extensible.  
-We can settle for extensible "on the surface".
-
-# Bit of background
-
-## How is your compiler structured
-
-![](./dependent-types-compiler.pdf)
-
-## How is the typechecker structured
-
-![](./dependent-types-typechecker.pdf)
-
-* not interested in the compilation part
-* talking dependently-typed (DT) languages in particular
-
-## Can we tackle the parser?
-
-![](./dependent-types-typechecker.pdf)
-
-* parsing is an old and hard problem
-* in modern DT languages one either has a custom syntax declarations or proper macros
-
-## Can we tackle the core?
-
-![](./dependent-types-typechecker.pdf)
-
-* core rules correspond to the encoded logic
-* modifying core can violate soundness
+\pause \raggedright
+\faceA Then we'll fix the core language but make the elaborator modular!
 
 ## Elaborator under attack
 
 ![](./dependent-types-general.pdf)
 
-## Problem statement
+# How do we design the elaborator?
 
-* *want* to find a principled design for an extensible elaborator.
-* *don't want* to create a DSL to only express "correct" type theories
+## How do we design the elaborator?
 
-# Going deeper into the elaborator
+Elaborators typically consists of  
+\hspace{1em} - a syntax traversal  
+\hspace{1em} - unifier  
+\hspace{1em} - constraints machinery
 
-## How does an elaborator work
+\
 
-* type-checking
-* a bit more liberal
-* if something isn't immediately obvious  
-  constrain the unknowns such that it typechecks
+\pause
 
-## Example: type classes
+* Which parts can we make more modular?
 
-* during initial typechecking of the body you don't care about a particular instance
-* just that it does exist
-* create a constraint to look for one
-* do a search later
-* maybe block the problem if you need to reduce something that involves the instance
+* Can we mediate the interactions?
 
-
-## Example: infer an argument
+## Constraints in Haskell
 
 ```
-f : ∀ (A : Type) (a : A) (n : Nat) -> Vec A n
-
-f _ (zero) (succ zero)
+W = empty
+  | W1, W2 # conjunction
+  | C t1 .. tn # type class constraint
+  | t1 ~ t2 # equality constraint
+  | ∀a1..an. W1 => W2 # implication constraint
 ```
 
-How do we go around typechecking it?
+## Constraints in Agda
 
-* lookup `f`
-* lookup `zero : Nat`
-* lookup `succ : Nat -> Nat`
-* constraint the type of implicit parameter `_` to `Type`
-* it has to be `Nat`
-
-
-## Example: infer an argument
-
-```
-f : ∀ (k : Nat) (A : F k) (a : A) (n : Nat) -> Vec A n
-
-f k _¹ (C _² _³) (succ zero)
-```
-
-* replace `_¹` with `?¹`
-* we know that `?¹ : F k`
-* elaborating `(C _² _³)` yields type `T ?² ?³`
-* produce a constraint `?¹ ~ T ?² ?³`
-
-## How do constraints work
-
-* typically a compiler has a constraint language
-* Haskell has a "simple" one:
-  ```
-  W = empty
-    | W1, W2 # conjunction
-    | C t1 .. tn # type class constraint
-    | t1 ~ t2 # equality constraint
-    | ∀a1..an. W1 => W2 # implication constraint
-  ```
-
-## How do constraints work
-
-* Agda has a more complex one
 ```
 W = ValueCmp t1 t2 # eq comparison
   | ElimCmp typ t1 e1 e2 # elim comparison
@@ -142,101 +79,188 @@ W = ValueCmp t1 t2 # eq comparison
   ... # plenty more
 ```
 
-## How do constraints work
+## Constraints in Agda
 
-* aiming for something in-between in the core + your extensions
+![](./agda-constraints.pdf){height=80%}
+
+## Constraints in Agda {.noframenumbering}
+
+![](./agda-constraints.pdf){height=80%}\ ![](./xkcd.png){height=50%}\ [^xkcd-source]
+
+[^xkcd-source]: [xkcd.com/605/](https://xkcd.com/605/)
+
+# Our solution
+
+## Our design
+
+- Typechecker traverses the syntax and generates constraints
+
+- The constraint datatype open (as in Data types à la carte [@swierstraDataTypesCarte2008])
+
+- Solvers are provided by the plug-ins
+
+Mantra: constraints are async function calls, metavariables are "promises".
+
+## Our constraints
+
+* aiming for something in-between in the core \faceB + your \faceA extensions
+  ```
+  CoreW = EqualityComparison t1 t2 ty m
+        | BlockedOnMeta m tc
+        | FillInMeta m ty
+        ...
+  ```
+* both we \faceB and you \faceA supply the solvers
+
+# Example: type classes
+
+## Type classes: what's in the base \faceB
+
+``` haskell
+inferType (App t1 t2) = do
+  (et1, Pi tyA tyB) <- inferType t1
+  et2 <- checkType t2 tyA
+  return (App et1 et2, subst tyB et2)
+```
+
+```haskell
+checkType (Implicit) ty = do
+  m <- createMetaTerm
+  raiseConstraint $ FillInTheMeta m ty
+  return m
+```
+
+
+## Type classes: what does the user write
 
 ```
-CoreW = EqualityComparison
-      | IsDatatypeConstructor
-      | FillInMeta
-      ...
+plus : {A : Type} -> {{PlusOperation A}}
+    -> (a : A) -> (b : A) -> A
+
+instance PlusNat : PlusOperation Nat where
+  plus = plusNat
+
+two = plus 1 1
 ```
 
-## How do constraints work
+## Type classes: desugaring user input
 
-* create and collect constraints while typechecking
-* solve them one by one in the process or afterwards
+```
+plus : (impA : Implicit Type)
+    -> TypeClass PlusOperation (deImp impA)
+    -> (a : deImp impA) -> (b :  deImp impA)
+    ->  deImp impA
 
-## Core idea
+PlusNat = Instance {
+    class = PlusOperation Nat,
+    body = {plus = plusNat}}
 
-* split the constraints and solvers of the langauge into smaller pieces
-* open them up to "power users"
+two = plus _ _ 1 1
+```
 
-## Why (bother with splitting)
+## Type classes: elaborating the program
 
-* at the moment the biggest "usual" solver is a conversion checker
-* it typically ranges around 1.7kloc in Idris, Lean, Coq
-* in Agda also results in a lot of intricacies in the codebase
-* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
-* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
+1. Create the metas:
+   ```
+   two = plus ?_1 ?_2 1 1
+   ```
 
-## Why (open it up)
-
-* get a relatively compact core of the elaborator
-* build features around it as "extensions" or "plugins"
-* allow cheaper experiments with the language
-* main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
-
-. . .
-
-Bottom line: this is a design study
+2. Raise the constraints:
+   ```
+   C1: FillInTheTerm ?_1 (Implicit Type)
+   C2: FillInTheTerm ?_2 (TypeClass PlusOperation (deImp ?_1))
+   C3: EqualityConstraint ?_1 Nat Type
+   C4: EqualityConstraint ?_1 Nat Type
+   ```
 
 
-# Gory implementation details
+## Type classes: writing the plugin \faceA
 
-## Baseline language
+```haskell
+tcHandler :: Constraint c -> MonadElab Bool
 
-* DT language
-* Pi, Sigma types
-* inductive types
-* case-constructs for elimination (not case-trees)
-* some other extra features, ignored for now
+tcSolver :: Constraint c -> MonadElab Bool
 
-## Additions
+tcSymbol = "type class instance search"
 
-::: incremental
+tc = Plugin { handler = tcHandler
+            , solver  = tcSolver
+            , symbol  = tcSymbol
+            , pre = []
+            , suc = []
+            }
+```
 
-* implicit arguments  
-  for now aiming for a placeholder term `_` (maybe n-ary `_`?)
+## Type classes: writing the plugin \faceA
+
+```haskell
+tcHandler :: Constraint c -> MonadElab Bool
+
+tcHandler constr = do
+  f <- match @FillInTheTerm constr
+  case f of
+    Just (FillInTheTerm _ (App (TCon "TypeClass") ...)) ->
+      return True
+    _ ->
+      return False
+```
+
+## Type classes: writing the plugin \faceA {.noframenumbering}
+
+```haskell
+tcHandler :: (FillInTheTerm :<: c)
+          => Constraint c -> MonadElab Bool
+
+tcHandler constr = do
+  f <- match @FillInTheTerm constr
+  case f of
+    Just (FillInTheTerm _ (App (TCon "TypeClass") ...)) ->
+      return True
+    _ ->
+      return False
+```
+
+# Implementation
+
+## What is this language: base \faceB
+
+* DT language with Pi, Sigma types
+
+* inductive types with indeces
+
+* case-constructs for elimination
+
+##  What is this language: additions \faceA
+
+* implicit arguments with placeholder terms
+
 * type classes
-  * can we derive things?
+
+* tactic arguments?
+
 * subtyping by coercion?
+
 * row types?
-* taking suggestions
 
-:::
+# Conclusions and questions
 
-## Design choices and implementation ideas
+## Conclusions and questions
 
-* constraints are async procedure calls
-* metas are communication channels for async computations
-* we have metas for terms  
-  but not for modalities or other language constructs just yet
+[github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
 
-## Design choices and implementation ideas
+* there's a simple unifier implemented
 
-* the extension writer communicates whether the problem is blocking or not by freezing the rest of the typechecking
-* each constraint raised gets an opportunity to be solved/simplified immediately by the user-supplied solver
-* if it doesn't - we can freeze the problem and return a meta in place of the typechecked solution
+* working on implicit arguments
 
-## WIP
 
-Current state:
-
-* implementing the unifier
-
-Still to do:
-
-* implementing extensions
+# Backup slides
 
 ## Open questions
 
-* How much can such a unifier scale?
-* How far can you push these kinds of extensions? Can you model erasure inference?
-* Can you prove anything interesting about such a system?
+* How far can you push these kinds of extensions?
+  i.e. can you model erasure inference?
+* What if we allow plugins to have a custom store in the monad?
 * Can we make the solver parallel?
-
 
 ## Prior work
 
@@ -254,12 +278,6 @@ Still to do:
 * TypOS
   * you have to buy into a whole new discipline
   * we hope to keep things a bit more conventional engineering-wise
-
-## Closing slide
-
-[github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator)
-
-# Backup slides
 
 ## Old architecture diagram
 
@@ -286,6 +304,24 @@ specify a (pre-) order in which the solvers should run i.e. type classes run aft
     suc :: [PluginId]
   }
 ```
+
+
+## Why (bother with splitting)
+
+* at the moment the biggest "usual" solver is a conversion checker
+* it typically ranges around 1.7kloc in Idris, Lean, Coq
+* in Agda also results in a lot of intricacies in the codebase
+* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
+* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
+
+## Why (open it up)
+
+* get a relatively compact core of the elaborator
+* build features around it as "extensions" or "plugins"
+* allow cheaper experiments with the language
+* main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
+
+Bottom line: this is a design study
 
 ## References {.allowframebreaks}
 

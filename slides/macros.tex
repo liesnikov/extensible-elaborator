@@ -1,15 +1,24 @@
-\usepackage{stmaryrd}
-\usepackage{xfrac}
-\usepackage{xcolor}
-\usepackage{xspace}
-\usepackage{hyperref}
+\usepackage{stmaryrd} % for horizontal-bar rules?
+\usepackage{xfrac} % typesetting fractions like a/b, idk what it's for here
+\usepackage{xspace} % define commands that appear not to eat spaces, same -- no clue
+
+\usepackage{hyperref} % hyperlinks!
+
 \usepackage[backend=biber, style=alphabetic]{biblatex}
 \addbibresource{bib.bib}
-
-% \lstset{
-%    language=Coq
-% }
 
 \setbeamertemplate{footline}{%
     \raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[20pt]{\color{gray}
           \scriptsize\insertframenumber}}}\hspace*{5pt}}
+
+
+% Coloured fonts aren't supported, unfortunately
+% https://www.overleaf.com/learn/latex/Articles/An_overview_of_technologies_supporting_the_use_of_colour_emoji_fonts_in_LaTeX#XeTeX_and_OpenType_colour_fonts
+
+\newfontfamily\EmojiFont{Noto Emoji}
+\newcommand\emoji[1]{{\EmojiFont #1}}
+
+\definecolor{colorA}{rgb}{1.00, 0.73, 0.01}
+\newcommand\faceA{{\huge \color{colorA} \emoji{🐥}}}
+\definecolor{colorB}{rgb}{0.75, 0.82, 0.29}
+\newcommand\faceB{{\huge \color{colorB} \emoji{🐍}}}
