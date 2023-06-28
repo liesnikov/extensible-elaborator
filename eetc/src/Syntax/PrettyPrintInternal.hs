@@ -317,10 +317,11 @@ displayTName :: TName -> DispInfo -> Doc
 displayTName m = do
   let number = Unbound.name2Integer m
       name = Unbound.name2String m
-  dnumber <- display number
-  if name /= "?"
-  then display m
-  else return $ PP.text ("?_") <> dnumber
+  if (name == "?") || (name == "_")
+  then do
+    dnumber <- display number
+    return $ (PP.text $ name) <> dnumber
+  else display m
 
 displayClosure :: Closure -> DispInfo -> Doc
 displayClosure kvl = do
