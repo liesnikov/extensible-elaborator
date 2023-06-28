@@ -19,7 +19,7 @@ typeConstructorHandler :: TypeConstructorConstraint :<: cs => HandlerType cs
 typeConstructorHandler constr = do
   let tcm = match @TypeConstructorConstraint constr
   case tcm of
-    Just (TConConstraint t1) -> return $ hasMetas t1
+    Just (TConConstraint t1) -> return . not . hasMetas $ t1
     Nothing -> return False
 
 typeConstructorSolver :: TypeConstructorConstraint :<: cs => SolverType cs
