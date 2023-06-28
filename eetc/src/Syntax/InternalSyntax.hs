@@ -501,8 +501,7 @@ composeClosures a b =
   let ma = Map.fromList a
       mb = Map.fromList b
       tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
-      aandb = Map.union ma mb
-  in Map.toList $ Map.union tranab aandb
+  in Map.toList $ Map.union tranab ma
 
 invertSubst :: [(TName, Term)] -> Maybe [(TName, Term)]
 invertSubst c = do
