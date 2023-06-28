@@ -2,7 +2,15 @@
 module TypeCheck.Solver.TrivialMetas ( leftMetaSymbol, leftMetaPlugin
                                      , rightMetaSymbol, rightMetaPlugin) where
 
-import           Syntax.Internal (Term(MetaVar), MetaClosure(MetaVarClosure))
+import           Data.Maybe (isJust)
+
+import qualified Unbound.Generics.LocallyNameless as Unbound
+
+import           Syntax.Internal (Term(MetaVar)
+                                 , MetaClosure(MetaVarClosure)
+                                 , invertClosure
+                                 , closure2Subst
+                                 )
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
@@ -18,19 +26,22 @@ leftMetaHandler constr = do
   case eqcm of
     Just (EqualityConstraint t1 t2 ty _) -> do
       case t1 of
-        MetaVar (MetaVarClosure m1 _)-> do
+        MetaVar (MetaVarClosure m1 c1)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m1
-          return $ not solved
+          let mic1 = invertClosure c1
+          return $ not solved && isJust mic1
         _ -> return False
     Nothing -> return False
 
 leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
-      (MetaVar (MetaVarClosure m1 _)) = t1
-  solveMeta m1 t2
-  solveMeta m t2
+      (MetaVar (MetaVarClosure m1 c1)) = t1
+      (Just ic1) = closure2Subst <$> invertClosure c1
+      st2 = Unbound.substs ic1 t2
+  solveMeta m1 st2
+  solveMeta m st2
   return True
 
 leftMetaSymbol :: PluginId
@@ -52,19 +63,22 @@ rightMetaHandler constr = do
   case eqcm of
     Just (EqualityConstraint t1 t2 ty _) -> do
       case t2 of
-        MetaVar (MetaVarClosure m2 _)-> do
+        MetaVar (MetaVarClosure m2 c2)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m2
-          return $ not solved
+          let mic2 = invertClosure c2
+          return $ not solved && isJust mic2
         _ -> return False
     Nothing -> return False
 
 rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
-      (MetaVar (MetaVarClosure m2 _)) = t2
-  solveMeta m2 t1
-  solveMeta m t1
+      (MetaVar (MetaVarClosure m2 c2)) = t2
+      (Just ic2) = closure2Subst <$> invertClosure c2
+      st1 = Unbound.substs ic2 t1
+  solveMeta m2 st1
+  solveMeta m st1
   return True
 
 rightMetaSymbol :: PluginId

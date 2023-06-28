@@ -504,6 +504,21 @@ composeClosures a b =
       aandb = Map.union ma mb
   in Map.toList $ Map.union tranab aandb
 
+invertSubst :: [(TName, Term)] -> Maybe [(TName, Term)]
+invertSubst c = do
+  mc <- traverse (\(f,s) -> case s of {Var i -> Just (f, i); _ -> Nothing}) c
+  rmap <- go mc Map.empty
+  return $ Map.toList $ Var <$> rmap
+  where
+    go :: (Ord a) => [(a, a)] -> Map a a -> Maybe (Map a a)
+    go [] acc = Just acc
+    go ((k,v):kvs) acc =
+      if Map.member v acc
+      then Nothing
+      else go kvs (Map.insert v k acc)
+
+invertClosure :: Closure -> Maybe Closure
+invertClosure = fmap subst2Closure . invertSubst . closure2Subst
 
 -------------------
 
