@@ -6,30 +6,24 @@ date: \today
 
 output: pdf_document
 
-documentclass: scrartcl
-geometry: "left=2.5cm,right=2.5cm,top=1cm,bottom=2.2cm"
+documentclass: acmart
+classoption:
+  - sigconf
+  - screen
+  - review
 numbersections: true
 colorlinks: true
 link-citations: true
-parindent: 1cm
-
-fontsize: 12pt
-mainfont: 'Source Serif 4'
-seriffont: 'Source Serif 4'
-sansfont: 'Source Sans 3'
-monofont: 'Source Code Pro'
 
 header-includes: |
     \usepackage{todonotes}
 ---
 
-\begin{abstract}
+# Abstract #  {#section_absract}
 
 We present a new design for compilers for dependently-typed languages based on the idea of an open datatype for constraints.
 This allows for a more compact base elaborator implementation while enabling extensions to the type system.
 We don't require modifications to the core of type-checker, therefore preserving safety of the language.
-
-\end{abstract}
 
 
 # Introduction #  {#section_introduction}
