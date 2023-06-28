@@ -6,7 +6,7 @@ import           Data.Maybe (fromMaybe)
 
 import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc, localEnv)
 import qualified TypeCheck.State as State
-import qualified TypeCheck.Environment as Env
+-- import qualified TypeCheck.Environment as Env
 import           TypeCheck.Constraints
 import           TypeCheck.Solver.Base
 
@@ -111,12 +111,12 @@ solveAllPossible' n a = do
         -- remove the constraint from the set
         let sconstr' = Map.delete cid newsconstr
 
-        let diffconstr = foldr Map.delete newsconstr (Map.keys sconstr)
+        -- let diffconstr = foldr Map.delete newsconstr (Map.keys sconstr)
 
-        Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
-                 , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
-                 , Env.DS " which generated new constraints"
-                 , Env.DD $ Map.map fst $ diffconstr]
+        -- Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
+        --          , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
+        --          , Env.DS " which generated new constraints"
+        --          , Env.DD $ Map.map fst $ diffconstr]
 
         -- update the set of constraints
         modifyTc $ \s -> s { State.constraints = sconstr' }
