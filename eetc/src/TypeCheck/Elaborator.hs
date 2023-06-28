@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeApplications #-}
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
+import           Control.Arrow (second)
 import           Control.Monad ( unless )
 import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
@@ -275,8 +276,9 @@ checkType (S.Lam ep1 lam) ty = do
   CA.constrainEquality ty metaPi I.Type
 
   (x, body) <- Unbound.unbind lam
-  (_, tyB) <- Unbound.unbind mbnd
+  (y', tyB') <- Unbound.unbind mbnd
   tx <- transName x
+  let (_, tyB)= second (Unbound.subst y' (I.Var tx)) $ (y', tyB')
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
