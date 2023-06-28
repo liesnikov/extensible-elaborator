@@ -5,6 +5,7 @@ import TypeCheck.Constraints (BasicConstraintsF)
 
 import TypeCheck.Solver.Base
 import TypeCheck.Solver.Identity
+import TypeCheck.Solver.PropagateSolutions
 import TypeCheck.Solver.TrivialMetas
 import TypeCheck.Solver.TypeConstructor
 import TypeCheck.Solver.PiInjectivity
@@ -14,7 +15,7 @@ import TypeCheck.Solver.Allsolver
 
 allSolvers:: [Plugin BasicConstraintsF]
 allSolvers = [ identityPlugin
-             , identityAfterSubstPlugin
+             , propagateSolvedMetasPlugin
              , leftMetaPlugin
              , rightMetaPlugin
              , typeConstructorPlugin
