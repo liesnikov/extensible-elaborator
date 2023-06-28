@@ -822,7 +822,7 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
     ---  for each data constructor is wellfomed, and elaborate them
     let elabConstructorDef defn@(S.ConstructorDef pos d (S.Telescope tele)) =
           Env.extendSourceLocation pos defn $
-            Env.extendCtx (I.DataSig t (I.Telescope edelta)) $
+            SA.extendGlobal [I.DataSig t (I.Telescope edelta)] $
               Env.extendCtxTele edelta $ do
                 etele <- elabTypeTele tele
                 return (I.ConstructorDef pos d (I.Telescope etele))
