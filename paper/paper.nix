@@ -2,19 +2,50 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-{ stdenv, pandoc, texlive,
-  librsvg, biber,
-  makeFontsConf, source-serif, source-sans, source-code-pro}:
+{ stdenv, pandoc, pandoc-secnos, texlive, librsvg, biber}:
 let texlive-combined = texlive.combine { inherit (texlive)
-      scheme-basic xetex latexmk
+      scheme-basic latexmk
       fontspec koma-script  # ??
       unicode-math # ??
-      xcolor # for coloured text
       todonotes # for todo-pop-ups
-      etoolbox
       biblatex
-      hyperref # for references and links
       fancyvrb # fancy verbatim text
+#      breakurl # to allow line breaks in hyperlinks
+      acmart
+      # acmart dependencies, for some reason not pulled from ctan
+      babel
+      booktabs
+      caption
+      cmap
+      draftwatermark
+      environ
+      etoolbox
+      # fontenc
+      framed
+      geometry
+      # graphicx
+      hyperref
+      hyperxmp
+      iftex
+      ifmtarg
+      libertine
+      microtype
+      natbib
+      refcount
+      setspace
+      textcase
+      totpages
+      xkeyval
+      xstring
+      ncctools # manyfoot
+      # newtxmath
+      xcolor
+      # zi4
+      float
+      comment
+      fancyhdr
+      pbalance
+      preprint # balance
       ; };
     extraTexInputs = [ ];
     extraBuildInputs = [ librsvg biber];
@@ -22,11 +53,11 @@ in stdenv.mkDerivation ({
 
   name = "extensible-elaborator-paper";
   src = builtins.filterSource
-    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result" "fonts.patch"]))
+    (path: type: !(builtins.elem (builtins.baseNameOf path) ["main.pdf" "result"]))
     ./.;
 
   nativeBuildInputs =
-    [ pandoc texlive-combined ] ++  extraBuildInputs;
+    [ pandoc pandoc-secnos texlive-combined ] ++  extraBuildInputs;
 
   buildPhase = ''
     make main.pdf
@@ -36,8 +67,6 @@ in stdenv.mkDerivation ({
     mkdir $out
     mv main.pdf $out/main.pdf
   '';
-
-  FONTCONFIG_FILE = makeFontsConf { fontDirectories = [source-serif source-sans source-code-pro]; };
 
   TEXINPUTS =
     builtins.concatStringsSep ":" ([ "." ] ++ extraTexInputs ++ [ "" ]);
