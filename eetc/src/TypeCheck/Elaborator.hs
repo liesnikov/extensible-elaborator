@@ -825,7 +825,9 @@ elabEntry (S.Data t (S.Telescope delta) cs) =
             SA.extendGlobal [I.DataSig t (I.Telescope edelta)] $
               Env.extendCtxTele edelta $ do
                 etele <- elabTypeTele tele
-                return (I.ConstructorDef pos d (I.Telescope etele))
+                solveAllConstraints
+                setele <- SA.substAllMetas etele
+                return (I.ConstructorDef pos d (I.Telescope setele))
     ecs <- mapM elabConstructorDef cs
     -- Implicitly, we expect the constructors to actually be different...
     let cnames = map (\(S.ConstructorDef _ c _) -> c) cs
