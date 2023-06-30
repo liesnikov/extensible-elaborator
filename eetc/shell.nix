@@ -1,5 +1,20 @@
-{compiler ? "ghc922"}:
 let
-  pi-forall = import ./default.nix {inherit compiler;};
+  defpkgs = builtins.fetchTarball {
+    # Descriptive name to make the store path easier to identify
+    name = "nixos-22.05.1271.babb041b716";
+    url = "https://releases.nixos.org/nixos/22.05-small/nixos-22.05.1271.babb041b716/nixexprs.tar.xz";
+    # Hash obtained using `nix-prefetch-url --unpack <url>`
+    sha256 = "0g8vwni83zn6kgkczrm5vwmyhl473rrs9d4k4hn5gfbgfsyv7ls8";
+  };
+  config = compiler: (import ./nix/compilerconfig.nix compiler);
 in
-  pi-forall.env
+{ compiler ? "ghc922",
+  pkgs ? import defpkgs {config = (config compiler);} }:
+let
+  pi-forall = import ./default.nix {inherit compiler; inherit pkgs;};
+in
+pi-forall.env.overrideAttrs (old: {
+  buildInputs = old.buildInputs ++
+                [pkgs.pkgs.haskell.packages."${compiler}".haskell-language-server
+                ];
+})

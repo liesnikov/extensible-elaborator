@@ -9,8 +9,8 @@ let
   config = compiler: (import ./nix/compilerconfig.nix compiler);
 in
 { compiler ? "ghc922",
-  nixpkgs ? import defpkgs {config = (config compiler);} }:
-nixpkgs.pkgs.haskell.packages."${compiler}".callCabal2nixWithOptions "eetc" ./. "--no-check" {}
+  pkgs ? import defpkgs {config = (config compiler);} }:
+pkgs.pkgs.haskell.packages."${compiler}".callCabal2nixWithOptions "eetc" ./. "--no-check" {}
 
 # to disable tests run
 # callCabal2nixWithOptions "eetc" ./. "--no-check" {}
