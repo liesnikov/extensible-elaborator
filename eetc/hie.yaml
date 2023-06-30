@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:eetc"
+
+    - path: "./app/Main.hs"
+      component: "eetc:exe:eetc"
+
+    - path: "./test"
+      component: "eetc:test:test-eetc"
