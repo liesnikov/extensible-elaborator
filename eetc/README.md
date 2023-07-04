@@ -13,6 +13,6 @@ the eetc binary will be available in `result/bin/eetc`
 
 ```
 nix-shell -p haskellPackages.graphmod graphviz
-graphmod | dot -Tpdf graph.pdf
+graphmod | dot -Tpdf > graph.pdf
 xdg-open graph.pdf
 ```
