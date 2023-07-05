@@ -16,7 +16,7 @@ module TypeCheck.Constraints ( ConstraintF
 import qualified Syntax.Internal as Syntax
 import           Text.PrettyPrint ( (<+>) )
 import qualified Text.PrettyPrint as PP
-import PrettyPrint (Disp, Disp1(..), disp)
+import PrettyPrint (Disp, Disp1(..), disp, displist)
 
 -- following data types a-la carte approach
 
@@ -78,17 +78,19 @@ instance Disp1 ConjunctionConstraint where
                                                (f c2))
 
 
+-- do the occurs check on term t of type ty with respect to support tele
+data OccursCheck e = OccursCheck Syntax.Term Syntax.Type [Syntax.TName]
+  deriving Functor
+
+instance Disp1 OccursCheck where
+  liftdisp _ (OccursCheck t ty tele) =
+    PP.text "occurs_check" <+> disp t <+> disp ty <+> displist tele
+
 type BasicConstraintsF =   EqualityConstraint
                        :+: ConjunctionConstraint
                        :+: TypeConstructorConstraint
+                       :+: OccursCheck
                        :+: EmptyConstraint
-
-{--
-data TypeClassConstrait e = InstanceNeeded Syntax.Type
-  deriving Functor
-
-type ExtendedConstraints = ConstraintF (BasicConstraintsF :+: TypeClassConstrait)
---}
 
 ----------------------------------------------------------
 -- data types a-la carte boilterplate
