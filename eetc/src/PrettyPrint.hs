@@ -2,6 +2,7 @@
 module PrettyPrint ( Disp (..), Disp1 (..), D (..)
                    , Display(..) , DispInfo(..)
                    , SourcePos, PP.Doc, PP.render
+                   , displist
                    ) where
 
 import           Data.Map.Strict (Map)
@@ -105,6 +106,10 @@ instance (Disp a, Disp b) => Disp (Map a b) where
                      fmap (\(k,v) -> disp k <+> PP.text ":" <+> disp v) $
                      Map.toList m)
         <+> PP.text " }"
+
+
+displist :: Disp a => [a] -> Doc
+displist = PP.hsep . map disp
 
 -------------------------------------------------------------------------
 
