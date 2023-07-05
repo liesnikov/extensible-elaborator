@@ -1,12 +1,15 @@
 module TypeCheck.Solver.Allsolver where
 
+import           Control.Monad (foldM)
 import           Control.Monad.Extra (ifM)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 
 import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc, localEnv)
 import qualified TypeCheck.State as State
+import qualified TypeCheck.StateActions as SA
 -- import qualified TypeCheck.Environment as Env
+import           TypeCheck.Blockers (Blocker(UnblockOnConstraint))
 import           TypeCheck.Constraints
 import           TypeCheck.Solver.Base
 
@@ -74,10 +77,22 @@ solveAndUnfreeze as c = do
   case mid of
     Nothing -> return Nothing
     Just (cid, pid) -> do
-      allfrozen <- getsTc State.frozen
-      let mfrozen = Map.lookup cid allfrozen
-          frozen = fromMaybe [] mfrozen
-      _ <- sequence frozen
+      allconstrs <- getsTc State.constraints
+      allfrozen <- getsTc State.blocks
+      let mblocked = Map.lookup (UnblockOnConstraint cid) allfrozen
+          -- mblocked is a list of either
+          -- separate mblockd with left into constrs, right into problems
+          (frozenConsts, frozenProblems) =
+            foldl (\(c, p) x -> case x of
+                      Left c' -> (c' : c, p)
+                      Right p' -> (c, p' : p))
+                  ([], [])
+                  (fromMaybe [] mblocked)
+          (Just newconsts) = foldM (\s cid -> SA.wakeupConstraint cid s)
+                                   allconstrs
+                                   frozenConsts
+      modifyTc $ \s -> s { State.constraints = newconsts }
+      _ <- sequence frozenProblems
       return $ Just pid
 
 solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c, State.Env) -> m (Maybe PluginId)
@@ -86,9 +101,9 @@ solve a (c, e) = localEnv (const e) $ solveAndUnfreeze a c
 -- call solveAllPossible' until two sets returned are the same
 solveAllPossible :: (MonadSolver c m) => Allsolver c -> m [ConstraintId]
 solveAllPossible a = do
-  sconstr <- getsTc (Map.keys . State.constraints)
+  sconstr <- getsTc (Map.keys . State.active . State.constraints)
   res <- solveAllPossible' 0 a
-  sconstr' <- getsTc (Map.keys . State.constraints)
+  sconstr' <- getsTc (Map.keys . State.active . State.constraints)
   if (sconstr == sconstr') then return res
   else solveAllPossible a
 
@@ -96,7 +111,8 @@ solveAllPossible a = do
 solveAllPossible' :: (MonadSolver c m) => Int -> Allsolver c -> m [ConstraintId]
 solveAllPossible' n a = do
   -- get a set of constraints
-  sconstr <- getsTc State.constraints
+  allconstrs <- getsTc State.constraints
+  let sconstr = State.active allconstrs
   if (n >= Map.size sconstr) then return $ Map.keys sconstr
   else do
     -- pick the one we're currently working on
@@ -109,7 +125,7 @@ solveAllPossible' n a = do
         -- get a potentially updated set of constraints
         newsconstr <- getsTc State.constraints
         -- remove the constraint from the set
-        let sconstr' = Map.delete cid newsconstr
+        let (Just sconstr') = SA.deactivateSucConstraint cid newsconstr
 
         -- let diffconstr = foldr Map.delete newsconstr (Map.keys sconstr)
 
@@ -120,7 +136,7 @@ solveAllPossible' n a = do
 
         -- update the set of constraints
         modifyTc $ \s -> s { State.constraints = sconstr' }
-        return $ Map.keys sconstr'
+        return . Map.keys . State.active $ sconstr'
       Nothing -> do
         -- recurse with increased index
         solveAllPossible' (n+1) a
