@@ -24,6 +24,7 @@ import           Syntax.Internal       ( Meta(..)
                                        , MetaTag(..)
                                        , MetaVarId(..) )
 import qualified TypeCheck.State as State
+import qualified TypeCheck.StateActions as SA
 import           TypeCheck.Solver (Allsolver, solveAllPossible)
 
 import           TypeCheck.Monad.Prelude hiding (TcState)
@@ -123,22 +124,14 @@ raiseConstraintMaybeFreezeTc cons freeze = do
   e <- askEnv
   f <- Unbound.fresh (Unbound.string2Name "constraint")
   let constraintId = Unbound.name2Integer f
-  modifyTc (\s -> s { State.constraints =
-                        Map.insert constraintId (inject constraintId cons, e) (State.constraints s)
-                    })
-  case freeze of
-    Nothing -> return ()
-    Just frozenproblem -> do
-      modifyTc (\s -> s { State.frozen =
-                            Map.insertWith (++) constraintId
-                                                [frozenproblem] (State.frozen s)})
+  SA.addConstraint (inject constraintId cons, e) freeze
 
 solveAllConstraintsTc :: (Disp1 cs) => TcMonad cs ()
 solveAllConstraintsTc = do
   cons <- getsTc State.constraints
   (Just solver) <- fmap State.solvers getTc
   _ <- solveAllPossible solver
-  unsolved <- getsTc State.constraints
+  unsolved <- getsTc (State.active . State.constraints)
   solutions <- getsTc State.metaSolutions
   -- warn [DS "metavariable solution dump in the solver",
   --       DD $ solutions]

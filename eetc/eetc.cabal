@@ -83,11 +83,13 @@ library
     TypeCheck.Solver
     TypeCheck.State
     TypeCheck.StateActions
+    TypeCheck.Blockers
     TypeCheck.Constraints
     TypeCheck.ConstraintsActions
 
     Arbitrary
   other-modules:
+
     TypeCheck.Monad.Prelude
     TypeCheck.Monad.TcReader
     TypeCheck.Monad.TcReaderEnv

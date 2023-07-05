@@ -13,6 +13,13 @@ module TypeCheck.StateActions ( lookupTy
                               , solveMeta
                               , substMetas
                               , substAllMetas
+                              , addActiveConstraint
+                              , suspendConstraint
+                              , wakeupConstraint
+                              , deactivateSucConstraint
+                              , deactivateSusConstraint
+                              , blockAction
+                              , addConstraint
                               ) where
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
@@ -29,6 +36,13 @@ import           Syntax.Internal   ( Term
                                    )
 import           PrettyPrint ( D(..) )
 
+import           TypeCheck.Blockers
+import           TypeCheck.Constraints ((:<:), ConstraintF
+                                       , ConstraintId, getConstraintId)
+import           TypeCheck.State ( Env, TcState(..), Err
+                                 , TcConstraint
+                                 , ConstraintsState(..))
+
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad.TcReader ( MonadTcReader(..)
                                           , asksTc)
@@ -36,7 +50,6 @@ import           TypeCheck.Monad.TcState ( MonadTcState(..))
 import           TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
                                              , asksEnv
                                              )
-import           TypeCheck.State ( TcState(..), Err )
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 type Decls = [Decl]
@@ -49,40 +62,6 @@ askDecls = decls <$> askTc
 
 -- asksDecl :: (MonadTcReader m) => (Decls -> a) -> m a
 -- asksDecl f = asksTc (f . decls)
-
--- perform one substitution of metas
--- (if the solutions have metas themselves this will leave them in the term)
-substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
-substMetas t = do
-  solutions <- asksTc (metaSolutions)
-  return $ Unbound.substs (Map.toList $ Map.mapKeys (unMapVarId) solutions) t
-
--- perform recursive substitution of metas
-substAllMetas :: (MonadTcReader m, Unbound.Subst Term a, Unbound.Alpha a) => a -> m a
-substAllMetas t = do
-  subst <- substMetas t
-  if Unbound.aeq t subst
-  then return t
-  else substAllMetas subst
-
-isMetaSolved :: (MonadTcReader m) => MetaVarId -> m Bool
-isMetaSolved mid = do
-  solutions <- asksTc (metaSolutions)
-  return $ mid `Map.member` solutions
-
-solveMeta :: (MonadError Err m, MonadTcReaderEnv m, MonadTcState m) => MetaVarId -> Term -> m ()
-solveMeta m t = do
-  solved <- isMetaSolved m
-  if solved
-    then do
-    solutions <- asksTc (metaSolutions)
-    Env.err [DS "trying to write a solution",
-             DD t,
-             DS "to a meta",
-             DD m,
-             DS "that already has a solution",
-             DD $ Map.lookup m solutions]
-    else modifyTc (\s -> s { metaSolutions = Map.insert m t (metaSolutions s) })
 
 -- | Find a name's user supplied type signature.
 lookupHint :: (MonadTcReader m, MonadTcReaderEnv m) => TName -> m (Maybe Sig)
@@ -235,5 +214,87 @@ extendGlobal ds a = do
     )
   a
 
+-- Dealing with metas
+
+-- perform one substitution of metas
+-- (if the solutions have metas themselves this will leave them in the term)
+substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
+substMetas t = do
+  solutions <- asksTc (metaSolutions)
+  return $ Unbound.substs (Map.toList $ Map.mapKeys (unMapVarId) solutions) t
+
+-- perform recursive substitution of metas
+substAllMetas :: (MonadTcReader m, Unbound.Subst Term a, Unbound.Alpha a) => a -> m a
+substAllMetas t = do
+  subst <- substMetas t
+  if Unbound.aeq t subst
+  then return t
+  else substAllMetas subst
+
+isMetaSolved :: (MonadTcReader m) => MetaVarId -> m Bool
+isMetaSolved mid = do
+  solutions <- asksTc (metaSolutions)
+  return $ mid `Map.member` solutions
+
+solveMeta :: (MonadError Err m, MonadTcReaderEnv m, MonadTcState m) => MetaVarId -> Term -> m ()
+solveMeta m t = do
+  solved <- isMetaSolved m
+  if solved
+    then do
+    solutions <- asksTc (metaSolutions)
+    Env.err [DS "trying to write a solution",
+             DD t,
+             DS "to a meta",
+             DD m,
+             DS "that already has a solution",
+             DD $ Map.lookup m solutions]
+    else modifyTc (\s -> s { metaSolutions = Map.insert m t (metaSolutions s) })
+
 extendCtxMods :: (MonadTcReaderEnv m) => [Module] -> m a -> m a
 extendCtxMods = Env.extendCtxMods
+
+-- Dealing with constraints
+
+addActiveConstraint :: TcConstraint c -> ConstraintsState c -> ConstraintsState c
+addActiveConstraint c s =
+  let cid = getConstraintId . fst $ c
+  in s {active = Map.insert cid c $ active s}
+
+suspendConstraint :: ConstraintId -> ConstraintsState c -> Maybe (ConstraintsState c)
+suspendConstraint cid s = do
+  c <- Map.lookup cid (active s)
+  return $ s {active = Map.delete cid (active s),
+              asleep = Map.insert cid c (asleep s)}
+
+wakeupConstraint :: ConstraintId -> ConstraintsState c -> Maybe (ConstraintsState c)
+wakeupConstraint cid s = do
+  c <- Map.lookup cid (asleep s)
+  return $ s {asleep = Map.delete cid (asleep s),
+              active = Map.insert cid c (active s)}
+
+deactivateSucConstraint :: ConstraintId -> ConstraintsState c -> Maybe (ConstraintsState c)
+deactivateSucConstraint cid s = do
+  c <- Map.lookup cid (active s)
+  return $ s {active = Map.delete cid (active s),
+              solved = Map.insert cid c (solved s)}
+
+deactivateSusConstraint :: ConstraintId -> ConstraintsState c -> Maybe (ConstraintsState c)
+deactivateSusConstraint cid s = do
+  c <- Map.lookup cid (asleep s)
+  return $ s {asleep = Map.delete cid (asleep s),
+              solved = Map.insert cid c (solved s)}
+
+-- assumes that the blocker is already in the constraints state
+blockAction :: Blocker -> t -> TcState t c s -> TcState t c s
+blockAction b p s = s {blocks = Map.insertWith (++) b [Right p] (blocks s)}
+
+-- add a new constraint
+addConstraint :: (MonadTcState m, c ~ SConstr m) =>
+                 TcConstraint c -> Maybe (m ()) -> m ()
+addConstraint c mcs = do
+  modifyTc (\s -> s { constraints = addActiveConstraint c (constraints s)
+                    })
+  case mcs of
+    Nothing -> return ()
+    Just cs -> modifyTc (blockAction
+                           (UnblockOnConstraint . getConstraintId . fst $ c)                                         cs)

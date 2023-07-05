@@ -4,6 +4,7 @@ module TypeCheck.State ( SourceLocation(..)
                        , Err(..)
                        , TcState(..)
                        , TcConstraint
+                       , ConstraintsState(..)
                        , fmapState
                        , emptyCoreState, emptyElabState
                        , NameMap
@@ -11,6 +12,9 @@ module TypeCheck.State ( SourceLocation(..)
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import           Data.Set (Set)
+import           Data.Set as Set
+
 
 import Syntax.Surface as S
 import Syntax.Internal as I
@@ -20,6 +24,7 @@ import Text.PrettyPrint.HughesPJ ( ($$), nest, text, vcat )
 import TypeCheck.Constraints ( ConstraintF
                              , ConstraintId
                              )
+import TypeCheck.Blockers
 
 -- | Environment manipulation and accessing functions
 -- The context 'gamma' is a list
@@ -59,7 +64,20 @@ emptyElabEnv = Env { ctx = []
 
 type NameMap = Map S.TName I.TName
 
+-- storing the environment in which the constraint was created
 type TcConstraint c = (ConstraintF c, Env)
+
+data ConstraintsState c = ConstraintsState {
+    active :: Map ConstraintId (TcConstraint c) -- up for solving
+  , asleep :: Map ConstraintId (TcConstraint c) -- blocked
+  , solved :: Map ConstraintId (TcConstraint c) -- done
+  }
+
+emptyConstraintsState = ConstraintsState {
+    active = Map.empty
+  , asleep = Map.empty
+  , solved = Map.empty
+  }
 
 data TcState tcaction c solver = TcS {
   -- FIXME
@@ -67,37 +85,37 @@ data TcState tcaction c solver = TcS {
   -- but that can't be matched without ImpredicativeTypes
     metas :: Map MetaVarId (Meta I.Term)
   , metaSolutions :: Map MetaVarId I.Term
-  -- storing the environment in which the constraint was created
-  , constraints :: Map ConstraintId (TcConstraint c)
   , vars :: NameMap
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
-  , frozen :: Map ConstraintId [tcaction]
+  , constraints :: ConstraintsState c
+  , blocks :: Map Blocker [Either ConstraintId tcaction]
   , solvers :: Maybe solver
   }
 
+-- very ugly funciton we need to lift state through transformers
 fmapState :: (a -> b) -> TcState a c s -> TcState b c s
-fmapState f s = s {frozen = fmap (fmap f) (frozen s)}
+fmapState f s = s {blocks = fmap (fmap $ fmap f) $ blocks s}
 
 emptyCoreState :: TcState tca c s
 emptyCoreState = TcS { metas = Map.empty
                      , metaSolutions = Map.empty
-                     , constraints = Map.empty
+                     , constraints = emptyConstraintsState
                      , vars = Map.empty
                      , decls = []
                      , udecls = []
-                     , frozen = Map.empty
+                     , blocks = Map.empty
                      , solvers = Nothing
                      }
 
 emptyElabState :: s -> TcState tca c s
 emptyElabState s = TcS { metas = Map.empty
                        , metaSolutions = Map.empty
-                       , constraints = Map.empty
+                       , constraints = emptyConstraintsState
                        , vars = Map.empty
                        , decls = I.preludeDataDecls
                        , udecls = []
-                       , frozen = Map.empty
+                       , blocks = Map.empty
                        , solvers = Just s
                        }
 
