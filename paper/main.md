@@ -21,9 +21,12 @@ header-includes: |
 
 # Abstract #  {#section_absract}
 
-We present a new design for compilers for dependently-typed languages based on the idea of an open datatype for constraints.
+Dependently-typed languages proved to be very useful for statically enforcing properties of programs and for enabling type-driven development.
+However their implementations have been studied to a smaller extent than their theoretical properties.
+Theoretical models of these languages do not consider the plethora of features that exist in a bigger language like Agda, leading to issues in the implementation of the unifier and the elaborator.
+We present a new design for elaboration of dependently-typed languages based on the idea of an open datatype for constraints to tackle these issues.
 This allows for a more compact base elaborator implementation while enabling extensions to the type system.
-We don't require modifications to the core of type-checker, therefore preserving safety of the language.
+We do not require modifications to the core of type-checker, therefore preserving safety of the language.
 
 
 # Introduction #  {#section_introduction}
