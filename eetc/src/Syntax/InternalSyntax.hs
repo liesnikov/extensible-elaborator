@@ -11,12 +11,13 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 import           Data.Typeable (Typeable)
-import           GHC.Generics (Generic,from)
+import           GHC.Generics (Generic,from, to)
 
 import           Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Unbound.Generics.LocallyNameless.Bind as Unbound
 import qualified Unbound.Generics.LocallyNameless.Ignore as Unbound
+import qualified Unbound.Generics.LocallyNameless.Internal.GSubst as Unbound
 
 import           Syntax.ModuleStub as MM
 
@@ -358,101 +359,54 @@ instance Unbound.Subst Term Term where
   isvar (Var x) = Just (Unbound.SubstName x)
   isvar _ = Nothing
 
---TODO: there is a way to write it with gsubst as unbound does
---      but unbound doesn't expose the generics
---      so it's either this or forking unbound
+-- ignoring isCoerceVar case below since we don't implement it and it default to Nothing
+
 --subst  :: Name b -> b -> a -> a
   subst n u x
     | Unbound.isFreeName n =
-      let rsub :: Unbound.Subst Term a => a -> a
-          rsub = Unbound.subst n u
-      in case x of
-          Type -> Type
-          Var m | m == n -> u
-                | otherwise -> Var m
-          Lam e b -> Lam e (rsub b)
-          App t arg -> App (rsub t) (rsub arg)
-          Pi e b1 b2 -> Pi e (rsub b1) (rsub b2)
-          Ann t1 t2 -> Ann (rsub t1) (rsub t2)
-          Pos s t -> Pos s (rsub t)
-          TrustMe -> TrustMe
-          PrintMe -> PrintMe
-          Let t b -> Let (rsub t) (rsub b)
-          TyUnit -> TyUnit
-          LitUnit -> LitUnit
-          TyBool -> TyBool
-          LitBool t -> LitBool t
-          If t1 t2 t3 -> If (rsub t1) (rsub t2) (rsub t3)
-          Sigma t b -> Sigma (rsub t) (rsub b)
-          Prod t1 t2 -> Prod (rsub t1) (rsub t2)
-          LetPair t1 t2 -> LetPair (rsub t1) (rsub t2)
-          TyEq t1 t2 -> TyEq (rsub t1) (rsub t2)
-          Refl -> Refl
-          Subst t1 t2 -> Subst (rsub t1) (rsub t2)
-          Contra t1 -> Contra (rsub t1)
-          TCon m ts -> TCon m (rsub ts)
-          DCon m ts -> DCon m (rsub ts)
-          Case t m -> Case (rsub t) (rsub m)
+      case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
+        Just (Unbound.SubstName m) | m == n -> u
+        _ -> case x of
           MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
             if mid == n
             then Unbound.substs (closure2Subst clos) u
-            else MetaVar $ MetaVarClosure (MetaVarId mid) $
-                                          composeClosures clos $
-                                                          subst2Closure [(n, u)]
+            else MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos [(n, u)]
+          _ -> to $ Unbound.gsubst n u (from x)
     | otherwise = error $ "Cannot substitute for bound variable " ++ show n
 
 --substs :: [(Name b, b)] -> a -> a
   substs ss x
     | all (Unbound.isFreeName . fst) ss =
-      let
-        rsub :: Unbound.Subst Term a => a -> a
-        rsub = Unbound.substs ss
-      in case x of
-          Type -> Type
-          Var n | Just (_, u) <- find ((==n) . fst) ss -> u
-          Var m -> Var m
-          Lam e b -> Lam e (rsub b)
-          App t arg -> App (rsub t) (rsub arg)
-          Pi e b1 b2 -> Pi e (rsub b1) (rsub b2)
-          Ann t1 t2 -> Ann (rsub t1) (rsub t2)
-          Pos s t -> Pos s (rsub t)
-          TrustMe -> TrustMe
-          PrintMe -> PrintMe
-          Let t b -> Let (rsub t) (rsub b)
-          TyUnit -> TyUnit
-          LitUnit -> LitUnit
-          TyBool -> TyBool
-          LitBool t -> LitBool t
-          If t1 t2 t3 -> If (rsub t1) (rsub t2) (rsub t3)
-          Sigma t b -> Sigma (rsub t) (rsub b)
-          Prod t1 t2 -> Prod (rsub t1) (rsub t2)
-          LetPair t1 t2 -> LetPair (rsub t1) (rsub t2)
-          TyEq t1 t2 -> TyEq (rsub t1) (rsub t2)
-          Refl -> Refl
-          Subst t1 t2 -> Subst (rsub t1) (rsub t2)
-          Contra t1 -> Contra (rsub t1)
-          TCon n ts -> TCon n (rsub ts)
-          DCon n ts -> DCon n (rsub ts)
-          Case t m -> Case (rsub t) (rsub m)
+      case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
+        Just (Unbound.SubstName m) | Just (_, u) <- find ((==m) . fst) ss -> u
+        _ -> case x of
           MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
-            maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $ composeClosures clos $ subst2Closure ss)
-                  (Unbound.substs (closure2Subst clos))
-                  (snd <$> find ((==mid) . fst) ss)
+            maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos ss)
+                  (Unbound.substs (closure2Subst clos) . snd)
+                  (find ((==mid) . fst) ss)
+          _ -> to $ Unbound.gsubsts ss (from x)
     | otherwise =
-      error $ "Cannot substitute for bound variable in: " ++ show ss ++ " in " ++ show x
+      error $ "Cannot substitute for bound variable " ++ show ss ++ " in " ++ show x
 
--- '(y : x) -> y'
-pi1 :: Term
-pi1 = Pi Rel (Var xName) (Unbound.bind yName (Var yName))
 
--- '(y : Bool) -> y'
-pi2 :: Term
-pi2 = Pi Rel TyBool (Unbound.bind yName (Var yName))
-
--- >>> Unbound.aeq (Unbound.subst xName TyBool pi1) pi2
--- True
---
-
+-- isbustss is used when we're inverting a substitution and applying it to a term
+-- the rules are slightly different when it comes to substitution on closures
+-- because in this case when substituting we can't preserve variable mappings in closures
+-- that don't lead anywhere
+isubstss :: [(Name Term, Term)] -> Term -> Term
+isubstss ss x
+    | all (Unbound.isFreeName . fst) ss =
+      case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
+        Just (Unbound.SubstName m) | Just (_, u) <- find ((==m) . fst) ss -> u
+        _ -> case x of
+          MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
+            maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $
+                                            composeClosures clos $ subst2Closure ss)
+                  (Unbound.substs (closure2Subst clos) . snd)
+                  (find ((==mid) . fst) ss)
+          _ -> to $ Unbound.gsubsts ss (from x)
+    | otherwise =
+      error $ "Cannot substitute for bound variable " ++ show ss ++ " in " ++ show x
 
 -----------------
 
@@ -490,18 +444,33 @@ internalPos = initialPos "internal"
 unIgnore :: Unbound.Ignore a -> a
 unIgnore (Unbound.I a) = a
 
-closure2Subst :: Closure -> [(TName, Term)]
+type Substitution = [(TName, Term)]
+
+closure2Subst :: Closure -> Substitution
 closure2Subst = map (\(n,t) -> (unIgnore n, t))
 
-subst2Closure :: [(TName, Term)] -> Closure
+subst2Closure :: Substitution -> Closure
 subst2Closure = map (\(n,t) -> (Unbound.I n, t))
 
+-- used for applied inverted closures when unifying a meta with a term
+-- throws away things which are in a but don't get mapped to anything in b
+-- since that widens the support of a
 composeClosures :: Closure -> Closure -> Closure
 composeClosures a b =
   let ma = Map.fromList a
       mb = Map.fromList b
       tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
   in Map.toList $ tranab
+
+-- used to propagate a substitution into a closure
+-- keeps things that were in a but don't get mapped to anything in b
+-- since if you're in a term and a variable doesn't get mapped you don't throw it away
+substsClosure :: Closure -> Substitution -> Closure
+substsClosure c ss =
+  let mc = Map.fromList c
+      mss = Map.fromList . subst2Closure $ ss
+      trancss = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mss) mc
+  in Map.toList $ Map.union trancss mc
 
 invertSubst :: [(TName, Term)] -> Maybe [(TName, Term)]
 invertSubst c = do
