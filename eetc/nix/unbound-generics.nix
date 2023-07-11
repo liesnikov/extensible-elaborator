@@ -1,7 +1,10 @@
-{fetchzip, callCabal2nix}:
+{fetchFromGitHub, callCabal2nix}:
 let unbound-src =
-      fetchzip {
-        url = "https://github.com/lambdageek/unbound-generics/archive/bd9bac1242ecb62d8152efc0e36357f2e1563fc5.zip";
-        sha256 = "sha256-2naqNNVZ13XDPoCJD3JU8JNVOTi9WCFfTRAnSVyVxY0=";
+      fetchFromGitHub {
+        owner = "liesnikov";
+        repo = "unbound-generics";
+        rev = "04b33b774f6d27116232493135d58858a7ab35f4";
+        name = "unbound-generics-source";
+        sha256 = "sha256-sCe5hvKPkXG3DppHTc8UKTnAcntcRvnKZd62BZlQ6SQ=";
       };
 in callCabal2nix "unbound-generics" unbound-src {}

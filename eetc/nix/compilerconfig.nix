@@ -6,9 +6,7 @@ compiler:
         "${compiler}" = pkgs.haskell.packages."${compiler}".override {
           overrides = haskellPackagesNew: haskellPackagesOld: rec {
             unbound-generics =
-              import ./unbound-generics.nix
-                { fetchzip = pkgs.fetchzip;
-                  callCabal2nix = haskellPackagesNew.callCabal2nix; };
+              pkgs.callPackage ./unbound-generics.nix {callCabal2nix = haskellPackagesNew.callCabal2nix;};
           };
         };
       };

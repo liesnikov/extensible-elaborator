@@ -5,9 +5,9 @@ packages:
 - '.'
 
 extra-deps:
-- unbound-generics-0.4.3
-# - git: git@github.com:lambdageek/unbound-generics.git
-#   commit: a2a558058012b09bb313b3eb03cddb734fcf4a98
+# - unbound-generics-0.4.3.1
+- git: git@github.com:liesnikov/unbound-generics.git
+  commit: 04b33b774f6d27116232493135d58858a7ab35f4
 
 
 flags: {}
