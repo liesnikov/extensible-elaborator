@@ -52,7 +52,7 @@ For example, Canonical Structures didn't even get to be properly documented for 
 Others like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system, like sized types which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
 
-All of the languages above make use of the notion of metavariables (also known as "existential variables" [@teamCoqProofAssistant2022 chap. 2.2.1]) to represent an as-of-yet unknown part of the term.
+All of the languages above make use of the notion of metavariables, also known as "existential variables" [@teamCoqProofAssistant2022, chap. 2.2.1], to represent an as-of-yet unknown part of the term.
 Solving metavariables is part of a process called elaboration, which turns user-friendly syntax into principled core syntax.
 We propose a new architecture for an extensible elaborator for dependently-typed languages.
 The idea is to provide an API that allows users to tap into the elaboration procedure with their own custom solvers that can manipulate metavariables and constraints placed on them.
@@ -75,13 +75,13 @@ We hope this inspires a library or a DSL for implementing dependently-typed lang
 Constraints have been an integral part of compilers for strongly-typed languages for a while [@oderskyTypeInferenceConstrained1999].
 For example, both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
 In the former case, they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a; @ghcdevelopmentteamGHCUserGuide chap. 6.10.3].
-This has proved to be a profitable design decision for GHC, as is indicated, for example in the following talk by @jonesTypeInferenceConstraint2019 as well as in a few published sources [@vytiniotisOutsideInModularType2011; @jonesPracticalTypeInference2007].
+This has proved to be a profitable design decision for GHC, as is indicated, for example in the following talk by @peytonjonesTypeInferenceConstraint2019 as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
 
 However, in the land of dependently-typed languages constraints are much less principled.
 Agda has [a family of constraints](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092) that grew organically, currently, that's 17 constructors.
 Idris technically [has constraints](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) with the only two constructors being equality constraint for two terms and for two sequences of terms.
 [The same holds](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) for Lean. \todo{citations}
-You'll find further discussion of the present work in the [Related Work section](#section_related_work).
+You'll find further discussion of the present work in the [Related Work](#section_related_work) section.
 
 In this section, we present some typical design challenges that come up while building a dependently typed compiler, the way they are usually solved and what the design blueprint we're suggesting brings to the picture.
 
@@ -94,7 +94,7 @@ If we start from a simple case of type-checking an application of a function sym
 Take Agda as an example: when checking an application during the [insertion of implicit arguments](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L99-L127) we already have to carry the information on how the argument will be resolved and then create a [specific kind of placeholder terms ](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150) for each of those cases.
 This kind of placeholder is commonly referred to as _metavariable_ [@norellPracticalProgrammingLanguage2007 chap. 3].
 
-Instead of handling every kind of metavariable in a distinct way we uniformly dispatch a search for the solution, which is then handled by the constraint solvers (in contrast with Idris [@bradyIdrisGeneralpurposeDependently2013 chap. ?], see more in the [Related work section](#section_related_work)).
+Instead of handling every kind of metavariable in a distinct way we uniformly dispatch a search for the solution, which is then handled by the constraint solvers (in contrast with Idris [@bradyIdrisGeneralpurposeDependently2013 chap. ?], see more in the [Related work](#section_related_work) section).
 We achieve this by creating metavariables for the unknown terms and then raising a constraint for the meta containing the type of the meta.
 This constraint can be latched on by the right solver based on this type.
 
@@ -125,7 +125,8 @@ This serves as a guarantee that all implicits have been filled in.
 Let us go through an example of the elaboration process for a simple term:
 
 ```
-plus : {A : Type} -> {{PlusOperation A}} -> (a : A) -> (b : A) -> A
+plus  :  {A : Type} -> {{PlusOperation A}}
+     -> (a : A) -> (b : A) -> A
 
 instance PlusNat : PlusOperation Nat where
   plus = plusNat
@@ -240,9 +241,9 @@ Our idea for a new design is to:
 In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
 For the purposes of this presentation, we write a type-checker for a dependently-typed language with support for metavariables and show how to extend it to include implicit arguments, type-classes and potentially other features.
-We show more complex features in the [Case Studies section](#section_casestudies) and some basic examples of how the system works below:
+We show more complex features in the [Case Studies](#section_casestudies) section and some basic examples of how the system works below:
 
-For the purposes of the base language it suffices to have the following two classes:
+For the purposes of the base language it suffices to have the following classes:
 
 ``` haskell
 -- two terms given should be equal
@@ -253,13 +254,17 @@ data EqualityConstraint e =
 -- this terms has to be filled in
 data FillInTheTerm e =
      FillInTheTerm Syntax.Term Syntax.Type
+
+data OccursCheck e =
+     OccursCheck Syntax.Term Syntax.Type [Syntax.TName]
 ```
 
 We also provide an additional constraint that is resolved to the equality one: \todo{hash it out in the implementation}
 
 ``` haskell
 -- the term passed to the constraint should be a type constructor
-data TypeConstructorConstraint e = TConConstraint Syntax.Term
+data TypeConstructorConstraint e =
+     TypeConstructorConstraint Syntax.Type
 ```
 
 The type-checker raises them supplying the information necessary, but agnostic of how they'll be solved.
@@ -380,7 +385,9 @@ Equality type isn't defined as a regular inductive type, but is instead built-in
     ```
     def f : {a : A} -> B a -> C
     
-    def f : (A : Implicit Type) -> (a : Implicit (deImp A)) -> (b : B (deIpm a)) -> C
+    def f : (A : Implicit Type)
+         -> (a : Implicit (deImp A))
+         -> (b : B (deIpm a)) -> C
     ```
   * the other option is to make `Implcit A` compute to `A` and make solvers not eager to reduce.
     In that case `deImp` is unnecessary.

@@ -473,36 +473,6 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Henry et al/undefined/Henry et al_Modularizing GHC.pdf}
 }
 
-@article{jonesPracticalTypeInference2007,
-  title = {Practical Type Inference for Arbitrary-Rank Types},
-  author = {Jones, Simon Peyton and Vytiniotis, Dimitrios and Weirich, Stephanie and Shields, Mark},
-  date = {2007-01},
-  journaltitle = {Journal of Functional Programming},
-  volume = {17},
-  number = {1},
-  pages = {1--82},
-  publisher = {{Cambridge University Press}},
-  issn = {1469-7653, 0956-7968},
-  doi = {10.1017/S0956796806006034},
-  url = {https://www.cambridge.org/core/journals/journal-of-functional-programming/article/practical-type-inference-for-arbitraryrank-types/5339FB9DAB968768874D4C20FA6F8CB6},
-  urldate = {2022-06-09},
-  abstract = {Haskell's popularity has driven the need for ever more expressive type system features, most of which threaten the decidability and practicality of Damas-Milner type inference. One such feature is the ability to write functions with higher-rank types – that is, functions that take polymorphic functions as their arguments. Complete type inference is known to be undecidable for higher-rank (impredicative) type systems, but in practice programmers are more than willing to add type annotations to guide the type inference engine, and to document their code. However, the choice of just what annotations are required, and what changes are required in the type system and its inference algorithm, has been an ongoing topic of research. We take as our starting point a λ-calculus proposed by Odersky and Läufer. Their system supports arbitrary-rank polymorphism through the exploitation of type annotations on λ-bound arguments and arbitrary sub-terms. Though elegant, and more convenient than some other proposals, Odersky and Läufer's system requires many annotations. We show how to use local type inference (invented by Pierce and Turner) to greatly reduce the annotation burden, to the point where higher-rank types become eminently usable. Higher-rank types have a very modest impact on type inference. We substantiate this claim in a very concrete way, by presenting a complete type-inference engine, written in Haskell, for a traditional Damas-Milner type system, and then showing how to extend it for higher-rank types. We write the type-inference engine using a monadic framework: it turns out to be a particularly compelling example of monads in action. The paper is long, but is strongly tutorial in style. Although we use Haskell as our example source language, and our implementation language, much of our work is directly applicable to any ML-like functional language.},
-  langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones et al/2007/Jones et al_2007_Practical type inference for arbitrary-rank types.pdf}
-}
-
-@unpublished{jonesTypeInferenceConstraint2019,
-  title = {Type Inference as Constraint Solving: How {{GHC}}’s Type Inference Engine Actually Works},
-  shorttitle = {Type Inference as Constraint Solving},
-  author = {Jones, Simon Peyton},
-  date = {2019-06-15},
-  url = {https://www.microsoft.com/en-us/research/publication/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works/},
-  urldate = {2022-06-28},
-  abstract = {The Haskell compiler GHC includes a type inference engine for a rather sophisticated type system.~ You might worry that a complicated type system leads to a very complicated type inference engine. ~ You’d be right, but we have learned a lot about how to structure type inference so that the complexity does not get out […]},
-  langid = {american},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf}
-}
-
 @thesis{juanPracticalUnificationDependent2020,
   title = {Practical {{Unification}} for {{Dependent Type Checking}}},
   author = {Juan, Víctor López},
@@ -672,7 +642,7 @@
 
 @article{najdTreesThatGrow2017,
   title = {Trees That Grow},
-  author = {Najd, Shayan and Jones, Simon Peyton},
+  author = {Najd, Shayan and Peyton Jones, Simon},
   date = {2017-01-01},
   journaltitle = {Journal of Universal Computer Science (JUCS)},
   volume = {23},
@@ -788,6 +758,36 @@
   abstract = {I have some code that type-checks about ten times slower using Agda 2.6.0-4a5e1dc, compared to Agda 2.5.4.2: git clone http://www.cse.chalmers.se/\textasciitilde nad/repos/equality/ (cd equality \&amp;\&amp; git ch...},
   langid = {english},
   organization = {{GitHub}}
+}
+
+@article{peytonjonesPracticalTypeInference2007,
+  title = {Practical Type Inference for Arbitrary-Rank Types},
+  author = {Peyton Jones, Simon and Vytiniotis, Dimitrios and Weirich, Stephanie and Shields, Mark},
+  date = {2007-01},
+  journaltitle = {Journal of Functional Programming},
+  volume = {17},
+  number = {1},
+  pages = {1--82},
+  publisher = {{Cambridge University Press}},
+  issn = {1469-7653, 0956-7968},
+  doi = {10.1017/S0956796806006034},
+  url = {https://www.cambridge.org/core/journals/journal-of-functional-programming/article/practical-type-inference-for-arbitraryrank-types/5339FB9DAB968768874D4C20FA6F8CB6},
+  urldate = {2022-06-09},
+  abstract = {Haskell's popularity has driven the need for ever more expressive type system features, most of which threaten the decidability and practicality of Damas-Milner type inference. One such feature is the ability to write functions with higher-rank types – that is, functions that take polymorphic functions as their arguments. Complete type inference is known to be undecidable for higher-rank (impredicative) type systems, but in practice programmers are more than willing to add type annotations to guide the type inference engine, and to document their code. However, the choice of just what annotations are required, and what changes are required in the type system and its inference algorithm, has been an ongoing topic of research. We take as our starting point a λ-calculus proposed by Odersky and Läufer. Their system supports arbitrary-rank polymorphism through the exploitation of type annotations on λ-bound arguments and arbitrary sub-terms. Though elegant, and more convenient than some other proposals, Odersky and Läufer's system requires many annotations. We show how to use local type inference (invented by Pierce and Turner) to greatly reduce the annotation burden, to the point where higher-rank types become eminently usable. Higher-rank types have a very modest impact on type inference. We substantiate this claim in a very concrete way, by presenting a complete type-inference engine, written in Haskell, for a traditional Damas-Milner type system, and then showing how to extend it for higher-rank types. We write the type-inference engine using a monadic framework: it turns out to be a particularly compelling example of monads in action. The paper is long, but is strongly tutorial in style. Although we use Haskell as our example source language, and our implementation language, much of our work is directly applicable to any ML-like functional language.},
+  langid = {english},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones et al/2007/Jones et al_2007_Practical type inference for arbitrary-rank types.pdf}
+}
+
+@unpublished{peytonjonesTypeInferenceConstraint2019,
+  title = {Type Inference as Constraint Solving: How {{GHC}}’s Type Inference Engine Actually Works},
+  shorttitle = {Type Inference as Constraint Solving},
+  author = {Peyton Jones, Simon},
+  date = {2019-06-15},
+  url = {https://www.microsoft.com/en-us/research/publication/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works/},
+  urldate = {2022-06-28},
+  abstract = {The Haskell compiler GHC includes a type inference engine for a rather sophisticated type system.~ You might worry that a complicated type system leads to a very complicated type inference engine. ~ You’d be right, but we have learned a lot about how to structure type inference so that the complexity does not get out […]},
+  langid = {american},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf}
 }
 
 @inproceedings{pientkaOptimizingHigherOrderPattern2003,
@@ -1103,7 +1103,7 @@
 @article{vytiniotisOutsideInModularType2011,
   ids = {vytiniotisOutsideInModularType2011a},
   title = {{{OutsideIn}}({{X}}) {{Modular}} Type Inference with Local Assumptions},
-  author = {Vytiniotis, Dimitrios and Jones, Simon Peyton and Schrijvers, Tom and Sulzmann, Martin},
+  author = {Vytiniotis, Dimitrios and Jones, Simon and Schrijvers, Tom and Sulzmann, Martin},
   date = {2011-09},
   journaltitle = {Journal of Functional Programming},
   volume = {21},
