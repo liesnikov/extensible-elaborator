@@ -22,27 +22,25 @@ header-includes: |
 # Abstract #  {#section_absract}
 
 Dependently-typed languages proved to be very useful for statically enforcing properties of programs and for enabling type-driven development.
-However their implementations have been studied to a smaller extent than their theoretical properties.
-Theoretical models of these languages do not consider the plethora of features that exist in a bigger language like Agda, leading to issues in the implementation of the unifier and the elaborator.
-We present a new design for elaboration of dependently-typed languages based on the idea of an open datatype for constraints to tackle these issues.
+However, their implementations have been studied to a smaller extent than their theoretical properties.
+Theoretical works rarely consider the plethora of features that exist in bigger languages like Agda, leading to ad hoc implementations, in particular in the unifier and the elaborator.
+We present a new design for the elaboration of dependently-typed languages based on the idea of an open datatype for constraints to tackle these issues.
 This allows for a more compact base elaborator implementation while enabling extensions to the type system.
-We do not require modifications to the core of type-checker, therefore preserving safety of the language.
+We do not require modifications to the core of the type-checker, therefore preserving the safety of the language.
 
 
 # Introduction #  {#section_introduction}
 
 Staticly-typed languages allow us to specify the behaviour of our programs more precisely.
 This comes with the benefit of more static guarantees but with an increased toll on the user to supply more precise information.
-Since the type of our program is part of the specification we can make use of this information to infer parts of our program.
-This follows the idea of Connor McBride to "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
-
-Examples of these include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
+Since the type of our program is part of the specification we can use this information to infer parts of our program, following an idea that Connor McBride aptly worded as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
+Somewhat simplistic examples here include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
 
 In dependently-typed languages, our types can be much more precise.
 This gives us an even bigger opportunity to infer larger parts of our programs from the type.
 This includes higher-order unification for implicit arguments in Agda, implicit coercions in Coq, and tactic arguments in Idris. \todo{something about Lean?}
-The solving can be not only automatic but also interactive.
-For example, holes in Agda, proof obligations and canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq, and holes in Haskell [@koppelSearchingEntangledProgram2022]. \todo{look into program synthesis?}
+The solving can be not only automatic but also interactive or partially automatic.
+For example, holes in Agda, proof obligations and canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq, and holes in Haskell [@koppelSearchingEntangledProgram2022].
 All of these mechanisms use different solvers and have various degrees of extensibility.
 They are usually not isolated from each other and can therefore produce unexpected interactions (for example, in this case between implicits and instances [@PerformanceRegressionIssue]).
 
@@ -52,10 +50,10 @@ For example, Canonical Structures didn't even get to be properly documented for 
 Others like Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system, like sized types which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean is a prominent example of a language that with bootstrapping [@mouraLeanTheoremProver2021] aims to bring more extensibility to the users [@leonardodemouraLeanMetaprogramming2021].
 
-All of the languages above make use of the notion of metavariables, also known as "existential variables" [@teamCoqProofAssistant2022, chap. 2.2.1], to represent an as-of-yet unknown part of the term.
+All of the languages above use metavariables, also known as "existential variables" [@teamCoqProofAssistant2022, chap. 2.2.1], to represent an as-of-yet unknown part of the term.
 Solving metavariables is part of a process called elaboration, which turns user-friendly syntax into principled core syntax.
 We propose a new architecture for an extensible elaborator for dependently-typed languages.
-The idea is to provide an API that allows users to tap into the elaboration procedure with their own custom solvers that can manipulate metavariables and constraints placed on them.
+The idea is to provide an API that allows users to tap into the elaboration procedure with their custom solvers that can manipulate metavariables and constraints placed on them.
 
 Contributions:
 
