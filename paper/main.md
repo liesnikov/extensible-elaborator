@@ -46,7 +46,7 @@ They are usually not isolated from each other and can therefore interact in the 
 
 In all of these examples, the solvers evolved organically over time together with the language.
 Coq [@thecoqdevelopmentteamCoqProofAssistant2022] invested a lot of effort into user-facing features while having a relatively stable core in the last decade.
-However, historically struggling with similar issues in the elaboration: for example, Canonical Structures didn't get to be properly documented for 15 yearsp
+However, historically struggling with similar issues in the elaboration: for example, Canonical Structures didn't get to be properly documented for 15 years
 [@mahboubiCanonicalStructuresWorking2013].
 Agda [@norellPracticalProgrammingLanguage2007] experimented more with features baked into the core of the type system, like sized types which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean 4 is aiming to streamline this process, allowing users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015a].
@@ -93,7 +93,8 @@ In this section, we present some typical design challenges that come up while bu
 
 Higher-order unification is notoriously hard to implement.
 The complexity stems from the desire of compiler writers to implement the most powerful unifier, while being limited by the fact that it higher-order unification is undecidable in general.
-This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug. \todo{footnote about Agda CI on cubical and stdlib, Coq on unimath}
+This code is also heavily used throughout the compiler, making it sensitive towards changes and hard to maintain and debug.
+This is evidenced by the fact that mature proof-assistants run libraries in the CI to ensure that the breakage can be repaired and reversed in time -- in Agda's case it would be the cubical and stdlib libraries and for Coq it is unimath.
 Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components.
 In practice, this means that one doesn't have to fit together an always-growing conversion checker but can instead write different cases separately.
 We again rely on the constraint solver machinery to distribute the problems to the fitting solvers.
@@ -306,7 +307,7 @@ $$
 Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
 
 On top of the above we include indexed inductive datatypes and case-constructs for their elimination.
-Indexed inductive datatypes are encoded using a well-known trick \todo{citation} as parameterised inductives with an equality argument constraining the index.
+Indexed inductive datatypes are encoded using a well-known trick \todo{citation} as parameterised inductive datatypes with an equality argument constraining the index.
 
 ## Syntax traversal ##
 
@@ -355,7 +356,7 @@ In this case the remainder of type-checking problem has to be suspended until th
 # Constraints and unification #
 
 The datatype of constraints is open which means the user can write a plugin to extend it.
-However, we provide a few out of the box to be able to typecheck the base language.
+However, we provide a few out of the box to be able to type-check the base language.
 
 For the purposes of the base language it suffices to have the following.
 
@@ -490,7 +491,7 @@ In case one of the constraints created in the extended context needs to know the
 
 As for the actual unification steps, we implement them in a similar fashion.
 One big difference is that we have to implement an occurs check when instantiating metavariables.
-This also happens through the mechanism of cosntraints, but this time using the `OccursCheck` constraint.
+This also happens through the mechanism of constraints, but this time using the `OccursCheck` constraint.
 
 Take a look at the following example, when only the left hand side of the constaint is an unsolved meta:
 
@@ -513,7 +514,7 @@ leftMetaSolver constr = do
 Once the occurs-check constraint has been created we block on it and write a solution to the metavariable only when it is actually correct.
 In case occurs-check fails the constraint simply won't get solved and therefore the elaboration procedure fails too.
 
-By splitting up the rules into individual, simple solvers we can compartmentalize the complexity of the unifier, making sure that each rule is as decoupled from the others as possible.
+By splitting up the rules into individual, simple solvers we can compartmentalise the complexity of the unifier, making sure that each rule is as decoupled from the others as possible.
 This doesn't influence the properties of the system, but doesn't help to guarantee them either.
 If one wishes to prove correctness of the unification the same work has to be done as in the usual setting.
 
@@ -651,7 +652,7 @@ Therefore we're left with three parts: parser, elaborator and core type-checker.
 
 We see parser or syntax extensibility as a necessary part of an extensible language.
 This problem has been studied extensively in the past and has a multitude of existing solutions.
-Macros are one of them and are utilized heavily in various forms in almost all established languages [@thecoqdevelopmentteamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+Macros are one of them and are utilised heavily in various forms in almost all established languages [@thecoqdevelopmentteamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
 
 Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
 Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at definitional equality but is quite far from a usable dependently-typed language.
