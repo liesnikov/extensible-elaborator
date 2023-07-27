@@ -247,11 +247,9 @@ This is one of the features requested by the Agda users [@agdausersInjectiveUnif
 
 Another example of this can be adding rules of associativity and commutativity to the unifier, as described in the thesis by @holtenDependentTypeCheckingModulo2023.
 
-
-# What is our design bringing into the picture? # {#section_solution_overview}
+## What is our design bringing into the picture? ##
 
 The examples above show that when building a dependently-typed language while the core might be perfectly elegant and simple, the features that appear on top of it complicate the design.
-And while metavariables and unification constraints solve some of them, in the end, it is not a satisfactory resolution.
 
 One can also observe that while the code above might rely on constraints, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
 To give a concrete example, Agda's constraint [solver](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301) relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
@@ -264,38 +262,136 @@ Our idea for a new design is to:
 
 In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
-For the purposes of this presentation, we write a type-checker for a dependently-typed language with support for metavariables and show how to extend it to include implicit arguments, type-classes and potentially other features.
-We show more complex features in the [Case Studies](#section_casestudies) section and some basic examples of how the system works below:
+From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure) \todo{redraw the diagram in tikz and figure out numbering}
 
-For the purposes of the base language it suffices to have the following classes:
+![Architecture diagram](architecture-diagram.svg){#architecture-figure width=50%}
 
-``` haskell
--- two terms given should be equal
-data EqualityConstraint e =
-     EqualityConstraint Syntax.Term Syntax.Term
-                        Syntax.Type
 
--- this terms has to be filled in
-data FillInTheTerm e =
-     FillInTheTerm Syntax.Term Syntax.Type
+In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
+It can raise a constraint that gets registered by the Solver Director.
+Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
+All of the components have some read access to the state, including Solver which might e.g. verify that there are no additional constraints on the meta.
 
-data OccursCheck e =
-     OccursCheck Syntax.Term Syntax.Type [Syntax.TName]
+
+# Dependently-typed calculus and bidirectional typing # {#section_bidirectional}
+
+In this section, we describe the core of the type system we implement.
+We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and add metavariables to it.
+However, for all other purposes, we leave the core rules intact and therefore, the core calculus too.
+
+## Core rules ##
+
+This is dependently-typed calculus that includes Pi, Sigma and indexed inductive types.
+
+$$
+\begin{array}{rcll}
+a,b,A,B & ::=
+     & x                              &\mbox{ variables  }\\
+    && \textbackslash x. a            &\mbox{ lambda expressions} \\
+    && a b                            &\mbox{ function applications }\\
+    && (x:A) \to B                    &\mbox{ dependent function type }\\
+    && Type                           &\mbox{ the `type' of types}\\
+    && \Sigma A (\textbackslash x. B) &\mbox{ sigma type constructor}\\
+    && (a,b)                          &\mbox{ sigma term constructor} \\
+    && \text{let} \ (x,y) = a \ 
+       \text{in} \  b                 &\mbox{ sigma elimination }\\
+    && A = B                          &\mbox{ equality type constructor}\\
+    && \text{refl}                    &\mbox{ equality term constructor}\\
+    && \text{subst} \ a \
+       \text{by} \ b                  &\mbox{ equality elimination by substitution}\\
+    && \text{contra} \ a              &\mbox{ equality elimination by contradiction }\\
+\end{array}
+$$
+
+Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
+
+On top of the above we include indexed inductive datatypes and case-constructs for their elimination.
+Indexed inductive datatypes are encoded using a well-known trick \todo{citation} as parameterised inductives with an equality argument constraining the index.
+
+## Syntax traversal ##
+
+We implement the core of the elaborator as a bidirectional syntax traversal, raising a constraint every time we need to assert something about the type.
+
+This includes the expected use of unification constraints, like in case we enter check-mode while the term should be inferred:
+
+```haskell
+checkType tm ty = do
+  (etm, ty') <- inferType tm
+  constrainEquality ty' ty I.Type
+  return $ etm
 ```
 
-We also provide an additional constraint that is resolved to the equality one: \todo{hash it out in the implementation}
+Any time we want to decompose the type provided in checking mode:
 
-``` haskell
--- the term passed to the constraint should be a type constructor
-data TypeConstructorConstraint e =
-     TypeConstructorConstraint Syntax.Type
+```haskell
+checkType (S.Lam lam) ty = do
+  mtyA <- createMetaTerm
+  mtx <- createUnknownVar
+  mtyB <- extendCtx (I.TypeSig (I.Sig mtx mtyA))
+                    (createMetaTerm)
+  let mbnd = Unbound.bind mtx mtyB
+  let metaPi = I.Pi mtyA mbnd
+
+  constrainEquality ty metaPi I.Type
+  -- rest of the traversal can now use mtyA and mbnd
+  ...
 ```
+
+At certain points we have to raise a blocking constraint, like for checking the type of a data constructor:
+
+```haskell
+checkType t@(S.DCon c args) ty = do
+  elabpromise <- createMetaTerm
+  CA.constrainTConAndFreeze ty $ do
+    mty <- SA.substMetas ty
+    case mty of
+      (I.TCon tname params) -> do
+t        ...
+      _ -> ...
+```
+
+In this case the remainder of type-checking problem has to be suspended until the constraint has been resolved.
+
+# Constraints and unification #
+
+The datatype of constraints is open which means the user can write a plugin to extend it.
+However, we provide a few out of the box to be able to typecheck the base language.
+
+For the purposes of the base language it suffices to have the following.
+
+* Two terms of certain type must be equal, encodes unification problems
+  ``` haskell
+  -- two terms given should be equal
+  data EqualityConstraint e =
+       EqualityConstraint Syntax.Term Syntax.Term
+                          Syntax.Type Sytax.MetaVarId
+  ```
+  In the process of unification we also need to do an occurs-check, encoded as follows:
+  ```haskell
+  data OccursCheck e =
+       OccursCheck Syntax.Term Syntax.Type [Syntax.TName]
+  ```
+* Ensures that a metavariable is resolved eventually:
+  ```haskell
+  -- this terms has to be filled in
+  data FillInTheTerm e =
+       FillInTheTerm Syntax.Term Syntax.Type
+  ```
+* Lastly, we provide a constraint which ensures that a term is a type constructor.
+  This could've been encoded as a unification problem, but since we don't have to limit ourselves in the constructors of the constaint datatype and there are no real downsides to factoring a problem out we include it separately:
+  ```haskell
+  -- the term passed to the constraint
+  -- should be a type constructor
+  data TypeConstructorConstraint e =
+       TypeConstructorConstraint Syntax.Type
+  ```
 
 The type-checker raises them supplying the information necessary, but agnostic of how they'll be solved.
 
-On the solver side we provide a suite of unification solvers that handle different cases of the problem: \todo{this is mock code, go over it once all is implemented}
+## Introduction to the solvers ##
 
-Let's take a look at the simplest example -- syntactically equal terms.
+On the solver side we provide a suite of unification solvers that handle different cases of the problem:
+
 
 ``` haskell
 -- solves syntactically equal terms
@@ -314,7 +410,7 @@ We first define the class of constraints that will be handled by the solver via 
 In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself.
 Which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
-The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state. \todo{make the types adhere to this paradigm}
+The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
 Finally, we register the solver by declaring it using a plugin interface.
 This plugin symbol will be picked up by the linker and registered at the runtime.
 
@@ -362,58 +458,111 @@ complex2 = Plugin { ...
 
 At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
 
-From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure) \todo{redraw the diagram in tikz and figure out numbering}
+## Unification ##
 
-![Architecture diagram](architecture-diagram.svg){#architecture-figure width=50%}
+We implement a system that is very close to [@abelHigherOrderDynamicPattern2011] with the exception that every function call in the simplification procedure is now a raised constraint of refined type.
 
+For example, the "decomposition of functions" [@abelHigherOrderDynamicPattern2011, fig. 2] rule is translated to the following implementation:
 
-In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
-It can raise a constraint that gets registered by the Solver Director.
-Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
-All of the components have some read access to the state, including Solver which might e.g. verify that there are no additional constraints on the meta.
+```haskell
+piEqInjectivitySolver :: (EqualityConstraint :<: cs)
+                      => SolverType cs
+piEqInjectivitySolver constr = do
+  let (Just (EqualityConstraint (I.Pi a1 b1)
+                                (I.Pi a2 b2) _ m)) =
+      match @EqualityConstraint constr
+  ma <- constrainEquality a1 a2 I.Type
+  (x, tyB1, _, tyB2) <- Unbound.unbind2Plus b1 b2
+  let mat = I.identityClosure ma
+  mb <- extendCtx (I.TypeSig (I.Sig x e1 mat)) $
+                  constrainEquality tyB1 tyB2 I.Type
+  let mbt = Unbound.bind x $ I.identityClosure mb
+  solveMeta m (I.Pi mat mbt)
+  return True
+```
 
+The reader might be surprised with a seemingly spurious metavariable `m`.
+It serves as an anti-unification communication channel.
+When an equality constraint is created we return a metavariable that stands for the unified term.
+This meta is used for unification problems that lie deeper into the telescope -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
+We do this to solve the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- we operate according to the "well-typed modulo constraints" principle essentially providing a placeholder that is guaranteed to preserver well-typedness in the extended context.
+In case one of the constraints created in the extended context needs to know the exact shape of `ma` it can block on it, freezing the rest of the problem until the meta is instantiated.
 
-# Dependently-typed calculus and bidirectional typing # {#section_bidirectional}
+As for the actual unification steps, we implement them in a similar fashion.
+One big difference is that we have to implement an occurs check when instantiating metavariables.
+This also happens through the mechanism of cosntraints, but this time using the `OccursCheck` constraint.
 
-In this section, we describe the core of the type system we implement.
-We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and add metavariables and implicits to it.
-However, for all other purposes, we leave the core rules intact and therefore, the core calculus too.
-This is dependently-typed calculus that includes Pi, Sigma and indexed inductive types.
-Equality type isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
+Take a look at the following example, when only the left hand side of the constaint is an unsolved meta:
 
-## Core rules ##
+```haskell
+leftMetaSolver :: (EqualityConstraint :<: cs)
+               => SolverType cs
+leftMetaSolver constr = do
+  let (Just (EqualityConstraint t1 t2 _ m)) =
+      match @EqualityConstraint constr
+  cid <- occursCheck t1 t2
+  blockOn (Blockers.All [cid]) $ do
+    let (MetaVar (MetaVarClosure m1 c1)) = t1
+        (Just ic1) = closure2Subst <$> invertClosure c1
+        st2 = Unbound.substs ic1 t2
+    solveMeta m1 st2
+    solveMeta m st2
+  return True
+```
 
-$$
-\begin{array}{rcll}
-a,b,A,B & ::=& x  &\mbox{ variables  }\\
-    && \textbackslash x. a           &\mbox{ lambda expressions} \\
-    && a b                           &\mbox{ function applications }\\
-    && (x:A) -> B                    &\mbox{ dependent function type }\\
-    && Type                          &\mbox{ the `type' of types}\\
-\end{array}
-$$
+Once the occurs-check constraint has been created we block on it and write a solution to the metavariable only when it is actually correct.
+In case occurs-check fails the constraint simply won't get solved and therefore the elaboration procedure fails too.
 
+By splitting up the rules into individual, simple solvers we can compartmentalize the complexity of the unifier, making sure that each rule is as decoupled from the others as possible.
+This doesn't influence the properties of the system, but doesn't help to guarantee them either.
+If one wishes to prove correctness of the unification the same work has to be done as in the usual setting.
 
-## Basic implicits ##
+## Extending unification ##
 
-## Open questions ##
+Let's create a simple plugin that makes certain symbols declared by the user injective.
 
-Move elsewhere?
+The actual implementation is relatively simple and isn't dissimilar to the Pi-injectivity solver we showed above.
 
-* Can we say anything about this calculus? Is type-checking decidable?
+```haskell
+userInjectivitySolver :: (EqualityConstraint :<: cs)
+                      => SolverType cs
+userInjectivitySolver constr = do
+  let (Just EqualityConstraint (I.App (I.Var f) a)
+                               (I.App (I.Var g) b) _ m)) =
+      match @EqualityConstraint constr
+  if f == g
+  then do
+    ifM (queryInjectiveDeclarations f)
+        (do
+           solveMeta m =<< constrainEquality a b I.Type
+           return True)
+        (return False)
+  else return False
+```
 
-# Case-studies # {#section_casestudies}
+where `queryInjectiveDeclarations` simply scans the available declarations for a marker that `f` has been declared injective.
 
-**Plan**: in this section, we start gradually building up some features while introducing the features gradually while showing parts of the system
+The only big thing left is to make sure that this solver fires at the right time.
+This can only conflict with the "decomposition of neutrals" rule, so we indicate to the Solver Direction that our plugin should run before the it:
 
-## Conversion relation ##
+```haskell
+userInjectivityPlugin :: (EqualityConstraint :<: cs) => Plugin cs
+userInjectivityPlugin =
+  Plugin { ...
+         , solver = userInjectivitySolver
+         , symbol = "userInjectivity"
+         , pre = [ unifyNeutralsDecomposition
+                 , unificationStartMarkerSymbol]
+         , suc = [unificationStartMarkerSymbol]
+         }
+```
 
-**Plan**:
+\todo{PROBLEM this will only affect elaborator, not the core}
 
-* show the actual implementation of a simple syntactic solver
-* list all the solvers we have for conversion/unification
-* describe their interactions with priorities
-* memoization of results?
+# Open datatype of constraints and case studies # {#section_casestudies}
+
+Let's now take a look at what the openness of the constraint datatype buys us in this design.
+In this section we'll first briefly describe how implicit arguments are implemented and then showcase how to build an extension implementing type-classes into the language.
 
 ## Implicit arguments ##
 
@@ -530,12 +679,19 @@ Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflecti
 Idris also focuses on tactics as the main mechanism for elaboration.
 Metavariables and constraints-wise in contrast with only one kind of meta and constraints in Idris [@bradyIdrisGeneralpurposeDependently2013 chap. 4.2, chap. 4.3.1].
 
+$\text{Tog}^{+}$ [@victorlopezjuanTog2020; @victorlopezjuanPracticalHeterogeneousUnification2021] tackles a different problem -- it is concerned with unification of terms that appear in different contexts.
+The main argument against anti-unification that we use is that it is bug-prone.
+On closer inspection, we think that that in Agda, which served as an example of the system where said bugs occur, the problems were stemming from the fact that anti-unification had to be implemented separately from unification, therefore duplicating the code-base.
+In which case it is indeed hard to keep the two in sync.
+However, in our case there is no such duplication since unification and anti-unification always move synchronously.
+Regarding twin types as implemented in $\text{Tog}^{+}$ -- we don't see a reason why it couldn't be done in this setting too, but since it required a rewrite of the system we decided against it in the interest of time.
+
 # Future work #
 
 There are some things we leave for future work.
 
 * Implement erasure inference [@tejiscakDependentlyTypedCalculus2020]?
-* Implement Canonical structures [@mahboubiCanonicalStructuresWorking2013]?
+* Implement Canonical Structures [@mahboubiCanonicalStructuresWorking2013]?
 * Rendering of macros as constraints?
   Map a macro to an implicit term with the right kind of annotation in the type, to get the right expander as an elaboration procedure?
 * Mapping constraint solving onto a concurrent execution model.
