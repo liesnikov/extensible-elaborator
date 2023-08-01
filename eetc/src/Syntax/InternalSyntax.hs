@@ -78,8 +78,8 @@ data Term
     LitBool Bool
   | -- | `if a then b1 else b2` expression for eliminating booleans
     If Term Term Term
-  | -- | Sigma-type (homework), written `{ x : A | B }`
 
+  | -- | Sigma-type (homework), written `{ x : A | B }`
     Sigma Term (Unbound.Bind TName Term)
   | -- | introduction form for Sigma-types `( a , b )`
     Prod Term Term
