@@ -205,7 +205,7 @@ tcHandler constr = do
       return False
 ```
 
-## Type classes: writing the plugin \faceA {.noframenumbering}
+## Type classes: writing the plugin \faceA ## {.noframenumbering}
 
 ```haskell
 tcHandler :: (FillInTheTerm :<: c)
