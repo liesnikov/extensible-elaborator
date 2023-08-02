@@ -14,6 +14,7 @@ nix-build: main.md Makefile bib.bib
 
 main.pdf: main.md bib.bib Makefile
 	pandoc --standalone main.md \
+  --filter pandoc-secnos \
 	--citeproc --bibliography bib.bib \
 	-o main.pdf
 

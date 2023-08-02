@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-{ stdenv, pandoc, texlive, librsvg, biber}:
+{ stdenv, pandoc, pandoc-secnos, texlive, librsvg, biber}:
 let texlive-combined = texlive.combine { inherit (texlive)
       scheme-basic latexmk
       fontspec koma-script  # ??
@@ -10,6 +10,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       todonotes # for todo-pop-ups
       biblatex
       fancyvrb # fancy verbatim text
+#      breakurl # to allow line breaks in hyperlinks
       acmart
       # acmart dependencies, for some reason not pulled from ctan
       babel
@@ -56,7 +57,7 @@ in stdenv.mkDerivation ({
     ./.;
 
   nativeBuildInputs =
-    [ pandoc texlive-combined ] ++  extraBuildInputs;
+    [ pandoc pandoc-secnos texlive-combined ] ++  extraBuildInputs;
 
   buildPhase = ''
     make main.pdf
