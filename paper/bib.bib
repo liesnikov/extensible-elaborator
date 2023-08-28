@@ -64,6 +64,30 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Abel_Bernardy/2020/Abel_Bernardy_2020_A unified view of modalities in type systems.pdf}
 }
 
+@online{agdausersInjectiveUnificationPragma2023,
+  title = {“{{Injective}} for Unification” Pragma · {{Issue}} \#6546 · Agda/Agda},
+  author = {{Agda users}},
+  date = {2023-03-23},
+  url = {https://github.com/agda/agda/issues/6546},
+  urldate = {2023-07-26},
+  abstract = {Agda already contains an INJECTIVE pragma, which marks a definition f as injective for the sake of pattern-matching. From this, we get that f is injective with respect to propositional equality (∀ ...},
+  langid = {english},
+  organization = {{GitHub}},
+  keywords = {archived},
+  annotation = {https://web.archive.org/web/20230726151346/https://github.com/agda/agda/issues/6546}
+}
+
+@online{agdausersPerformanceRegressionIssue2018,
+  title = {Performance Regression · {{Issue}} \#3435 · Agda/Agda},
+  author = {{Agda users}},
+  date = {2018-12-06},
+  url = {https://github.com/agda/agda/issues/3435},
+  urldate = {2022-12-05},
+  abstract = {I have some code that type-checks about ten times slower using Agda 2.6.0-4a5e1dc, compared to Agda 2.5.4.2: git clone http://www.cse.chalmers.se/\textasciitilde nad/repos/equality/ (cd equality \&amp;\&amp; git ch...},
+  langid = {english},
+  organization = {{GitHub}}
+}
+
 @software{alekseykligerUnboundgenerics2022,
   title = {Unbound-Generics},
   author = {{Aleksey Kliger}},
@@ -282,6 +306,25 @@
   organization = {{GitHub}}
 }
 
+@inproceedings{demouraLeanTheoremProver2015a,
+  title = {The {{Lean Theorem Prover}} ({{System Description}})},
+  booktitle = {Automated {{Deduction}} - {{CADE-25}}},
+  author = {de Moura, Leonardo and Kong, Soonho and Avigad, Jeremy and van Doorn, Floris and von Raumer, Jakob},
+  editor = {Felty, Amy P. and Middeldorp, Aart},
+  options = {useprefix=true},
+  date = {2015},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  pages = {378--388},
+  publisher = {{Springer International Publishing}},
+  location = {{Cham}},
+  doi = {10.1007/978-3-319-21401-6_26},
+  abstract = {Lean is a new open source theorem prover being developed at Microsoft Research and Carnegie Mellon University, with a small trusted kernel based on dependent type theory. It aims to bridge the gap between interactive and automated theorem proving, by situating automated tools and methods in a framework that supports user interaction and the construction of fully specified axiomatic proofs. Lean is an ongoing and long-term effort, but it already provides many useful components, integrated development environments, and a rich API which can be used to embed it into other systems. It is currently being used to formalize category theory, homotopy type theory, and abstract algebra. We describe the project goals, system architecture, and main features, and we discuss applications and continuing work.},
+  isbn = {978-3-319-21401-6},
+  langid = {english},
+  keywords = {Automate Theorem Prove,Theorem Prove,Trust Level,Type Checker,Type Class},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/de Moura et al/2015/de Moura et al_2015_The Lean Theorem Prover (System Description)2.pdf}
+}
+
 @article{ebnerMetaprogrammingFrameworkFormal2017,
   title = {A Metaprogramming Framework for Formal Verification},
   author = {Ebner, Gabriel and Ullrich, Sebastian and Roesch, Jared and Avigad, Jeremy and de Moura, Leonardo},
@@ -365,17 +408,13 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Gaster_Jones/1996/Gaster_Jones_1996_A polymorphic type system for extensible records and variants.pdf}
 }
 
-@online{ghcdevelopmentteamGHCUserGuide,
+@online{ghcdevelopmentteamGHCUserGuide2022,
   title = {{{GHC}} 9.4.2 {{User}}’s {{Guide}}},
   author = {{GHC development team}},
+  date = {2022-08-22},
   url = {https://downloads.haskell.org/ghc/9.4.2/docs/users_guide/index.html},
-  urldate = {2022-07-15}
-}
-
-@online{GHCPluginsResource,
-  title = {{{GHC Plugins Resource Index}}},
-  url = {https://mpickering.github.io/plugins.html},
-  urldate = {2023-01-09}
+  urldate = {2022-07-15},
+  organization = {{GHC manual}}
 }
 
 @report{gonthierSmallScaleReflection2008,
@@ -475,34 +514,18 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Henry et al/undefined/Henry et al_Modularizing GHC.pdf}
 }
 
-@article{jonesPracticalTypeInference2007,
-  title = {Practical Type Inference for Arbitrary-Rank Types},
-  author = {Jones, Simon Peyton and Vytiniotis, Dimitrios and Weirich, Stephanie and Shields, Mark},
-  date = {2007-01},
-  journaltitle = {Journal of Functional Programming},
-  volume = {17},
-  number = {1},
-  pages = {1--82},
-  publisher = {{Cambridge University Press}},
-  issn = {1469-7653, 0956-7968},
-  doi = {10.1017/S0956796806006034},
-  url = {https://www.cambridge.org/core/journals/journal-of-functional-programming/article/practical-type-inference-for-arbitraryrank-types/5339FB9DAB968768874D4C20FA6F8CB6},
-  urldate = {2022-06-09},
-  abstract = {Haskell's popularity has driven the need for ever more expressive type system features, most of which threaten the decidability and practicality of Damas-Milner type inference. One such feature is the ability to write functions with higher-rank types – that is, functions that take polymorphic functions as their arguments. Complete type inference is known to be undecidable for higher-rank (impredicative) type systems, but in practice programmers are more than willing to add type annotations to guide the type inference engine, and to document their code. However, the choice of just what annotations are required, and what changes are required in the type system and its inference algorithm, has been an ongoing topic of research. We take as our starting point a λ-calculus proposed by Odersky and Läufer. Their system supports arbitrary-rank polymorphism through the exploitation of type annotations on λ-bound arguments and arbitrary sub-terms. Though elegant, and more convenient than some other proposals, Odersky and Läufer's system requires many annotations. We show how to use local type inference (invented by Pierce and Turner) to greatly reduce the annotation burden, to the point where higher-rank types become eminently usable. Higher-rank types have a very modest impact on type inference. We substantiate this claim in a very concrete way, by presenting a complete type-inference engine, written in Haskell, for a traditional Damas-Milner type system, and then showing how to extend it for higher-rank types. We write the type-inference engine using a monadic framework: it turns out to be a particularly compelling example of monads in action. The paper is long, but is strongly tutorial in style. Although we use Haskell as our example source language, and our implementation language, much of our work is directly applicable to any ML-like functional language.},
+@thesis{holtenDependentTypeCheckingModulo2023,
+  type = {mathesis},
+  title = {Dependent {{Type-Checking Modulo Associativity}} and {{Commutativity}}},
+  author = {Holten, Lucas},
+  date = {2023},
+  institution = {{Delft University of Technology}},
+  location = {{Delft, the Netherlands}},
+  url = {https://repository.tudelft.nl/islandora/object/uuid%3A3f6c2de8-5437-4e47-b37f-6358c04eda9e},
+  urldate = {2023-07-26},
+  abstract = {Writing software that follows its specification is important for many applications. One approach to guarantee this is formal verification in a dependently-typed programming language. Formal verification in these dependently-typed languages is based on proof writing. Sadly, while proofs are easy to check for computers, writing proofs can be tedious for developers. One particular proof component that currently requires developers attention in many systems, is associative and commutative (AC) reasoning.\&lt;br/\&gt;We contribute an extension of dependent type-systems to fully automate AC reasoning. This alleviates developers from this task and allows them to concentrate on other proof components. Our approach works by modifying the conversion checker and doesn't compromise soundness or completeness. Furthermore, our approach reuses existing type-checking components, making it easier to implement. We also implemented our theory as an extension of the Agda type-checker. This allowed us to use this implementation to experiment with some example programs.\&lt;br/\&gt;This thesis can help language designers decide if they want automatic AC reasoning in their language. For language users it can serve as inspiration on how to use such a type-system and finally for researchers we have ideas for future work.\&lt;br/\&gt;},
   langid = {english},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones et al/2007/Jones et al_2007_Practical type inference for arbitrary-rank types.pdf}
-}
-
-@unpublished{jonesTypeInferenceConstraint2019,
-  title = {Type Inference as Constraint Solving: How {{GHC}}’s Type Inference Engine Actually Works},
-  shorttitle = {Type Inference as Constraint Solving},
-  author = {Jones, Simon Peyton},
-  date = {2019-06-15},
-  url = {https://www.microsoft.com/en-us/research/publication/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works/},
-  urldate = {2022-06-28},
-  abstract = {The Haskell compiler GHC includes a type inference engine for a rather sophisticated type system.~ You might worry that a complicated type system leads to a very complicated type inference engine. ~ You’d be right, but we have learned a lot about how to structure type inference so that the complexity does not get out […]},
-  langid = {american},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Holten/2023/Holten_2023_Dependent Type-Checking Modulo Associativity and Commutativity.pdf}
 }
 
 @thesis{juanPracticalUnificationDependent2020,
@@ -564,7 +587,7 @@
 }
 
 @inproceedings{mahboubiCanonicalStructuresWorking2013,
-  title = {Canonical Structures for the Working Coq User},
+  title = {Canonical Structures for the Working {{Coq}} User},
   booktitle = {Proceedings of the 4th International Conference on Interactive Theorem Proving},
   author = {Mahboubi, Assia and Tassi, Enrico},
   date = {2013},
@@ -675,7 +698,7 @@
 
 @article{najdTreesThatGrow2017,
   title = {Trees That Grow},
-  author = {Najd, Shayan and Jones, Simon Peyton},
+  author = {Najd, Shayan and Peyton Jones, Simon},
   date = {2017-01-01},
   journaltitle = {Journal of Universal Computer Science (JUCS)},
   volume = {23},
@@ -784,13 +807,54 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pédrot/2019/Pédrot_2019_Ltac2.pdf}
 }
 
-@online{PerformanceRegressionIssue,
-  title = {Performance Regression · {{Issue}} \#3435 · Agda/Agda},
-  url = {https://github.com/agda/agda/issues/3435},
-  urldate = {2022-12-05},
-  abstract = {I have some code that type-checks about ten times slower using Agda 2.6.0-4a5e1dc, compared to Agda 2.5.4.2: git clone http://www.cse.chalmers.se/\textasciitilde nad/repos/equality/ (cd equality \&amp;\&amp; git ch...},
+@article{peytonjonesPracticalTypeInference2007,
+  title = {Practical Type Inference for Arbitrary-Rank Types},
+  author = {Peyton Jones, Simon and Vytiniotis, Dimitrios and Weirich, Stephanie and Shields, Mark},
+  date = {2007-01},
+  journaltitle = {Journal of Functional Programming},
+  volume = {17},
+  number = {1},
+  pages = {1--82},
+  publisher = {{Cambridge University Press}},
+  issn = {1469-7653, 0956-7968},
+  doi = {10.1017/S0956796806006034},
+  url = {https://www.cambridge.org/core/journals/journal-of-functional-programming/article/practical-type-inference-for-arbitraryrank-types/5339FB9DAB968768874D4C20FA6F8CB6},
+  urldate = {2022-06-09},
+  abstract = {Haskell's popularity has driven the need for ever more expressive type system features, most of which threaten the decidability and practicality of Damas-Milner type inference. One such feature is the ability to write functions with higher-rank types – that is, functions that take polymorphic functions as their arguments. Complete type inference is known to be undecidable for higher-rank (impredicative) type systems, but in practice programmers are more than willing to add type annotations to guide the type inference engine, and to document their code. However, the choice of just what annotations are required, and what changes are required in the type system and its inference algorithm, has been an ongoing topic of research. We take as our starting point a λ-calculus proposed by Odersky and Läufer. Their system supports arbitrary-rank polymorphism through the exploitation of type annotations on λ-bound arguments and arbitrary sub-terms. Though elegant, and more convenient than some other proposals, Odersky and Läufer's system requires many annotations. We show how to use local type inference (invented by Pierce and Turner) to greatly reduce the annotation burden, to the point where higher-rank types become eminently usable. Higher-rank types have a very modest impact on type inference. We substantiate this claim in a very concrete way, by presenting a complete type-inference engine, written in Haskell, for a traditional Damas-Milner type system, and then showing how to extend it for higher-rank types. We write the type-inference engine using a monadic framework: it turns out to be a particularly compelling example of monads in action. The paper is long, but is strongly tutorial in style. Although we use Haskell as our example source language, and our implementation language, much of our work is directly applicable to any ML-like functional language.},
   langid = {english},
-  organization = {{GitHub}}
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones et al/2007/Jones et al_2007_Practical type inference for arbitrary-rank types.pdf}
+}
+
+@unpublished{peytonjonesTypeInferenceConstraint2019,
+  title = {Type Inference as Constraint Solving: How {{GHC}}’s Type Inference Engine Actually Works},
+  shorttitle = {Type Inference as Constraint Solving},
+  author = {Peyton Jones, Simon},
+  date = {2019-06-15},
+  url = {https://www.microsoft.com/en-us/research/publication/type-inference-as-constraint-solving-how-ghcs-type-inference-engine-actually-works/},
+  urldate = {2022-06-28},
+  abstract = {The Haskell compiler GHC includes a type inference engine for a rather sophisticated type system.~ You might worry that a complicated type system leads to a very complicated type inference engine. ~ You’d be right, but we have learned a lot about how to structure type inference so that the complexity does not get out […]},
+  langid = {american},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Jones/2019/Jones_2019_Type inference as constraint solving.pdf}
+}
+
+@inproceedings{pfenningUnificationAntiunificationCalculus1991,
+  title = {Unification and Anti-Unification in the Calculus of Constructions},
+  booktitle = {[1991] {{Proceedings Sixth Annual IEEE Symposium}} on {{Logic}} in {{Computer Science}}},
+  author = {Pfenning, F.},
+  date = {1991-07},
+  pages = {74--85},
+  doi = {10.1109/LICS.1991.151632},
+  abstract = {Algorithms for unification and anti-unification in the calculus of constructions, where occurrences of free variables (the variables subject to instantiation) are restricted to higher-order patterns, are presented. Most general unifiers and least common anti-instances are shown to exist and are unique up to a simple equivalence. The unification algorithm is used for logic program execution and type and term reconstruction in the current implementation of Elf and has shown itself to be practical.{$<>$}},
+  eventtitle = {[1991] {{Proceedings Sixth Annual IEEE Symposium}} on {{Logic}} in {{Computer Science}}},
+  keywords = {Artificial intelligence,Calculus,Computer languages,Computer science,Internet,Logic programming,Terminology},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Pfenning/1991/Pfenning_1991_Unification and anti-unification in the calculus of constructions.pdf}
+}
+
+@online{pickeringGHCPluginsResource,
+  title = {{{GHC Plugins Resource Index}}},
+  author = {Pickering, Matthew},
+  url = {https://mpickering.github.io/plugins.html},
+  urldate = {2023-01-09}
 }
 
 @inproceedings{pientkaOptimizingHigherOrderPattern2003,
@@ -878,6 +942,21 @@
   urldate = {2022-07-21},
   abstract = {The modules under src/full are currently closely interdependent which makes reasoning/learning about Agda's compiler implementation somewhat challenging and makes refactoring difficult.},
   organization = {{GitHub, Agda issues}}
+}
+
+@thesis{saibiOutilsGeneriquesModelisation1999,
+  type = {phdthesis},
+  title = {Outils Génériques de Modélisation et de Démonstration pour la Formalisation des Mathématiques en Théorie des Types. Application à la Théorie des Catégories.},
+  author = {Saibi, Amokrane},
+  date = {1999-03-19},
+  institution = {{Université Pierre et Marie Curie - Paris VI}},
+  doi = {10/document; https://web.archive.org/web/20230726150206/https://theses.hal.science/tel-00523810},
+  url = {https://theses.hal.science/tel-00523810},
+  urldate = {2023-07-26},
+  abstract = {Outils Génériques de Modélisation et de Démonstration pour la Formalisation des Mathématiques en Théorie des Types. Application à la Théorie des Catégories.},
+  langid = {french},
+  keywords = {archived},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Saibi/1999/Saibi_1999_Outils Génériques de Modélisation et de Démonstration pour la Formalisation des.pdf}
 }
 
 @unpublished{selsamTabledTypeclassResolution2020,
@@ -990,19 +1069,6 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Tassi et al/2012/Tassi et al_2012_A Bi-Directional Refinement Algorithm for the Calculus of (Co)Inductive.pdf}
 }
 
-@software{teamCoqProofAssistant2022,
-  title = {The {{Coq Proof Assistant}}, Version 8.15.0},
-  author = {Team, The Coq Development},
-  date = {2022-01-13},
-  doi = {10.5281/zenodo.5846982},
-  url = {https://zenodo.org/record/5846982},
-  urldate = {2022-07-20},
-  abstract = {Coq is a formal proof management system. It provides a formal language to write mathematical definitions, executable algorithms and theorems together with an environment for semi-interactive development of machine-checked proofs. Typical applications include the certification of properties of programming languages (e.g. the CompCert compiler certification project, the Verified Software Toolchain for verification of C programs, or the Iris framework for concurrent separation logic), the formalization of mathematics (e.g. the full formalization of the Feit-Thompson theorem, or homotopy type theory), and teaching. Coq version 8.15 integrates many bug fixes, deprecations and cleanups as well as a few new features. We highlight some of the most impactful changes here: The apply with tactic no longer renames arguments unless compatibility flag Apply With Renaming is set. Improvements to the auto tactic family, fixing the Hint Unfold behavior, and generalizing the use of discrimination nets. The typeclasses eauto tactic has a new best\_effort option allowing it to return partial solutions to a proof search problem, depending on the mode declarations associated to each constraint. This mode is used by typeclass resolution during type inference to provide more precise error messages. Many commands and options were deprecated or removed after deprecation and more consistently support locality attributes. The Import command is extended with import\_categories to select the components of a module to import or not, including features such as hints, coercions, and notations. A visual Ltac debugger is now available in CoqIDE. See the Changes in 8.15.0 section below for the detailed list of changes, including potentially breaking changes marked with Changed. Coq's reference manual for 8.15, documentation of the 8.15 standard library and developer documentation of the 8.15 ML API are also available. Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael Soegtrop and Théo Zimmermann worked on maintaining and improving the continuous integration system and package building infrastructure. Erik Martin-Dorel has maintained the Coq Docker images that are used in many Coq projects for continuous integration. The OPAM repository for Coq packages has been maintained by Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with contributions from many users. A list of packages is available at https://coq.inria.fr/opam/www/. The Coq Platform has been maintained by Michael Soegtrop and Enrico Tassi. Our current maintainers are Yves Bertot, Frédéric Besson, Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès, Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin, Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard, Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack, Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia and Théo Zimmermann. See the Coq Team face book page for more details. The 41 contributors to this version are Tanaka Akira, Frédéric Besson, Juan Conejero, Ali Caglayan, Cyril Cohen, Adrian Dapprich, Maxime Dénès, Stéphane Desarzens, Christian Doczkal, Andrej Dudenhefner, Jim Fehrle, Emilio Jesús Gallego Arias, Attila Gáspár, Gaëtan Gilbert, Jason Gross, Hugo Herbelin, Jasper Hugunin, Bart Jacobs, Ralf Jung, Grant Jurgensen, Jan-Oliver Kaiser, Wojciech Karpiel, Fabian Kunze, Olivier Laurent, Yishuai Li, Erik Martin-Dorel, Guillaume Melquiond, Jean-Francois Monin, Pierre-Marie Pédrot, Rudy Peterson, Clément Pit-Claudel, Seth Poulsen, Pierre Roux, Takafumi Saikawa, Kazuhiko Sakaguchi, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov and Théo Zimmerman. The Coq community at large helped improve the design of this new version via the GitHub issue and pull request system, the Coq development mailing list coqdev@inria.fr, the coq-club@inria.fr mailing list, the Discourse forum and the Coq Zulip chat. Version 8.15's development spanned 3 months from the release of Coq 8.14.0. Gaëtan Gilbert is the release manager of Coq 8.15. This release is the result of 384 merged PRs, closing 67 issues.},
-  organization = {{Zenodo}},
-  keywords = {formal proofs,mathematical software,proof assistant},
-  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Team/2022/Team_2022_The Coq Proof Assistant.pdf}
-}
-
 @article{tejiscakDependentlyTypedCalculus2020,
   title = {A Dependently Typed Calculus with Pattern Matching and Erasure Inference},
   author = {Tejiščák, Matúš},
@@ -1037,6 +1103,19 @@
   keywords = {archived},
   annotation = {https://web.archive.org/web/20230522091202/https://agda.readthedocs.io/\_/downloads/en/v2.6.3/pdf/},
   file = {/home/bohdan/Zotero/storage/WZT3LAMI/pdf.pdf}
+}
+
+@software{thecoqdevelopmentteamCoqProofAssistant2022,
+  title = {The {{Coq Proof Assistant}}, Version 8.15.0},
+  author = {{The Coq Development Team}},
+  date = {2022-01-13},
+  doi = {10.5281/zenodo.5846982},
+  url = {https://zenodo.org/record/5846982},
+  urldate = {2022-07-20},
+  abstract = {Coq is a formal proof management system. It provides a formal language to write mathematical definitions, executable algorithms and theorems together with an environment for semi-interactive development of machine-checked proofs. Typical applications include the certification of properties of programming languages (e.g. the CompCert compiler certification project, the Verified Software Toolchain for verification of C programs, or the Iris framework for concurrent separation logic), the formalization of mathematics (e.g. the full formalization of the Feit-Thompson theorem, or homotopy type theory), and teaching. Coq version 8.15 integrates many bug fixes, deprecations and cleanups as well as a few new features. We highlight some of the most impactful changes here: The apply with tactic no longer renames arguments unless compatibility flag Apply With Renaming is set. Improvements to the auto tactic family, fixing the Hint Unfold behavior, and generalizing the use of discrimination nets. The typeclasses eauto tactic has a new best\_effort option allowing it to return partial solutions to a proof search problem, depending on the mode declarations associated to each constraint. This mode is used by typeclass resolution during type inference to provide more precise error messages. Many commands and options were deprecated or removed after deprecation and more consistently support locality attributes. The Import command is extended with import\_categories to select the components of a module to import or not, including features such as hints, coercions, and notations. A visual Ltac debugger is now available in CoqIDE. See the Changes in 8.15.0 section below for the detailed list of changes, including potentially breaking changes marked with Changed. Coq's reference manual for 8.15, documentation of the 8.15 standard library and developer documentation of the 8.15 ML API are also available. Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael Soegtrop and Théo Zimmermann worked on maintaining and improving the continuous integration system and package building infrastructure. Erik Martin-Dorel has maintained the Coq Docker images that are used in many Coq projects for continuous integration. The OPAM repository for Coq packages has been maintained by Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with contributions from many users. A list of packages is available at https://coq.inria.fr/opam/www/. The Coq Platform has been maintained by Michael Soegtrop and Enrico Tassi. Our current maintainers are Yves Bertot, Frédéric Besson, Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès, Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin, Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard, Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack, Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia and Théo Zimmermann. See the Coq Team face book page for more details. The 41 contributors to this version are Tanaka Akira, Frédéric Besson, Juan Conejero, Ali Caglayan, Cyril Cohen, Adrian Dapprich, Maxime Dénès, Stéphane Desarzens, Christian Doczkal, Andrej Dudenhefner, Jim Fehrle, Emilio Jesús Gallego Arias, Attila Gáspár, Gaëtan Gilbert, Jason Gross, Hugo Herbelin, Jasper Hugunin, Bart Jacobs, Ralf Jung, Grant Jurgensen, Jan-Oliver Kaiser, Wojciech Karpiel, Fabian Kunze, Olivier Laurent, Yishuai Li, Erik Martin-Dorel, Guillaume Melquiond, Jean-Francois Monin, Pierre-Marie Pédrot, Rudy Peterson, Clément Pit-Claudel, Seth Poulsen, Pierre Roux, Takafumi Saikawa, Kazuhiko Sakaguchi, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov and Théo Zimmerman. The Coq community at large helped improve the design of this new version via the GitHub issue and pull request system, the Coq development mailing list coqdev@inria.fr, the coq-club@inria.fr mailing list, the Discourse forum and the Coq Zulip chat. Version 8.15's development spanned 3 months from the release of Coq 8.14.0. Gaëtan Gilbert is the release manager of Coq 8.15. This release is the result of 384 merged PRs, closing 67 issues.},
+  organization = {{Zenodo}},
+  keywords = {formal proofs,mathematical software,proof assistant},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Team/2022/Team_2022_The Coq Proof Assistant.pdf}
 }
 
 @misc{theidristeamIdrisTutorial2021,
@@ -1096,7 +1175,7 @@
 }
 
 @software{victorlopezjuanTog2020,
-  title = {{{Tog}}⁺},
+  title = {Tog+},
   author = {{Víctor López Juan}},
   date = {2020-08-28},
   url = {https://framagit.org/vlopez/togt},
@@ -1108,7 +1187,7 @@
 @article{vytiniotisOutsideInModularType2011,
   ids = {vytiniotisOutsideInModularType2011a},
   title = {{{OutsideIn}}({{X}}) {{Modular}} Type Inference with Local Assumptions},
-  author = {Vytiniotis, Dimitrios and Jones, Simon Peyton and Schrijvers, Tom and Sulzmann, Martin},
+  author = {Vytiniotis, Dimitrios and Peyton Jones, Simon and Schrijvers, Tom and Sulzmann, Martin},
   date = {2011-09},
   journaltitle = {Journal of Functional Programming},
   volume = {21},

@@ -3,14 +3,20 @@ author: __Bohdan Liesnikov__ and Jesper Cockx
 title: Building an elaborator \newline using extensible constraints
 institute: TU Delft, Delft, Netherlands
 date: August 29th, 2023
+
 classoption: "aspectratio=169"
 fontsize: 12pt
 navigation: empty
+
 theme: default
 colortheme: dove
 fonttheme: structuresmallcapsserif
+
 section-titles: true
 listings: true
+
+colorlinks: true
+
 mainfont: 'Source Serif 4'
 sansfont: 'Source Sans 3'
 monofont: 'Source Code Pro'
@@ -103,7 +109,7 @@ Mantra: constraints are async function calls, metavariables are "promises".
 
 ## Our constraints
 
-* aiming for something in-between in the core \faceB + your \faceA extensions
+* basic \faceB ones + extensions \faceA
   ```
   CoreW = EqualityComparison t1 t2 ty m
         | BlockedOnMeta m tc
@@ -238,15 +244,15 @@ tcHandler constr = do
 
 ## Injectivity of unification: what do we want
 
-There's already a pragma in Agda which marks symbols as injective wrt pattern-matching.
-[@agdausersInjectiveUnificationPragma2023]
+* There's already a pragma in Agda which marks symbols as injective wrt pattern-matching. [agda.readthedocs.io/en/v2.6.3/language/pragmas.html#injective-pragma](https://agda.readthedocs.io/en/v2.6.3/language/pragmas.html#injective-pragma)
+
+* But there's also a request for injectivity wrt to unification [@agdausersInjectiveUnificationPragma2023].
 
 ## Injectivity of unification: what's in the base \faceB ##
 
-Your usual unification rules.
-We take @abelHigherOrderDynamicPattern2011's work as a basis, similar to Agda.
+* @abelHigherOrderDynamicPattern2011 work as a basis, similar to Agda.
 
-Because we implement unification and simplification rules as solvers we just have to find the right spot for the new simplification rule!
+* Because we implement unification and simplification rules as solvers we just have to find the right spot for the new simplification rule!
 
 ## Injectivity of unification: what does the user write
 
@@ -258,7 +264,7 @@ postulate
 {-# INJECTIVE El #-}
 ```
 
-## Injectivity of unification: writing the plugin \faceA ##
+## Injectivity of unification: writing the solver \faceA ##
 
 ```haskell
 userInjectivitySolver constr = do
@@ -273,6 +279,19 @@ userInjectivitySolver constr = do
            return True)
         (return False)
   else return False
+```
+
+## Injectivity of unification: plugging the solver \faceA ##
+
+```haskell
+userInjectivityPlugin =
+  Plugin { ...
+         , solver = userInjectivitySolver
+         , symbol = "userInjectivity"
+         , pre = [ unifyNeutralsDecomposition
+                 , unificationStartMarkerSymbol]
+         , suc = [unificationStartMarkerSymbol]
+         }
 ```
 
 # Implementation
@@ -307,6 +326,7 @@ userInjectivitySolver constr = do
 
 * working on implicit arguments
 
+ifl draft available at [github.com/liesnikov/extensible-elaborator/releases/tag/ifl-draft-feedback]( https://github.com/liesnikov/extensible-elaborator/releases/tag/ifl-draft-feedback)
 
 # Backup slides
 
