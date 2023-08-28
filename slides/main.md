@@ -2,7 +2,7 @@
 author: __Bohdan Liesnikov__ and Jesper Cockx
 title: Building an elaborator \newline using extensible constraints
 institute: TU Delft, Delft, Netherlands
-date: June 12th, 2023
+date: August 29th, 2023
 classoption: "aspectratio=169"
 fontsize: 12pt
 navigation: empty
@@ -29,10 +29,10 @@ But do you know what it'll look like? \faceB
 \faceA Not yet, but I'll make it modular so I can build it step by step!
 
 \pause \raggedleft
-But we want the core to be stable! Figuring it out is hard enough \faceB
+But we want the core to be stable! Building it out is hard enough \faceB
 
 \pause \raggedright
-\faceA Then we'll fix the core language but make the elaborator modular!
+\faceA Then we'll fix the core language but make the surface modular!
 
 ## Elaborator under attack
 
@@ -111,6 +111,20 @@ Mantra: constraints are async function calls, metavariables are "promises".
         ...
   ```
 * both we \faceB and you \faceA supply the solvers
+
+## Open datatype of constraints
+
+* get a relatively compact base of the elaborator
+* build features around it as "extensions" or "plugins"
+* allow cheaper experiments with the language
+
+## Modular unifiers
+
+* at the moment the biggest "usual" solver is a conversion checker
+* it typically ranges around 1.7kloc in Idris, Lean, Coq
+* in Agda also results in a lot of intricacies in the codebase
+* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
+* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
 
 # Example: type classes
 
@@ -220,6 +234,47 @@ tcHandler constr = do
       return False
 ```
 
+# Example: injectivity of unification
+
+## Injectivity of unification: what do we want
+
+There's already a pragma in Agda which marks symbols as injective wrt pattern-matching.
+[@agdausersInjectiveUnificationPragma2023]
+
+## Injectivity of unification: what's in the base
+
+Your usual unification rules.
+We take @abelHigherOrderDynamicPattern2011's work as a basis, similar to Agda.
+
+Because we implement unification and simplification rules as solvers we just have to find the right spot for the new simplification rule!
+
+## Injectivity of unification: what does the user write
+
+```agda
+postulate
+  U : Set
+  El : U → Set
+
+{-# INJECTIVE El #-}
+```
+
+## Injectivity of unification: writing the plugin
+
+```haskell
+userInjectivitySolver constr = do
+  let (Just EqualityConstraint (I.App (I.Var f) a)
+                               (I.App (I.Var g) b) _ m)) =
+      match @EqualityConstraint constr
+  if f == g
+  then do
+    ifM (queryInjectiveDeclarations f)
+        (do
+           solveMeta m =<< constrainEquality a b I.Type
+           return True)
+        (return False)
+  else return False
+```
+
 # Implementation
 
 ## What is this language: base \faceB
@@ -305,23 +360,6 @@ specify a (pre-) order in which the solvers should run i.e. type classes run aft
   }
 ```
 
-
-## Why (bother with splitting)
-
-* at the moment the biggest "usual" solver is a conversion checker
-* it typically ranges around 1.7kloc in Idris, Lean, Coq
-* in Agda also results in a lot of intricacies in the codebase
-* chains of nested calls with logic spread around `compareAs`/`compareTerm`/`compareAtom`
-* the need to manually catch and handle constraints at times `catchConstraint`/`patternViolation`
-
-## Why (open it up)
-
-* get a relatively compact core of the elaborator
-* build features around it as "extensions" or "plugins"
-* allow cheaper experiments with the language
-* main inspirations: Haskell [@jonesPracticalTypeInference2007 ; @ghcdevelopmentteamGlasgowHaskellCompiler], Matita [@tassiBiDirectionalRefinementAlgorithm2012]
-
-Bottom line: this is a design study
 
 ## References {.allowframebreaks}
 
