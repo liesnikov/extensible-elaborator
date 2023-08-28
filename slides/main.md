@@ -241,7 +241,7 @@ tcHandler constr = do
 There's already a pragma in Agda which marks symbols as injective wrt pattern-matching.
 [@agdausersInjectiveUnificationPragma2023]
 
-## Injectivity of unification: what's in the base
+## Injectivity of unification: what's in the base \faceB ##
 
 Your usual unification rules.
 We take @abelHigherOrderDynamicPattern2011's work as a basis, similar to Agda.
@@ -258,7 +258,7 @@ postulate
 {-# INJECTIVE El #-}
 ```
 
-## Injectivity of unification: writing the plugin
+## Injectivity of unification: writing the plugin \faceA ##
 
 ```haskell
 userInjectivitySolver constr = do
