@@ -101,7 +101,7 @@ W = ValueCmp t1 t2 # eq comparison
 
 - Typechecker traverses the syntax and generates constraints
 
-- The constraint datatype open (as in Data types à la carte [@swierstraDataTypesCarte2008])
+- The constraint datatype is open (as in Data types à la carte [@swierstraDataTypesCarte2008])
 
 - Solvers are provided by the plug-ins
 
@@ -118,13 +118,13 @@ Mantra: constraints are async function calls, metavariables are "promises".
   ```
 * both we \faceB and you \faceA supply the solvers
 
-## Open datatype of constraints
+## Open datatype of constraints (\faceA happy)
 
 * get a relatively compact base of the elaborator
 * build features around it as "extensions" or "plugins"
 * allow cheaper experiments with the language
 
-## Modular unifiers
+## Modular unifiers (\faceB surprised)
 
 * at the moment the biggest "usual" solver is a conversion checker
 * it typically ranges around 1.7kloc in Idris, Lean, Coq
@@ -240,21 +240,23 @@ tcHandler constr = do
       return False
 ```
 
-# Example: injectivity of unification
+# Example: injectivity in unification
 
-## Injectivity of unification: what do we want
+## Injectivity in unification: what do we want
 
-* There's already a pragma in Agda which marks symbols as injective wrt pattern-matching. [agda.readthedocs.io/en/v2.6.3/language/pragmas.html#injective-pragma](https://agda.readthedocs.io/en/v2.6.3/language/pragmas.html#injective-pragma)
+* There's already a pragma in Agda which marks symbols as injective wrt pattern-matching. [{-# INJECTIVE f #-}](https://agda.readthedocs.io/en/v2.6.3/language/pragmas.html#injective-pragma)
+
+* `--lossy-unification`
 
 * But there's also a request for injectivity wrt to unification [@agdausersInjectiveUnificationPragma2023].
 
-## Injectivity of unification: what's in the base \faceB ##
+## Injectivity in unification: what's in the base \faceB ##
 
 * @abelHigherOrderDynamicPattern2011 work as a basis, similar to Agda.
 
 * Because we implement unification and simplification rules as solvers we just have to find the right spot for the new simplification rule!
 
-## Injectivity of unification: what does the user write
+## Injectivity in unification: what does the user write
 
 ```agda
 postulate
@@ -264,7 +266,7 @@ postulate
 {-# INJECTIVE El #-}
 ```
 
-## Injectivity of unification: writing the solver \faceA ##
+## Injectivity in unification: writing the solver \faceA ##
 
 ```haskell
 userInjectivitySolver constr = do
@@ -281,7 +283,7 @@ userInjectivitySolver constr = do
   else return False
 ```
 
-## Injectivity of unification: plugging the solver \faceA ##
+## Injectivity in unification: plugging the solver \faceA ##
 
 ```haskell
 userInjectivityPlugin =
@@ -300,7 +302,7 @@ userInjectivityPlugin =
 
 * DT language with Pi, Sigma types
 
-* inductive types with indeces
+* inductive types with indices
 
 * case-constructs for elimination
 
