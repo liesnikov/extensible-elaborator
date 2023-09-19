@@ -130,7 +130,7 @@ data MetaClosure where
   deriving (Show, Eq, Ord, Generic, Typeable)
   deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
 
-type Closure = [(Unbound.Ignore TName,Term)]
+type Closure = [(Unbound.Ignore TName, Term)]
 
 -- | An argument to a function
 data Arg = Arg {argEp :: Epsilon, unArg :: Term}
@@ -382,26 +382,6 @@ instance Unbound.Subst Term Term where
         _ -> case x of
           MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
             maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos ss)
-                  (Unbound.substs (closure2Subst clos) . snd)
-                  (find ((==mid) . fst) ss)
-          _ -> to $ Unbound.gsubsts ss (from x)
-    | otherwise =
-      error $ "Cannot substitute for bound variable " ++ show ss ++ " in " ++ show x
-
-
--- isbustss is used when we're inverting a substitution and applying it to a term
--- the rules are slightly different when it comes to substitution on closures
--- because in this case when substituting we can't preserve variable mappings in closures
--- that don't lead anywhere
-isubstss :: [(Name Term, Term)] -> Term -> Term
-isubstss ss x
-    | all (Unbound.isFreeName . fst) ss =
-      case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
-        Just (Unbound.SubstName m) | Just (_, u) <- find ((==m) . fst) ss -> u
-        _ -> case x of
-          MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
-            maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $
-                                            composeClosures clos $ subst2Closure ss)
                   (Unbound.substs (closure2Subst clos) . snd)
                   (find ((==mid) . fst) ss)
           _ -> to $ Unbound.gsubsts ss (from x)

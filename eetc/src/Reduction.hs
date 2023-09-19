@@ -70,7 +70,9 @@ reduce (Case scrut mtchs) = do
     _ -> return (Case nf mtchs)
 
 -- metavariables are substituted
-reduce tm@(MetaVar _) = SA.substMetas tm >>= reduce
+reduce tm@(MetaVar _) = do
+  msol <- SA.lookupMetaVarSolution tm
+  maybe (return tm) (reduce) msol
 
 -- all other terms are already in REDUCE
 -- don't do anything special for them

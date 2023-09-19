@@ -10,6 +10,7 @@ module TypeCheck.StateActions ( lookupTy
                               , extendGlobal
                               , extendCtxMods
                               , isMetaSolved
+                              , lookupMetaVarSolution
                               , solveMeta
                               , substMetas
                               , substAllMetas
@@ -27,11 +28,12 @@ import           Data.Maybe ( listToMaybe )
 import qualified Data.Map.Strict as Map
 
 import           Syntax.ModuleStub ( TCName, DCName )
-import           Syntax.Internal   ( Term
+import           Syntax.Internal   ( Term(MetaVar)
                                    , TName, Epsilon, Sig (..)
                                    , ConstructorDef(..)
                                    , Telescope
                                    , Decl(..), Module
+                                   , Meta, MetaClosure(..)
                                    , MetaVarId(..)
                                    )
 import           PrettyPrint ( D(..) )
@@ -215,6 +217,15 @@ extendGlobal ds a = do
   a
 
 -- Dealing with metas
+
+lookupMetaVarIdSolution :: (MonadTcReader m) => MetaVarId -> m (Maybe Term)
+lookupMetaVarIdSolution mid = do
+  dict <- asksTc (metaSolutions)
+  return $ Map.lookup mid dict
+
+lookupMetaVarSolution :: (MonadTcReader m) => Term -> m (Maybe Term)
+lookupMetaVarSolution (MetaVar (MetaVarClosure mid _)) = lookupMetaVarIdSolution mid
+lookupMetaVarSolution _ = return $ Nothing
 
 -- perform one substitution of metas
 -- (if the solutions have metas themselves this will leave them in the term)
