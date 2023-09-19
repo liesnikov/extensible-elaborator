@@ -89,7 +89,7 @@ library
 
     Arbitrary
   other-modules:
-
+    TypeCheck.OccursCheck
     TypeCheck.Monad.Prelude
     TypeCheck.Monad.TcReader
     TypeCheck.Monad.TcReaderEnv
