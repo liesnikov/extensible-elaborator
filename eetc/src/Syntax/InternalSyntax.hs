@@ -71,9 +71,9 @@ data Term
     TyUnit
   | -- | the inhabitant of `Unit`, written `()`
     LitUnit
+
   | -- | the type with two inhabitants (homework) `Bool`
     TyBool
-
   | -- | `True` and `False`
     LitBool Bool
   | -- | `if a then b1 else b2` expression for eliminating booleans

@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
 module TypeCheck.Solver (Allsolver, allsolver, solveAllPossible) where
 
 import TypeCheck.Constraints (BasicConstraintsF)

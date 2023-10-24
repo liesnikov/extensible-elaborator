@@ -97,14 +97,13 @@ instance (Disp a, Disp b) => Disp (Either a b) where
 
 instance (Disp a) => Disp (S.Set a) where
   disp l =  PP.text "[ "
-        <+> PP.hsep (PP.punctuate (PP.text ",") $ fmap disp $ S.toList l)
+        <+> PP.hsep (PP.punctuate (PP.text ",") $ disp <$> S.toList l)
         <+> PP.text " ]"
 
 instance (Disp a, Disp b) => Disp (Map a b) where
   disp m = PP.text "{ "
         <+> PP.hsep (PP.punctuate (PP.text ",") $
-                     fmap (\(k,v) -> disp k <+> PP.text ":" <+> disp v) $
-                     Map.toList m)
+                     (\ (k, v) -> disp k <+> PP.text ":" <+> disp v) <$> Map.toList m)
         <+> PP.text " }"
 
 
