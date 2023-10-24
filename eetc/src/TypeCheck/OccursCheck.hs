@@ -10,7 +10,25 @@ import qualified Syntax.InternalSyntax as I
       Term(..),
       MetaVarId,
       TName )
+
+import qualified TypeCheck.Environment as Env
+import PrettyPrint (D(..))
+import           TypeCheck.Monad.Typeclasses (MonadSolver)
+
 import qualified Unbound.Generics.LocallyNameless as Unbound
+
+data PruningPosition =
+    Flexible
+  | Rigid
+  | StrongRigid
+  deriving (Eq, Show)
+
+data OccursData = OccursData {
+    globals :: [I.TName]
+  , locals ::  [I.TName]
+  , current :: I.MetaVarId
+  , position :: PruningPosition
+  } deriving (Eq, Show)
 
 -- | entry function for occurs check and pruning
 occursCheck :: (MonadSolver c m) =>
@@ -148,6 +166,7 @@ occursCheckMeta mid tel mc = do
   if nid == mid
   then Env.err [DS "Detected a cycle while solving", DD mid]
   else do
+    _ <- prune mc tel
     -- otherwise, check the meta
     let (names, terms) = unzip nc
     terms' <- mapM (occursCheck mid tel) terms
@@ -176,3 +195,17 @@ occursCheckArg :: (MonadSolver c m)
                -> I.Arg ->
                m I.Arg
 occursCheckArg mid tel (I.Arg e t) = I.Arg e <$> occursCheck mid tel t
+
+
+data PruneResult
+  = NothingToPrune   -- ^ the kill list is empty or only @False@s
+  | PrunedNothing    -- ^ there is no possible kill (because of type dep.)
+  | PrunedSomething  -- ^ managed to kill some args in the list
+  | PrunedEverything -- ^ all prescribed kills where performed
+    deriving (Eq, Show)
+
+prune :: (MonadSolver c m)
+  => I.MetaClosure  -- ^ Meta to prune.
+  -> [I.TName]  -- ^ disallowed variable.
+  -> m PruneResult
+prune (I.MetaVarClosure m cl) tel = undefined
