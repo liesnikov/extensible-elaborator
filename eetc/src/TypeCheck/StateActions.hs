@@ -3,6 +3,7 @@ module TypeCheck.StateActions ( lookupTy
                               , lookupTyMaybe
                               , lookupDef
                               , lookupRecDef
+                              , lookupAnyDef
                               , lookupHint
                               , lookupTCon
                               , lookupDCon
@@ -129,6 +130,31 @@ lookupRecDef v = do
   ctx <- askDecls
   let mdef = listToMaybe [a | RecDef v' a <- ctx, v == v']
   substMetas mdef
+
+lookupEitherDef ::
+  (MonadTcReader m) =>
+  TName ->
+  m (Maybe (Either Term Term))
+lookupEitherDef v = do
+  ctx <- askDecls
+  let mdef = listToMaybe [a | Def v' a <- ctx, v == v']
+  let mrecdef = listToMaybe [a | RecDef v' a <- ctx, v == v']
+  case (mdef, mrecdef) of
+    (Just def, _) -> Just . Left <$> substMetas def
+    (_, Just recdef) -> Just . Right <$> substMetas recdef
+    _ -> return $ Nothing
+
+lookupAnyDef ::
+  (MonadTcReader m) =>
+  TName ->
+  m (Maybe Term)
+lookupAnyDef v = do
+  mdef <- lookupEitherDef v
+  case mdef of
+    Just (Left def) -> return $ Just def
+    Just (Right recdef) -> return $ Just recdef
+    Nothing -> return $ Nothing
+
 
 -- | Find a type constructor in the context
 lookupTCon ::
