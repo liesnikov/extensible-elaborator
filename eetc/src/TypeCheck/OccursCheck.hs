@@ -2,8 +2,14 @@
 
 module TypeCheck.OccursCheck where
 
-import qualified Syntax.Internal as I
-import TypeCheck.Monad.Typeclasses (MonadSolver)
+import qualified Syntax.InternalSyntax as I
+    ( Pattern(..),
+      MetaClosure(..),
+      Match(..),
+      Arg(Arg),
+      Term(..),
+      MetaVarId,
+      TName )
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 -- | entry function for occurs check and pruning
@@ -38,8 +44,8 @@ occursCheck mid tel (I.Ann t ty) = do
 occursCheck mid tel (I.Pos s t) = do
   t' <- occursCheck mid tel t
   return $ I.Pos s t'
-occursCheck mid tel (I.TrustMe) = return $ I.TrustMe
-occursCheck mid tel (I.PrintMe) = return $ I.PrintMe
+occursCheck mid tel (I.TrustMe) = return I.TrustMe
+occursCheck mid tel (I.PrintMe) = return I.PrintMe
 occursCheck mid tel (I.Let t b) = do
   (x, body) <- Unbound.unbind b
   body' <- occursCheck mid (x : tel) body
@@ -47,11 +53,11 @@ occursCheck mid tel (I.Let t b) = do
   return $ I.Let t' (Unbound.bind x body')
 
 -- units
-occursCheck mid tel (I.TyUnit) = return $ I.TyUnit
-occursCheck mid tel (I.LitUnit) = return $ I.LitUnit
+occursCheck mid tel (I.TyUnit) = return I.TyUnit
+occursCheck mid tel (I.LitUnit) = return I.LitUnit
 
 -- bools
-occursCheck mid tel (I.TyBool) = return $ I.TyBool
+occursCheck mid tel (I.TyBool) = return I.TyBool
 occursCheck mid tel (I.LitBool b) = return $ I.LitBool b
 occursCheck mid tel (I.If b t e) = do
   b' <- occursCheck mid tel b
@@ -83,7 +89,7 @@ occursCheck mid tel (I.TyEq a b) = do
   b' <- occursCheck mid tel b
   return $ I.TyEq a' b'
 occursCheck mid tel (I.Refl) = do
-  return $ I.Refl
+  return I.Refl
 occursCheck mid tel (I.Subst t e) = do
   t' <- occursCheck mid tel t
   e' <- occursCheck mid tel e
@@ -114,7 +120,7 @@ occursCheckMatches :: (MonadSolver c m)
                    -> [I.TName]
                    -> [I.Match]
                    -> m [I.Match]
-occursCheckMatches mid tel ms = mapM (occursCheckMatch mid tel) ms
+occursCheckMatches mid tel = mapM (occursCheckMatch mid tel)
 
 occursCheckMatch :: (MonadSolver c m)
                  => I.MetaVarId
@@ -128,7 +134,7 @@ occursCheckMatch mid tel (I.Match body) = do
 
 pat2Vars :: I.Pattern -> [I.TName]
 pat2Vars (I.PatVar x) = [x]
-pat2Vars (I.PatCon _ ps) = concatMap pat2Vars (map fst ps)
+pat2Vars (I.PatCon _ ps) = concatMap (pat2Vars . fst) ps
 
 occursCheckMeta :: (MonadSolver c m)
                 => I.MetaVarId
@@ -140,7 +146,7 @@ occursCheckMeta mid tel mc = do
   -- if so, we have a cycle error out
   let (I.MetaVarClosure nid nc) = mc
   if nid == mid
-  then error "cycle"
+  then Env.err [DS "Detected a cycle while solving", DD mid]
   else do
     -- otherwise, check the meta
     let (names, terms) = unzip nc
@@ -155,15 +161,14 @@ occursCheckVar :: (MonadSolver c m)
 occursCheckVar mid tel v =
   if v `elem` tel
   then return v
-  else -- fail
-    undefined
+  else  Env.err [DS "Encountered a variable which isn't allowed", DD mid]
 
 occursCheckArgs :: (MonadSolver c m)
                 => I.MetaVarId
                 -> [I.TName]
                 -> [I.Arg]
                 -> m [I.Arg]
-occursCheckArgs mid tel args = mapM (occursCheckArg mid tel) args
+occursCheckArgs mid tel = mapM (occursCheckArg mid tel)
 
 occursCheckArg :: (MonadSolver c m)
                => I.MetaVarId
