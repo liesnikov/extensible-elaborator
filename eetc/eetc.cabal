@@ -89,6 +89,8 @@ library
 
     Arbitrary
   other-modules:
+    Reduction
+
     TypeCheck.OccursCheck
     TypeCheck.Monad.Prelude
     TypeCheck.Monad.TcReader

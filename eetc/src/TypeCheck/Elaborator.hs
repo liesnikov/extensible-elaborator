@@ -19,6 +19,7 @@ import qualified Unbound.Generics.LocallyNameless.Unsafe as Unbound.Unsafe
 import           Syntax.ModuleStub
 import qualified Syntax.Surface as S
 import qualified Syntax.Internal as I
+import           Reduction (whnf)
 import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import qualified TypeCheck.ConstraintsActions as CA
@@ -82,7 +83,7 @@ inferType (S.App t1 t2) = do
   -- FIXME
   -- needs a conversion checker
   -- or does it? I think we can run the conversion checker in the solver
-  nty1 <- whnf ty1
+  (nty1, _) <- whnf ty1
 
   -- FIXME
   -- we're defaulting to relevant arguments for now
@@ -432,9 +433,8 @@ checkType (S.Contra p) typ = do
   let metaEq = I.TyEq a b
   CA.constrainEquality typ metaEq I.Type
 
-  -- FIXME
-  -- This relies on a and b being in whnf
-  -- We can't guarantee it
+  (a', ba) <- whnf a
+  (b', bb) <- whnf b
   case (a, b) of
     (I.DCon da _, I.DCon db _)
       | da /= db ->
@@ -448,7 +448,11 @@ checkType (S.Contra p) typ = do
           DD a,
           DS "and",
           DD b,
-          DS "are contradictory"
+          DS "are contradictory",
+          DS "the reduction is blocked on",
+          DD ba,
+          DS "and",
+          DD bb
         ]
 
 -- | type constructors (fully applied)
@@ -460,10 +464,8 @@ checkType (S.Contra p) typ = do
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
   CA.constrainTConAndFreeze ty $ do
-    mty <- SA.substMetas ty
+    (mty,_) <- whnf =<< SA.substMetas ty
     case mty of
-    -- FIXME
-    -- take whnf here ^^?
       (I.TCon tname params) -> do
         (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
         let isTypeSig :: I.Decl -> Bool
@@ -490,8 +492,7 @@ checkType t@(S.DCon c args) ty = do
 -- | case analysis  `case a of matches`
 checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
-  -- FIXME
-  escrut' <- whnf escrut
+  (escrut',_) <- whnf escrut
   elabpromise <- createMetaTerm
   CA.constrainTConAndFreeze ty $ do
     let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
@@ -572,9 +573,8 @@ elabTypeTele tele =
 -- | Create a Def if either side normalizes to a single variable
 def :: (MonadElab c m) => I.Term -> I.Term -> m [I.Decl]
 def t1 t2 = do
-  --FIXME
-  nf1 <- whnf t1
-  nf2 <- whnf t2
+  (nf1,_) <- whnf t1
+  (nf2,_) <- whnf t2
   case (nf1, nf2) of
     (I.Var x, I.Var y) | x == y -> return []
     (I.Var x, _) -> return [I.Def x nf2]
@@ -646,10 +646,15 @@ doSubst ss (I.Def x ty : tele') = do
   --FIXME
   let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
       unify ln at bt = do
-        Env.warn [DS "supposed to unify",
-                  DD at,
-                  DD bt,
-                  DS "for now pretending that they are the same"]
+        (atw,_) <- whnf at
+        (btw,_) <- whnf bt
+        if (atw /= btw)
+          then
+          Env.warn [DS "supposed to unify",
+                    DD atw,
+                    DD btw,
+                    DS "for now pretending that they are the same"]
+          else return ()
         return []
   -- relying on a behaviour of unify to produce a Def when tx is a variable
   -- which it is here, so essentially the only thing this does is whnf-reduces the ty'
@@ -658,8 +663,7 @@ doSubst ss (I.Def x ty : tele') = do
   decls2 <- Env.extendCtxs decls1 (doSubst ss tele')
   return $ decls1 ++ decls2
 doSubst ss (I.TypeSig sig : tele') = do
-  --FIXME
-  tynf <- whnf (Unbound.substs ss (I.sigType sig))
+  (tynf,_) <- whnf (Unbound.substs ss (I.sigType sig))
   let sig' = sig{I.sigType = tynf}
   tele'' <- doSubst ss tele'
   return $ I.TypeSig sig' : tele''
@@ -983,13 +987,3 @@ checkSubPats dc (I.TypeSig _ : tele) patss
       _ -> Env.err [DS "All subpatterns must be variables in this version."]
 checkSubPats dc t ps =
   Env.err [DS "Internal error in checkSubPats", DD dc, DS (show ps)]
-
-
--- FIXME
--- this is a plug for the time being that we don't have a conversion checker
-whnf :: (MonadElab c m) => I.Term -> m I.Term
-whnf t = do
-  Env.warn [DS "supposed to reduce",
-            DD t,
-            DS "for now returning it without reduction"]
-  return t
