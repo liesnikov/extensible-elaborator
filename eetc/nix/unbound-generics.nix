@@ -3,8 +3,8 @@ let unbound-src =
       fetchFromGitHub {
         owner = "liesnikov";
         repo = "unbound-generics";
-        rev = "04b33b774f6d27116232493135d58858a7ab35f4";
+        rev = "da6dddcb777939053b6106b95a9fe20c63b985fc";
         name = "unbound-generics-source";
-        sha256 = "sha256-sCe5hvKPkXG3DppHTc8UKTnAcntcRvnKZd62BZlQ6SQ=";
+        sha256 = "sha256-A34xzIbvwHyE5pYiMIszMsRI5rkYlrifM8P2nPAgziM=";
       };
 in callCabal2nix "unbound-generics" unbound-src {}
