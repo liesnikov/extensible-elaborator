@@ -1,9 +1,14 @@
+{ nixpkgs ? import (import ../nixpkgs.nix) {} }:
 let
-  config = compiler: (import ./nix/compilerconfig.nix compiler);
+  compiler = "ghc92";
+  overlay = nixpkgs.callPackage ./nix/overlays.nix {inherit compiler;};
+  pkgs = nixpkgs.extend overlay;
+  callCabal2nixWithOptions =
+    if compiler == ""
+    then pkgs.haskellPackages.callCabal2nixWithOptions
+    else pkgs.haskell.packages."${compiler}".callCabal2nixWithOptions;
 in
-{ compiler ? "ghc92",
-  pkgs ? import (import ../nixpkgs.nix) {config = (config compiler);} }:
-pkgs.pkgs.haskell.packages."${compiler}".callCabal2nixWithOptions "eetc" ./. "--no-check" {}
+  callCabal2nixWithOptions "eetc" ./. "--no-check" {}
 
 # to disable tests run
 # callCabal2nixWithOptions "eetc" ./. "--no-check" {}
