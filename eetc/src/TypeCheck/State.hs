@@ -73,6 +73,7 @@ data ConstraintsState c = ConstraintsState {
   , solved :: Map ConstraintId (TcConstraint c) -- done
   }
 
+emptyConstraintsState :: ConstraintsState c
 emptyConstraintsState = ConstraintsState {
     active = Map.empty
   , asleep = Map.empty
