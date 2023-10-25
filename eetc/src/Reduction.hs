@@ -132,14 +132,14 @@ patternMatches (Arg Rel t) pat@(PatCon dp pats) = do
         (DCon d [])   | d == dp -> return . Right $ []
         (DCon d args) | d == dp -> do
            v <- sequence <$> zipWithM patternMatches args (map fst pats)
-           return $ either (Left) (Right . concat) v
+           return $ fmap concat v
         _ -> Env.err [DS "arg", DD nf, DS "doesn't match pattern", DD pat]
     Just b ->
       case nf of
         (DCon d [])   | d == dp -> return . Right $ []
         (DCon d args) | d == dp -> do
            v <- sequence <$> zipWithM patternMatches args (map fst pats)
-           return $ either (Left) (Right . concat) v
+           return $ fmap concat v
         _ -> return $ Left b
 patternMatches (Arg Irr _) pat = do
   Env.err [DS "Cannot match against irrelevant args"]

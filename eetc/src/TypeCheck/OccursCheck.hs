@@ -11,8 +11,10 @@ import qualified Syntax.InternalSyntax as I
       MetaVarId,
       TName )
 
+import           Reduction (whnf)
+import           PrettyPrint (D(..))
+
 import qualified TypeCheck.Environment as Env
-import PrettyPrint (D(..))
 import           TypeCheck.Monad.Typeclasses (MonadSolver)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
@@ -37,7 +39,7 @@ occursCheck :: (MonadSolver c m) =>
             -> I.Term -- ^ the term we're pruning
             -> m I.Term
 -- pattern-match on the term and defer to functions as described by abel & pientka
-occursCheck mid tel (I.Type) = return I.Type
+occursCheck mid tel I.Type = return I.Type
 occursCheck mid tel (I.Var x) = I.Var <$> occursCheckVar mid tel x
 occursCheck mid tel (I.Lam h b) = do
   -- ^ extend the context of allowed vars with a new binding
@@ -62,8 +64,8 @@ occursCheck mid tel (I.Ann t ty) = do
 occursCheck mid tel (I.Pos s t) = do
   t' <- occursCheck mid tel t
   return $ I.Pos s t'
-occursCheck mid tel (I.TrustMe) = return I.TrustMe
-occursCheck mid tel (I.PrintMe) = return I.PrintMe
+occursCheck mid tel I.TrustMe = return I.TrustMe
+occursCheck mid tel I.PrintMe = return I.PrintMe
 occursCheck mid tel (I.Let t b) = do
   (x, body) <- Unbound.unbind b
   body' <- occursCheck mid (x : tel) body
@@ -71,11 +73,11 @@ occursCheck mid tel (I.Let t b) = do
   return $ I.Let t' (Unbound.bind x body')
 
 -- units
-occursCheck mid tel (I.TyUnit) = return I.TyUnit
-occursCheck mid tel (I.LitUnit) = return I.LitUnit
+occursCheck mid tel I.TyUnit = return I.TyUnit
+occursCheck mid tel I.LitUnit = return I.LitUnit
 
 -- bools
-occursCheck mid tel (I.TyBool) = return I.TyBool
+occursCheck mid tel I.TyBool = return I.TyBool
 occursCheck mid tel (I.LitBool b) = return $ I.LitBool b
 occursCheck mid tel (I.If b t e) = do
   b' <- occursCheck mid tel b
@@ -106,8 +108,7 @@ occursCheck mid tel (I.TyEq a b) = do
   a' <- occursCheck mid tel a
   b' <- occursCheck mid tel b
   return $ I.TyEq a' b'
-occursCheck mid tel (I.Refl) = do
-  return I.Refl
+occursCheck mid tel I.Refl = return I.Refl
 occursCheck mid tel (I.Subst t e) = do
   t' <- occursCheck mid tel t
   e' <- occursCheck mid tel e
