@@ -96,7 +96,7 @@ data TcState tcaction c solver = TcS {
 
 -- very ugly funciton we need to lift state through transformers
 fmapState :: (a -> b) -> TcState a c s -> TcState b c s
-fmapState f s = s {blocks = fmap (fmap $ fmap f) $ blocks s}
+fmapState f s = s {blocks = fmap (fmap f) <$> blocks s}
 
 emptyCoreState :: TcState tca c s
 emptyCoreState = TcS { metas = Map.empty
