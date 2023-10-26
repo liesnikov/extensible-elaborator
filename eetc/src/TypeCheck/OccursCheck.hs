@@ -50,7 +50,7 @@ switchToFlexible :: OccursData -> OccursData
 switchToFlexible od = switchPosition od Flexible
 
 class Occurs a where
-  occurs :: (MonadSolver c m) =>OccursData -> a -> m a
+  occurs :: (MonadSolver c m) => OccursData -> a -> m a
 
 instance Occurs a => Occurs [a] where
   occurs env = mapM (occurs env)
@@ -218,7 +218,6 @@ instance Occurs I.TName where
 
 instance Occurs I.Arg where
   occurs env (I.Arg e t) = I.Arg e <$> occurs env t
-
 
 pat2Vars :: I.Pattern -> [I.TName]
 pat2Vars (I.PatVar x) = [x]
