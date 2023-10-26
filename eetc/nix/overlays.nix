@@ -8,7 +8,7 @@ let
       name = "unbound-generics-source";
       sha256 = "sha256-A34xzIbvwHyE5pYiMIszMsRI5rkYlrifM8P2nPAgziM=";
     };
-  haskellOverride = haskellPackagesNew: haskellPacakgesOld: rec {
+  haskellOverride = haskellPackagesNew: haskellPackagesOld: rec {
     # because by default nixpkgs ships core-included mtl 2.2
     # this overrides it to the hackage version
     # will break with nixpkgs update though,
