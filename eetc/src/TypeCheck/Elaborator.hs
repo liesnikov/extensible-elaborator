@@ -1,8 +1,7 @@
-{-# LANGUAGE TypeApplications #-}
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
 import           Control.Arrow (second)
-import           Control.Monad ( unless )
+import           Control.Monad ( unless, when)
 import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
                                       , foldM )
@@ -37,7 +36,7 @@ transEpsilon S.Irr = I.Irr
 transName :: (MonadElab c m) => S.TName -> m I.TName
 transName n = do
   namemap <- askTcNames
-  case (Map.lookup n namemap) of
+  case Map.lookup n namemap of
     Nothing -> do
       let s = Unbound.name2String n
       m <- Unbound.fresh $ Unbound.string2Name s
@@ -57,12 +56,12 @@ transPattern (S.PatVar n) =
   I.PatVar <$> transName n
 
 elabTerm :: (MonadElab c m) => S.Term -> m I.Term
-elabTerm = (fmap fst) . inferType
+elabTerm = fmap fst . inferType
 
 inferType :: forall c m. (MonadElab c m) => S.Term -> m (I.Term, I.Type)
 
 -- type has type type for now
-inferType (S.Type) = return (I.Type, I.Type)
+inferType S.Type = return (I.Type, I.Type)
 
 -- variable lookup
 inferType (S.Var x) = do
@@ -79,10 +78,7 @@ inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred"
 -- application
 inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
-
-  -- FIXME
-  -- needs a conversion checker
-  -- or does it? I think we can run the conversion checker in the solver
+  -- FIXME: move this to a solver
   (nty1, _) <- whnf ty1
 
   -- FIXME
@@ -90,13 +86,13 @@ inferType (S.App t1 t2) = do
   let epx = I.Rel
   tyA <- createMetaTerm
   tx <- createUnknownVar
-  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) (createMetaTerm)
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) createMetaTerm
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
 
   CA.constrainEquality nty1 metaPi I.Type
 
-  unless (epx == (transEpsilon $ S.argEp t2)) $ Env.err
+  unless (epx == transEpsilon (S.argEp t2)) $ Env.err
     [DS "In application, expected",
      DD epx, DS "argument but found",
      DD t2, DS "instead." ]
@@ -127,11 +123,11 @@ inferType (S.Ann tm ty) = do
 inferType (S.Pos p tm) =
   Env.extendSourceLocation p tm $ inferType tm
 
-inferType t@(S.TrustMe) = Env.err [DS "TrustMes must be checked not inferred",
+inferType t@S.TrustMe = Env.err [DS "TrustMes must be checked not inferred",
                                    DD t
                                   ]
 
-inferType t@(S.PrintMe) = Env.err [DS "PrintMes must be checked not inferred",
+inferType t@S.PrintMe = Env.err [DS "PrintMes must be checked not inferred",
                                    DD t
                                   ]
 
@@ -144,11 +140,11 @@ inferType (S.Let rhs bnd) = do
 
 
 -- unit type
-inferType (S.TyUnit) = return (I.TyUnit, I.Type)
-inferType (S.LitUnit) = return (I.LitUnit, I.TyUnit)
+inferType S.TyUnit = return (I.TyUnit, I.Type)
+inferType S.LitUnit = return (I.LitUnit, I.TyUnit)
 
 -- booleans
-inferType (S.TyBool) = return (I.TyBool, I.Type)
+inferType S.TyBool = return (I.TyBool, I.Type)
 -- true/false
 inferType (S.LitBool b) = return (I.LitBool b, I.TyBool)
 -- bool eliminator
@@ -179,7 +175,7 @@ inferType (S.TyEq a b) = do
   (ea, aTy) <- inferType a
   eb <- checkType b aTy
   return (I.TyEq ea eb, I.Type)
-inferType t@(S.Refl) = Env.err [DS "Refl constructor must be checked not inferred",
+inferType t@S.Refl = Env.err [DS "Refl constructor must be checked not inferred",
                                 DD t
                                ]
 inferType t@(S.Subst a b) = Env.err [DS "Subst must be checked not inferred",
@@ -230,7 +226,7 @@ inferType (S.DCon c args) = do
             DS "arguments."
           ]
       eargs <- elabArgTele args deltai
-      return $ (I.DCon c eargs, I.TCon tname [])
+      return (I.DCon c eargs, I.TCon tname [])
 
     [_] ->
       Env.err
@@ -243,7 +239,7 @@ inferType t@(S.Case scrut alts) =
            DD t
           ]
 
-inferType t@(S.Implicit) =
+inferType t@S.Implicit =
   Env.err [DS "Encountered implicit argument",
            DD t,
            DS "not supported yet"
@@ -270,7 +266,7 @@ checkType (S.Lam ep1 lam) ty = do
   let mep = I.Rel
   mtyA <- createMetaTerm
   mtx <- createUnknownVar
-  mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) (createMetaTerm)
+  mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) createMetaTerm
   let mbnd = Unbound.bind mtx mtyB
       metaPi = I.Pi mep mtyA mbnd
 
@@ -279,7 +275,7 @@ checkType (S.Lam ep1 lam) ty = do
   (x, body) <- Unbound.unbind lam
   (y', tyB') <- Unbound.unbind mbnd
   tx <- transName x
-  let (_, tyB)= second (Unbound.subst y' (I.Var tx)) $ (y', tyB')
+  let (_, tyB)= second (Unbound.subst y' (I.Var tx)) (y', tyB')
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
@@ -305,13 +301,13 @@ checkType (S.Lam ep1 lam) ty = do
 checkType (S.Pos sourcepos term) typ =
   Env.extendSourceLocation sourcepos term $ checkType term typ
 -- | an axiom 'TRUSTME', inhabits all types
-checkType (S.TrustMe) typ = return $ I.TrustMe
+checkType S.TrustMe typ = return I.TrustMe
 -- | a directive to the type checker to print out the current context
-checkType (S.PrintMe) typ = do
+checkType S.PrintMe typ = do
   gamma <- Env.getLocalCtx
   Env.warn [DS "Unmet obligation.\nContext:", DD gamma,
             DS "\nGoal:", DD typ]
-  return $ I.PrintMe
+  return I.PrintMe
 
 -- | let expression, introduces a new (non-recursive) definition in the ctx
 -- | `let x = a in b`
@@ -345,7 +341,7 @@ checkType (S.Let rhs bnd) typ = do
 --           ]
 -- | `if a then b1 else b2` expression for eliminating booleans
 checkType (S.If t1 t2 t3) typ = do
-  et1 <- checkType t1 (I.TyBool)
+  et1 <- checkType t1 I.TyBool
   dtrue <- def et1 (I.LitBool True)
   dfalse <- def et1 (I.LitBool False)
   et2 <- Env.extendCtxs dtrue $ checkType t2 typ
@@ -358,19 +354,18 @@ checkType (S.If t1 t2 t3) typ = do
 --            DD t
 --           ]
 -- | introduction form for Sigma-types `( a , b )`
-checkType (S.Prod a b) typ = do
-  case typ of
-    (I.Sigma tyA bnd) -> do
-      (x, tyB) <- Unbound.unbind bnd
-      ea <- checkType a tyA
-      eb <- Env.extendCtxs [I.mkSig x tyA, I.Def x ea] $ checkType b tyB
-      return $ I.Prod ea eb
-    _ ->
-      Env.err
-        [ DS "Products must have Sigma Type",
-          DD typ,
-          DS "found instead"
-        ]
+checkType (S.Prod a b) typ = case typ of
+  (I.Sigma tyA bnd) -> do
+    (x, tyB) <- Unbound.unbind bnd
+    ea <- checkType a tyA
+    eb <- Env.extendCtxs [I.mkSig x tyA, I.Def x ea] $ checkType b tyB
+    return $ I.Prod ea eb
+  _ ->
+    Env.err
+      [ DS "Products must have Sigma Type",
+        DD typ,
+        DS "found instead"
+      ]
 -- | elimination form for Sigma-types `let (x,y) = a in b`
 checkType (S.LetPair p bnd) typ = do
   ((x, y), body) <- Unbound.unbind bnd
@@ -380,7 +375,7 @@ checkType (S.LetPair p bnd) typ = do
 
   tyA <- createMetaTerm
   -- do we really need it to be relevant here?
-  mtyB <- Env.extendCtx (I.mkSig tx tyA) (createMetaTerm)
+  mtyB <- Env.extendCtx (I.mkSig tx tyA) createMetaTerm
   let tybnd = Unbound.bind tx mtyB
   let sigmaPi = I.Sigma tyA tybnd
   CA.constrainEquality pty sigmaPi I.Type
@@ -398,13 +393,13 @@ checkType t@(S.TyEq ta tb) typ =
            DD t
           ]
 -- | Proof of equality `Refl`
-checkType (S.Refl) typ@(I.TyEq a b) = do
+checkType S.Refl typ@(I.TyEq a b) = do
   -- FIXME
   -- Is creating a meta term the right thing to do here?
   unknownType <- createMetaTerm
   CA.constrainEquality a b unknownType
-  return $ I.Refl
-checkType (S.Refl) typ =
+  return I.Refl
+checkType S.Refl typ =
   Env.err [DS "Refl annotated with ", DD typ]
 -- | equality type elimination  `subst a by b`
 checkType (S.Subst a b) typ = do
@@ -496,8 +491,8 @@ checkType (S.Case scrut alts) ty = do
   elabpromise <- createMetaTerm
   CA.constrainTConAndFreeze ty $ do
     let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-        ensureTCon (I.TCon c args) = return $ (c, args)
-        ensureTCon term = Env.err $ [DS "can't verify that",
+        ensureTCon (I.TCon c args) = return (c, args)
+        ensureTCon term = Env.err [DS "can't verify that",
                                      DD term,
                                      DS "has TCon as head-symbol"]
     (c, args) <- ensureTCon =<< SA.substMetas sty
@@ -535,7 +530,7 @@ checkType (S.Case scrut alts) ty = do
 checkType tm ty = do
   (etm, ty') <- inferType tm
   CA.constrainEquality ty' ty I.Type
-  return $ etm
+  return etm
 
 -- | Make sure that the term is a "type" (i.e. that it has type 'Type')
 elabType :: (MonadElab c m) => S.Term -> m I.Term
@@ -552,14 +547,14 @@ elabSig (S.Sig name ep typ) = do
 elabTypeTele :: (MonadElab c m) => [S.Decl] -> m [I.Decl]
 elabTypeTele [] = return []
 elabTypeTele (S.Def x tm : tl) = do
-  ((I.Var tx), ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
+  (I.Var tx, ty1) <- Env.withStage I.Irr $ inferType (S.Var x)
   etm <- Env.withStage I.Irr $ checkType tm ty1
-  let decl = (I.Def tx etm)
+  let decl = I.Def tx etm
   etl <- Env.extendCtx decl $ elabTypeTele tl
   return $ decl : etl
 elabTypeTele ((S.TypeSig sig) : tl) = do
   esig <- elabSig sig
-  let decl = (I.TypeSig esig)
+  let decl = I.TypeSig esig
   etl <- Env.extendCtx decl $ elabTypeTele tl
   return $ decl : etl
 elabTypeTele tele =
@@ -602,7 +597,7 @@ elabArgTele args (I.Def x ty : tele) = do
   tele' <- doSubst [(x,ty)] tele
   elabArgTele args tele'
 elabArgTele (S.Arg ep1 tm : terms) (I.TypeSig (I.Sig x ep2 ty) : tele)
-  | (transEpsilon ep1) == ep2 = do
+  | transEpsilon ep1 == ep2 = do
       etm <- Env.withStage ep2 $ checkType tm ty
       tele' <- doSubst [(x, etm)] tele
       tl <- elabArgTele terms tele'
@@ -648,13 +643,10 @@ doSubst ss (I.Def x ty : tele') = do
       unify ln at bt = do
         (atw,_) <- whnf at
         (btw,_) <- whnf bt
-        if (atw /= btw)
-          then
-          Env.warn [DS "supposed to unify",
+        Control.Monad.when (atw /= btw) $ Env.warn [DS "supposed to unify",
                     DD atw,
                     DD btw,
                     DS "for now pretending that they are the same"]
-          else return ()
         return []
   -- relying on a behaviour of unify to produce a Def when tx is a variable
   -- which it is here, so essentially the only thing this does is whnf-reduces the ty'
@@ -679,8 +671,8 @@ declarePat :: (MonadElab c m) => I.Pattern -> I.Epsilon -> I.Type -> m [I.Decl]
 declarePat (I.PatVar x)       ep ty  = return [I.TypeSig (I.Sig x ep ty)]
 declarePat (I.PatCon dc pats) I.Rel ty = do
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-      ensureTCon (I.TCon c args) = return $ (c, args)
-      ensureTCon term = Env.err $ [DS "can't verify that",
+      ensureTCon (I.TCon c args) = return (c, args)
+      ensureTCon term = Env.err [DS "can't verify that",
                                    DD term,
                                    DS "has TCon as head-symbol"]
   (tc,params) <- ensureTCon =<< SA.substMetas ty
@@ -880,15 +872,14 @@ exhaustivityCheck :: (MonadElab c m) => I.Term -> I.Type -> [I.Pattern] -> m ()
 exhaustivityCheck scrut ty (I.PatVar x : _) = return ()
 exhaustivityCheck scrut ty pats = do
   let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
-      ensureTCon (I.TCon c args) = return $ (c, args)
-      ensureTCon term = Env.err $ [DS "can't verify that",
+      ensureTCon (I.TCon c args) = return (c, args)
+      ensureTCon term = Env.err [DS "can't verify that",
                                    DD term,
                                    DS "has TCon as head-symbol"]
   (tcon, tys) <- ensureTCon =<< SA.substMetas ty
   (I.Telescope delta, mdefs) <- SA.lookupTCon tcon
   case mdefs of
-    Just datacons -> do
-      loop pats datacons
+    Just datacons -> loop pats datacons
       where
         loop [] [] = return ()
         loop [] dcons = do
