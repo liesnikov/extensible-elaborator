@@ -42,7 +42,7 @@ import           PrettyPrint ( D(..) )
 import           TypeCheck.Blockers
 import           TypeCheck.Constraints ((:<:), ConstraintF
                                        , ConstraintId, getConstraintId)
-import           TypeCheck.State ( Env, TcState(..), Err
+import           TypeCheck.State ( Env, MetaStorage(..), TcState(..), Err
                                  , TcConstraint
                                  , ConstraintsState(..))
 
@@ -246,7 +246,7 @@ extendGlobal ds a = do
 
 lookupMetaVarIdSolution :: (MonadTcReader m) => MetaVarId -> m (Maybe Term)
 lookupMetaVarIdSolution mid = do
-  dict <- asksTc (metaSolutions)
+  dict <- asksTc (metaSolutions . meta)
   return $ Map.lookup mid dict
 
 lookupMetaVarSolution :: (MonadTcReader m) => Term -> m (Maybe Term)
@@ -257,7 +257,7 @@ lookupMetaVarSolution _ = return $ Nothing
 -- (if the solutions have metas themselves this will leave them in the term)
 substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
 substMetas t = do
-  solutions <- asksTc (metaSolutions)
+  solutions <- asksTc (metaSolutions . meta)
   return $ Unbound.substs (Map.toList $ Map.mapKeys (unMapVarId) solutions) t
 
 -- perform recursive substitution of metas
@@ -270,7 +270,7 @@ substAllMetas t = do
 
 isMetaSolved :: (MonadTcReader m) => MetaVarId -> m Bool
 isMetaSolved mid = do
-  solutions <- asksTc (metaSolutions)
+  solutions <- asksTc (metaSolutions . meta)
   return $ mid `Map.member` solutions
 
 solveMeta :: (MonadError Err m, MonadTcReaderEnv m, MonadTcState m) => MetaVarId -> Term -> m ()
@@ -278,14 +278,16 @@ solveMeta m t = do
   solved <- isMetaSolved m
   if solved
     then do
-    solutions <- asksTc (metaSolutions)
+    solutions <- asksTc (metaSolutions . meta)
     Env.err [DS "trying to write a solution",
              DD t,
              DS "to a meta",
              DD m,
              DS "that already has a solution",
              DD $ Map.lookup m solutions]
-    else modifyTc (\s -> s { metaSolutions = Map.insert m t (metaSolutions s) })
+    else
+    modifyTc (\s -> s {meta = let ms = meta s
+                              in ms {metaSolutions = Map.insert m t (metaSolutions ms)}})
 
 extendCtxMods :: (MonadTcReaderEnv m) => [Module] -> m a -> m a
 extendCtxMods = Env.extendCtxMods

@@ -2,6 +2,7 @@ module TypeCheck.State ( SourceLocation(..)
                        , Env(..)
                        , emptyCoreEnv, emptyElabEnv
                        , Err(..)
+                       , MetaStorage(..)
                        , TcState(..)
                        , TcConstraint
                        , ConstraintsState(..)
@@ -80,12 +81,24 @@ emptyConstraintsState = ConstraintsState {
   , solved = Map.empty
   }
 
-data TcState tcaction c solver = TcS {
+data MetaStorage = MetaStorage {
   -- FIXME
   -- previously was an existential forall a. Map .. (Meta a)
   -- but that can't be matched without ImpredicativeTypes
     metas :: Map MetaVarId (Meta I.Term)
+  , metaTypes :: Map MetaVarId (I.Telescope, I.Type)
   , metaSolutions :: Map MetaVarId I.Term
+  }
+
+emptyMetaStorage :: MetaStorage
+emptyMetaStorage = MetaStorage {
+    metas = Map.empty
+  , metaTypes = Map.empty
+  , metaSolutions = Map.empty
+  }
+
+data TcState tcaction c solver = TcS {
+    meta :: MetaStorage
   , vars :: NameMap
   , decls :: [I.Decl]
   , udecls :: [S.Decl]
@@ -99,8 +112,7 @@ fmapState :: (a -> b) -> TcState a c s -> TcState b c s
 fmapState f s = s {blocks = fmap (fmap f) <$> blocks s}
 
 emptyCoreState :: TcState tca c s
-emptyCoreState = TcS { metas = Map.empty
-                     , metaSolutions = Map.empty
+emptyCoreState = TcS { meta = emptyMetaStorage
                      , constraints = emptyConstraintsState
                      , vars = Map.empty
                      , decls = []
@@ -110,8 +122,7 @@ emptyCoreState = TcS { metas = Map.empty
                      }
 
 emptyElabState :: s -> TcState tca c s
-emptyElabState s = TcS { metas = Map.empty
-                       , metaSolutions = Map.empty
+emptyElabState s = TcS { meta = emptyMetaStorage
                        , constraints = emptyConstraintsState
                        , vars = Map.empty
                        , decls = I.preludeDataDecls
