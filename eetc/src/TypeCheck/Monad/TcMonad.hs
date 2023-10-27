@@ -101,16 +101,18 @@ instance MonadTcState (TcMonad c) where
 
 createMetaVarFresh :: (Unbound.Fresh m, MonadTcState m) => MetaTag -> m MetaVarId
 createMetaVarFresh (MetaVarTag tel) = do
-  dict <- State.metas <$> getTc
+  dict <- State.metas . State.meta <$> getTc
   newMetaVarId' <- Unbound.fresh $ Unbound.string2Name "?"
   let newMetaVarId = MetaVarId newMetaVarId'
   let newMeta = MetaTerm tel newMetaVarId
-  modifyTc (\s -> s {State.metas = Map.insert newMetaVarId newMeta (State.metas s)})
+  modifyTc (\s -> s {State.meta = let ms = State.meta s
+                                      mss = State.metas ms
+                                  in ms {State.metas = Map.insert newMetaVarId newMeta mss}})
   return $ newMetaVarId
 
 lookupMetaVarTc :: MetaVarId -> TcMonad c (Maybe (Meta I.Term))
 lookupMetaVarTc mid = do
-  dict <- State.metas <$> getTc
+  dict <- State.metas . State.meta <$> getTc
   return $ Map.lookup mid dict
 
 --FIXME
@@ -131,7 +133,7 @@ solveAllConstraintsTc = do
   (Just solver) <- fmap State.solvers getTc
   _ <- solveAllPossible solver
   unsolved <- getsTc (State.active . State.constraints)
-  solutions <- getsTc State.metaSolutions
+  solutions <- getsTc (State.metaSolutions . State.meta)
   -- warn [DS "metavariable solution dump in the solver",
   --       DD $ solutions]
   if not . null $ unsolved
