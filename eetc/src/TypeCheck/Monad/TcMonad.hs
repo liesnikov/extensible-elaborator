@@ -3,7 +3,6 @@ module TypeCheck.Monad.TcMonad ( TcMonad, runTcStateMonad, runTcMonad
                                ) where
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import           Control.Applicative (Alternative(..))
 import           Control.Monad (join, MonadPlus(..))
 import           Control.Monad.Except ( MonadError(..)

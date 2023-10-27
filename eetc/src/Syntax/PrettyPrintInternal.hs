@@ -1,7 +1,6 @@
 module Syntax.PrettyPrintInternal where
 
 import Control.Monad.Reader (MonadReader (ask, local), asks)
-import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import Text.PrettyPrint (($$), (<+>))
 import qualified Text.PrettyPrint as PP
