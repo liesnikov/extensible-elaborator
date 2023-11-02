@@ -13,8 +13,6 @@ module TypeCheck.State ( SourceLocation(..)
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Set (Set)
-import           Data.Set as Set
 
 
 import Syntax.Surface as S

@@ -4,13 +4,15 @@ module TypeCheck.Monad.TcReader ( MonadTcReader(..)
                                 , askTcNames, localTcNames) where
 
 import TypeCheck.Monad.Prelude
+import TypeCheck.Monad.Prelude as Prelude (Type)
+
 import TypeCheck.State (fmapState)
 
 -- Monad with read access to TcState
 
 class Monad m => MonadTcReader m where
-  type RConstr m :: Type -> Type
-  type RSolver m :: Type
+  type RConstr m :: Prelude.Type -> Prelude.Type
+  type RSolver m :: Prelude.Type
   askTc :: m (TcState m (RConstr m) (RSolver m))
   localTc :: (TcState m (RConstr m) (RSolver m)  ->
               TcState m (RConstr m) (RSolver m)) ->
