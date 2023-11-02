@@ -1,0 +1,4 @@
+module BoolTest where
+
+t : Unit
+t = let u = () in u
