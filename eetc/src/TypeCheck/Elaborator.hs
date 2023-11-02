@@ -1,7 +1,7 @@
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
 import           Control.Arrow (second)
-import           Control.Monad ( unless, when)
+import           Control.Monad ( unless, when )
 import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
                                       , foldM )
@@ -164,11 +164,11 @@ inferType t@(S.Sigma tyA bnd) = do
   let ebnd = Unbound.bind tx etyB
   return (I.Sigma etyA ebnd, I.Type)
 
-inferType t@(S.Prod a b) = Env.err [DS "Products must be checked not inferred",
-                                    DD t
+inferType t@(S.Prod a b) = Env.err [ DS "Products must be checked not inferred"
+                                   , DD t
                                    ]
-inferType t@(S.LetPair p bnd) = Env.err [DS "Product elims must be checked not inferred",
-                                         DD t
+inferType t@(S.LetPair p bnd) = Env.err [ DS "Product elims must be checked not inferred"
+                                        , DD t
                                         ]
 
 -- equality type
@@ -176,14 +176,14 @@ inferType (S.TyEq a b) = do
   (ea, aTy) <- inferType a
   eb <- checkType b aTy
   return (I.TyEq ea eb, I.Type)
-inferType t@S.Refl = Env.err [DS "Refl constructor must be checked not inferred",
-                                DD t
-                               ]
-inferType t@(S.Subst a b) = Env.err [DS "Subst must be checked not inferred",
-                                     DD t
+inferType t@S.Refl = Env.err [ DS "Refl constructor must be checked not inferred"
+                             , DD t
+                             ]
+inferType t@(S.Subst a b) = Env.err [ DS "Subst must be checked not inferred"
+                                    , DD t
                                     ]
-inferType t@(S.Contra p) = Env.err [DS "Contradiction must be checked not inferred",
-                                    DD t
+inferType t@(S.Contra p) = Env.err [ DS "Contradiction must be checked not inferred"
+                                   , DD t
                                    ]
 
 -- inductive datatypes
