@@ -136,7 +136,8 @@ inferType (S.Let rhs bnd) = do
   (x, body) <- Unbound.unbind bnd
   tx <- transName x
   (erhs, erty) <- inferType rhs
-  Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ inferType body
+  (eb, ety) <- Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ inferType body
+  return (I.Let erhs (Unbound.bind tx eb), I.Let erhs (Unbound.bind tx ety))
 
 
 -- unit type
@@ -315,7 +316,8 @@ checkType (S.Let rhs bnd) typ = do
   (x, body) <- Unbound.unbind bnd
   tx <- transName x
   (erhs, erty) <- inferType rhs
-  Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
+  eb <- Env.extendCtxs [I.mkSig tx erty, I.Def tx erhs] $ checkType body typ
+  return $ I.Let erhs (Unbound.bind tx eb)
 
 -- | the type with a single inhabitant, called `Unit`
 -- checkType t@(S.TyUnit) typ =
