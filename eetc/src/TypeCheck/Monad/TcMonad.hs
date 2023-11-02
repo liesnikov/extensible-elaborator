@@ -115,6 +115,11 @@ lookupMetaVarTc mid = do
   dict <- State.metas . State.meta <$> getTc
   return $ Map.lookup mid dict
 
+lookupMetaVarTypeTc :: MetaVarId -> TcMonad c (Maybe (I.Telescope, I.Type))
+lookupMetaVarTypeTc mid = do
+  dict <- State.metaTypes . State.meta <$> getTc
+  return $ Map.lookup mid dict
+
 --FIXME
 -- dispatch simplifier before storing the constraints
 raiseConstraintMaybeFreezeTc :: (c :<: cs)
@@ -138,7 +143,7 @@ solveAllConstraintsTc = do
   --       DD $ solutions]
   if not . null $ unsolved
     then warn [DS "After checking an entry there are unsolved constraints",
-               DD $ Map.map fst $ unsolved,
+               DD $ Map.map fst unsolved,
                DS "with these solutions to metas",
                DD $ solutions
               ]
@@ -163,6 +168,7 @@ instance MonadConstraints (TcMonad c) where
   type MConstr (TcMonad c) = c
   createMetaVar   = createMetaVarFresh
   lookupMetaVar   = lookupMetaVarTc
+  lookupMetaVarType = lookupMetaVarTypeTc
   raiseConstraintMaybeFreeze = raiseConstraintMaybeFreezeTc
   solveAllConstraints = solveAllConstraintsTc
 
