@@ -714,9 +714,15 @@ pat2Term (I.PatCon dc pats) = I.DCon dc (pats2Terms pats)
 
 -- | Convert a telescope into an identity closure
 ctx2Clos :: [I.Decl] -> I.Closure
-ctx2Clos tel = tel >>= \decl -> case decl of
-  I.TypeSig sig -> I.subst2Closure [(I.sigName sig, I.Var (I.sigName sig))]
-  _ -> []
+ctx2Clos [] = []
+ctx2Clos ((I.TypeSig sig) : (I.Def m td) : tel)
+  | I.sigName sig == m = ctx2Clos tel
+  | otherwise = undefined
+ctx2Clos (I.TypeSig sig : t) =
+  let hcl = I.subst2Closure [(I.sigName sig, I.Var (I.sigName sig))]
+      tcl = ctx2Clos t
+  in hcl ++ tcl
+ctx2Clos _ = undefined
 
 --------------------------------------------------------
 -- Using the typechecker for decls and modules and stuff
