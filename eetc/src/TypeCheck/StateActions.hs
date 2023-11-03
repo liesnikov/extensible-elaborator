@@ -286,6 +286,8 @@ solveMeta m t = do
              DS "that already has a solution",
              DD $ Map.lookup m solutions]
     else
+--  FIXME
+--  typecheck the solution in meta's context to check relevances
     modifyTc (\s -> s {meta = let ms = meta s
                               in ms {metaSolutions = Map.insert m t (metaSolutions ms)}})
 
