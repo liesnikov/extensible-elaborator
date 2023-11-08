@@ -440,7 +440,7 @@ composeClosures a b =
   let ma = Map.fromList a
       mb = Map.fromList b
       tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
-  in Map.toList $ tranab
+  in Map.toList tranab
 
 -- used to propagate a substitution into a closure
 -- keeps things that were in a but don't get mapped to anything in b
@@ -494,7 +494,7 @@ instance CheckForMetas Epsilon where
   collectAllMetas = const []
 
 instance CheckForMetas Term where
-  collectAllMetas (Type) = []
+  collectAllMetas Type = []
   collectAllMetas (Var _) = []
   collectAllMetas (Lam ep bod) = collectAllMetas ep ++ collectBoundMetas bod
   collectAllMetas (App t arg) = collectAllMetas t ++ collectAllMetas arg
@@ -503,12 +503,12 @@ instance CheckForMetas Term where
                                     collectBoundMetas bod
   collectAllMetas (Ann term typ) = collectAllMetas term ++ collectAllMetas typ
   collectAllMetas (Pos _ term) = collectAllMetas term
-  collectAllMetas (TrustMe) = []
-  collectAllMetas (PrintMe) = []
+  collectAllMetas TrustMe = []
+  collectAllMetas PrintMe = []
   collectAllMetas (Let term bod) = collectAllMetas term ++ collectBoundMetas bod
-  collectAllMetas (TyUnit) = []
-  collectAllMetas (LitUnit) = []
-  collectAllMetas (TyBool) = []
+  collectAllMetas TyUnit = []
+  collectAllMetas LitUnit = []
+  collectAllMetas TyBool = []
   collectAllMetas (LitBool _ ) = []
   collectAllMetas (If cond thent elset) = collectAllMetas cond ++
                                           collectAllMetas thent ++
@@ -517,7 +517,7 @@ instance CheckForMetas Term where
   collectAllMetas (Prod term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
   collectAllMetas (LetPair term bod) = collectAllMetas term ++ collectBoundMetas bod
   collectAllMetas (TyEq term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
-  collectAllMetas (Refl) = []
+  collectAllMetas Refl = []
   collectAllMetas (Subst term1 term2) = collectAllMetas term1 ++ collectAllMetas term2
   collectAllMetas (Contra term) = collectAllMetas term
   collectAllMetas (TCon _ args) = args >>= collectAllMetas
