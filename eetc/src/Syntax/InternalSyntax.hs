@@ -108,7 +108,7 @@ data Term
 
 -- used to communicate to the typechecker what kind of meta you want created
 data MetaTag where
-  MetaVarTag :: Telescope -> MetaTag
+  MetaVarTag :: Telescope -> Type -> MetaTag
 
 -- identifiers for metas
 newtype MetaVarId = MetaVarId {unMapVarId :: Unbound.Name Term}
@@ -431,6 +431,18 @@ closure2Subst = map (\(n,t) -> (unIgnore n, t))
 
 subst2Closure :: Substitution -> Closure
 subst2Closure = map (\(n,t) -> (Unbound.I n, t))
+
+-- | Convert a telescope into an identity closure
+ctx2Clos :: [Decl] -> Closure
+ctx2Clos [] = []
+ctx2Clos ((TypeSig sig) : (Def m td) : tel)
+  | sigName sig == m = ctx2Clos tel
+  | otherwise = undefined
+ctx2Clos (TypeSig sig : t) =
+  let hcl = subst2Closure [(sigName sig, Var (sigName sig))]
+      tcl = ctx2Clos t
+  in hcl ++ tcl
+ctx2Clos _ = undefined
 
 -- used for applied inverted closures when unifying a meta with a term
 -- throws away things which are in a but don't get mapped to anything in b
