@@ -29,6 +29,7 @@ leftMetaHandler constr = do
         MetaVar (MetaVarClosure m1 c1)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m1
+          -- FIXME should only happen after pruning
           let mic1 = invertClosure c1
           return $ not solved && isJust mic1
         _ -> return False
@@ -38,6 +39,7 @@ leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m1 c1)) = t1
+      -- FIXME do an occurs check
       (Just ic1) = closure2Subst <$> invertClosure c1
       st2 = Unbound.substs ic1 t2
   solveMeta m1 st2
@@ -66,6 +68,7 @@ rightMetaHandler constr = do
         MetaVar (MetaVarClosure m2 c2)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m2
+          -- FIXME should only happen after pruning
           let mic2 = invertClosure c2
           return $ not solved && isJust mic2
         _ -> return False
@@ -75,6 +78,7 @@ rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m2 c2)) = t2
+       -- FIXME do an occurs check
       (Just ic2) = closure2Subst <$> invertClosure c2
       st1 = Unbound.substs ic2 t1
   solveMeta m2 st1
