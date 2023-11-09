@@ -23,7 +23,6 @@ import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import qualified TypeCheck.ConstraintsActions as CA
 import           TypeCheck.Monad ( MonadElab
-                                 , createMetaVar
                                  , askTcNames
                                  , modifyTcNames
                                  , solveAllConstraints
@@ -84,9 +83,9 @@ inferType (S.App t1 t2) = do
   -- FIXME
   -- we're defaulting to relevant arguments for now
   let epx = I.Rel
-  tyA <- createMetaTerm
+  tyA <- SA.createMetaTerm I.Type
   tx <- createUnknownVar
-  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) createMetaTerm
+  tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) (SA.createMetaTerm I.Type)
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
 
@@ -265,9 +264,9 @@ checkType (S.Lam ep1 lam) ty = do
   -- FIXME
   -- we're defaulting to relevant arguments for now
   let mep = I.Rel
-  mtyA <- createMetaTerm
+  mtyA <- SA.createMetaTerm I.Type
   mtx <- createUnknownVar
-  mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) createMetaTerm
+  mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) (SA.createMetaTerm I.Type)
   let mbnd = Unbound.bind mtx mtyB
       metaPi = I.Pi mep mtyA mbnd
 
@@ -375,9 +374,9 @@ checkType (S.LetPair p bnd) typ = do
   ty <- transName y
   (ep, pty) <- inferType p
 
-  tyA <- createMetaTerm
+  tyA <- SA.createMetaTerm I.Type
   -- do we really need it to be relevant here?
-  mtyB <- Env.extendCtx (I.mkSig tx tyA) createMetaTerm
+  mtyB <- Env.extendCtx (I.mkSig tx tyA) (SA.createMetaTerm I.Type)
   let tybnd = Unbound.bind tx mtyB
   let sigmaPi = I.Sigma tyA tybnd
   CA.constrainEquality pty sigmaPi I.Type
@@ -398,7 +397,7 @@ checkType t@(S.TyEq ta tb) typ =
 checkType S.Refl typ@(I.TyEq a b) = do
   -- FIXME
   -- Is creating a meta term the right thing to do here?
-  unknownType <- createMetaTerm
+  unknownType <- SA.createMetaTerm I.Type
   CA.constrainEquality a b unknownType
   return I.Refl
 checkType S.Refl typ =
@@ -408,8 +407,9 @@ checkType (S.Subst a b) typ = do
   -- infer the type of the proof 'b'
   (eb, tp) <- inferType b
   -- make sure that it is an equality between m and n
-  m <- createMetaTerm
-  n <- createMetaTerm
+  ty <- SA.createMetaTerm I.Type
+  m <- SA.createMetaTerm ty
+  n <- SA.createMetaTerm ty
   let metaeq = I.TyEq m n
   CA.constrainEquality tp metaeq I.Type
 
@@ -425,8 +425,9 @@ checkType (S.Subst a b) typ = do
 -- | witness to an equality contradiction
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
-  a <- createMetaTerm
-  b <- createMetaTerm
+  ty <- SA.createMetaTerm I.Type
+  a <- SA.createMetaTerm ty
+  b <- SA.createMetaTerm ty
   let metaEq = I.TyEq a b
   CA.constrainEquality typ metaEq I.Type
 
@@ -459,7 +460,7 @@ checkType (S.Contra p) typ = do
 --           ]
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
-  elabpromise <- createMetaTerm
+  elabpromise <- SA.createMetaTerm ty
   CA.constrainTConAndFreeze ty $ do
     (mty,_) <- whnf =<< SA.substMetas ty
     case mty of
@@ -490,7 +491,7 @@ checkType t@(S.DCon c args) ty = do
 checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
   (escrut',_) <- whnf escrut
-  elabpromise <- createMetaTerm
+  elabpromise <- SA.createMetaTerm ty
   CA.constrainTConAndFreeze ty $ do
     let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
         ensureTCon (I.TCon c args) = return (c, args)
@@ -577,13 +578,6 @@ def t1 t2 = do
     (I.Var x, _) -> return [I.Def x nf2]
     (_, I.Var x) -> return [I.Def x nf1]
     _ -> return []
-
-createMetaTerm :: (MonadElab c m) => m I.Term
-createMetaTerm = do
-  t <- Env.getCtx
-  i <- createMetaVar (I.MetaVarTag . I.Telescope $ t)
-  let clos = ctx2Clos t
-  return $ I.MetaVar $ I.MetaVarClosure i clos
 
 createUnknownVar :: (MonadElab c m) => m I.TName
 createUnknownVar = Unbound.fresh (Unbound.string2Name "_")
@@ -711,18 +705,6 @@ pat2Term (I.PatCon dc pats) = I.DCon dc (pats2Terms pats)
     pats2Terms ((p, ep) : ps) = I.Arg ep t : ts where
       t = pat2Term p
       ts = pats2Terms ps
-
--- | Convert a telescope into an identity closure
-ctx2Clos :: [I.Decl] -> I.Closure
-ctx2Clos [] = []
-ctx2Clos ((I.TypeSig sig) : (I.Def m td) : tel)
-  | I.sigName sig == m = ctx2Clos tel
-  | otherwise = undefined
-ctx2Clos (I.TypeSig sig : t) =
-  let hcl = I.subst2Closure [(I.sigName sig, I.Var (I.sigName sig))]
-      tcl = ctx2Clos t
-  in hcl ++ tcl
-ctx2Clos _ = undefined
 
 --------------------------------------------------------
 -- Using the typechecker for decls and modules and stuff

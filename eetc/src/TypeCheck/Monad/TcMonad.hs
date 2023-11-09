@@ -100,14 +100,18 @@ instance MonadTcState (TcMonad c) where
   modifyTc = TcM . modify
 
 createMetaVarFresh :: (Unbound.Fresh m, MonadTcState m) => MetaTag -> m MetaVarId
-createMetaVarFresh (MetaVarTag tel) = do
+createMetaVarFresh (MetaVarTag tel ty) = do
   dict <- State.metas . State.meta <$> getTc
   newMetaVarId' <- Unbound.fresh $ Unbound.string2Name "?"
   let newMetaVarId = MetaVarId newMetaVarId'
   let newMeta = MetaTerm tel newMetaVarId
-  modifyTc (\s -> s {State.meta = let ms = State.meta s
-                                      mss = State.metas ms
-                                  in ms {State.metas = Map.insert newMetaVarId newMeta mss}})
+  modifyTc (\s -> s {State.meta =
+                       let ms = State.meta s
+                           mss = State.metas ms
+                           mty = State.metaTypes ms
+                       in ms {State.metas = Map.insert newMetaVarId newMeta mss,
+                              State.metaTypes = Map.insert newMetaVarId (tel, ty) mty
+                              }})
   return $ newMetaVarId
 
 lookupMetaVarTc :: MetaVarId -> TcMonad c (Maybe (Meta I.Term))

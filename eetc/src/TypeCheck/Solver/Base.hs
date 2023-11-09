@@ -60,7 +60,7 @@ constrainEquality :: (MonadTcReaderEnv m,
                   -> m Syntax.MetaVarId
 constrainEquality t1 t2 ty = do
   t <- Env.getCtx
-  m <- createMetaVar (Syntax.MetaVarTag . Syntax.Telescope $ t)
+  m <- createMetaVar $ Syntax.MetaVarTag (Syntax.Telescope t) ty
   raiseConstraint $ inj @_ @EqualityConstraint
                   $ EqualityConstraint t1 t2 ty m
   return m

@@ -10,6 +10,7 @@ module TypeCheck.StateActions ( lookupTy
                               , lookupDConAll
                               , extendGlobal
                               , extendCtxMods
+                              , createMetaTerm
                               , isMetaSolved
                               , lookupMetaVarSolution
                               , solveMeta
@@ -29,13 +30,16 @@ import           Data.Maybe ( listToMaybe )
 import qualified Data.Map.Strict as Map
 
 import           Syntax.ModuleStub ( TCName, DCName )
-import           Syntax.Internal   ( Term(MetaVar)
+import           Syntax.Internal   ( Type,
+                                     Term(MetaVar)
                                    , TName, Epsilon, Sig (..)
                                    , ConstructorDef(..)
-                                   , Telescope
+                                   , Telescope(..)
                                    , Decl(..), Module
                                    , Meta, MetaClosure(..)
+                                   , ctx2Clos
                                    , MetaVarId(..)
+                                   , MetaTag(..)
                                    )
 import           PrettyPrint ( D(..) )
 
@@ -53,6 +57,8 @@ import           TypeCheck.Monad.TcState ( MonadTcState(..))
 import           TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
                                              , asksEnv
                                              )
+
+import           TypeCheck.Monad.Constraints (MonadConstraints(createMetaVar))
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 type Decls = [Decl]
@@ -243,6 +249,14 @@ extendGlobal ds a = do
   a
 
 -- Dealing with metas
+
+createMetaTerm :: (MonadConstraints m, MonadTcReaderEnv m) => Type -> m Term
+createMetaTerm typ = do
+  t <- Env.getCtx
+  i <- createMetaVar $ MetaVarTag (Telescope t) typ
+  let clos = ctx2Clos t
+  return $ MetaVar $ MetaVarClosure i clos
+
 
 lookupMetaVarIdSolution :: (MonadTcReader m) => MetaVarId -> m (Maybe Term)
 lookupMetaVarIdSolution mid = do
