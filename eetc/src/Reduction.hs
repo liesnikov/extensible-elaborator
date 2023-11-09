@@ -75,13 +75,6 @@ whnf (Subst tm pf) = do
                      , DD tm'
                      ]
 
-
-whnf (Contra t) = do
-  (nf, mblock) <- whnf t
-  case mblock of
-    Just b -> return (Contra nf, Just b)
-    Nothing -> return (Contra nf, Nothing)
-
 whnf (Case scrut mtchs) = do
   (nf, mblock) <- whnf scrut
   case mblock of
