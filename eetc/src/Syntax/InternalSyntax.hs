@@ -192,8 +192,8 @@ data Decl
   | -- | A potentially (recursive) definition of
     -- a particular name, must be declared
     RecDef TName Term
-    -- | Adjust the context for relevance checking
-  | Demote Epsilon
+  | -- | Adjust the context for relevance checking
+    Demote Epsilon
   | -- | Declaration for a datatype including all of
     -- its data constructors
     Data TCName Telescope [ConstructorDef]
@@ -434,15 +434,23 @@ subst2Closure = map (\(n,t) -> (Unbound.I n, t))
 
 -- | Convert a telescope into an identity closure
 ctx2Clos :: [Decl] -> Closure
-ctx2Clos [] = []
-ctx2Clos ((TypeSig sig) : (Def m td) : tel)
-  | sigName sig == m = ctx2Clos tel
-  | otherwise = undefined
-ctx2Clos (TypeSig sig : t) =
-  let hcl = subst2Closure [(sigName sig, Var (sigName sig))]
-      tcl = ctx2Clos t
-  in hcl ++ tcl
-ctx2Clos _ = undefined
+ctx2Clos tel = reverse $ go (reverse tel) []
+  where
+    -- go over the telescope right to left,
+    -- dropping variables that have associated definitions
+    -- and everything that isn't a type signature
+    go :: [Decl] -> [TName] -> Closure
+    go [] _ = []
+    go (TypeSig (Sig {sigName = n}) : t) defns =
+      if n `elem` defns
+      then go t defns
+      else (Unbound.I n, Var n) : go t defns
+    go (Def n _ : t) defns = go t (n : defns)
+    go (Demote ep : t) defns = go t defns
+    go (DataSig {} : t) defns = go t defns
+    go (Data {} : t) defns = go t defns
+    go (RecDef {} : t) defns = go t defns
+
 
 -- used for applied inverted closures when unifying a meta with a term
 -- throws away things which are in a but don't get mapped to anything in b
