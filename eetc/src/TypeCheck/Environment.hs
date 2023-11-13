@@ -22,6 +22,7 @@ module TypeCheck.Environment
     err,
     warn,
     extendErr,
+    extendErrList,
     D (..),
     Err (..),
     withStage,
@@ -249,6 +250,10 @@ extendErr :: MonadError Err m => m a -> Doc -> m a
 extendErr ma msg' =
   ma `catchError` \(Err ps msg) ->
     throwError $ Err ps (msg $$ msg')
+
+extendErrList :: (MonadError Err m, Disp b) => m a -> [b] -> m a
+extendErrList ma l =
+  extendErr ma (sep $ map disp l)
 
 -- | Throw an error
 err :: (Disp a, MonadError Err m, MonadTcReaderEnv m) => [a] -> m b

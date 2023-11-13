@@ -8,7 +8,7 @@ import           Data.Maybe (fromMaybe)
 import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc, localEnv)
 import qualified TypeCheck.State as State
 import qualified TypeCheck.StateActions as SA
--- import qualified TypeCheck.Environment as Env
+import qualified TypeCheck.Environment as Env
 import           TypeCheck.Blockers (Blocker(UnblockOnConstraint))
 import           TypeCheck.Constraints
 import           TypeCheck.Solver.Base
@@ -117,8 +117,20 @@ solveAllPossible' n a = do
   else do
     -- pick the one we're currently working on
     let (cid, constr) = Map.elemAt n sconstr
+    solutions <- getsTc (State.metaSolutions . State.meta)
     -- try solving it
-    res <- solve a constr
+    res <- Env.extendErrList (solve a constr)
+                             [ Env.DS $ "Solver errored out"
+                             , Env.DS $ "With current active constraints being being"
+                             , Env.DD $ Map.map fst $ sconstr
+                             , Env.DS $ "And current solutions to metas being"
+                             , Env.DD $ solutions
+                             , Env.DS $ "Solved constraints are"
+                             , Env.DD $ Map.map fst $ State.solved allconstrs
+                             , Env.DS $ "Blocked constraints are"
+                             , Env.DD $ Map.map fst $ State.asleep allconstrs
+                             ]
+
     -- if it is solved remove from the set of constraints and return
     case res of
       Just pid -> do
@@ -129,10 +141,10 @@ solveAllPossible' n a = do
 
         -- let diffconstr = foldr Map.delete newsconstr (Map.keys sconstr)
 
-        -- Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
-        --          , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
-        --          , Env.DS " which generated new constraints"
-        --          , Env.DD $ Map.map fst $ diffconstr]
+        --Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
+        --         , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
+        --         , Env.DS " which generated new constraints"
+        --         , Env.DD $ Map.map fst $ diffconstr]
 
         -- update the set of constraints
         modifyTc $ \s -> s { State.constraints = sconstr' }

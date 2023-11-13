@@ -5,7 +5,6 @@ module TypeCheck.Monad.TcReader ( MonadTcReader(..)
 
 import TypeCheck.Monad.Prelude
 import TypeCheck.Monad.Prelude as Prelude (Type)
-
 import TypeCheck.State (fmapState)
 
 -- Monad with read access to TcState

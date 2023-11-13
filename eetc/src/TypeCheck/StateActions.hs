@@ -8,6 +8,7 @@ module TypeCheck.StateActions ( lookupTy
                               , lookupTCon
                               , lookupDCon
                               , lookupDConAll
+                              , getDecls
                               , extendGlobal
                               , extendCtxMods
                               , createMetaTerm
@@ -36,7 +37,7 @@ import           Syntax.Internal   ( Type,
                                    , ConstructorDef(..)
                                    , Telescope(..)
                                    , Decl(..), Module
-                                   , Meta, MetaClosure(..)
+                                   , MetaClosure(..)
                                    , ctx2Clos
                                    , MetaVarId(..)
                                    , MetaTag(..)
@@ -44,9 +45,8 @@ import           Syntax.Internal   ( Type,
 import           PrettyPrint ( D(..) )
 
 import           TypeCheck.Blockers
-import           TypeCheck.Constraints ((:<:), ConstraintF
-                                       , ConstraintId, getConstraintId)
-import           TypeCheck.State ( Env, MetaStorage(..), TcState(..), Err
+import           TypeCheck.Constraints (ConstraintId, getConstraintId)
+import           TypeCheck.State ( MetaStorage(..), TcState(..), Err
                                  , TcConstraint
                                  , ConstraintsState(..))
 
@@ -236,6 +236,10 @@ lookupDCon c tname = do
             ++ map (DD . fst) matches
             ++ map (DD . snd . snd) matches
         )
+
+
+getDecls :: (MonadTcReader m) => m [Decl]
+getDecls = asksTc decls
 
 -- FIXME
 -- should we really pass the continuation?

@@ -1,6 +1,6 @@
 -- | Occurs check, substitution inversion and pruning at the same time
 
-module TypeCheck.OccursCheck where
+module TypeCheck.OccursCheck (occursCheck) where
 
 import qualified Syntax.InternalSyntax as I
 
@@ -8,6 +8,8 @@ import           PrettyPrint (D(..))
 import           Reduction (whnf)
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad.Typeclasses ( MonadSolver
+                                             , MonadTcReader
+                                             , MonadTcReaderEnv
                                              , MonadConstraints (lookupMetaVarType
                                                                 , createMetaVar))
 
@@ -15,7 +17,11 @@ import           TypeCheck.StateActions as SA
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
-import Data.Map.Strict (Map)
+
+import Data.Maybe (maybeToList)
+import Data.Foldable (foldrM)
+import Control.Monad.Extra (ifM)
+import Data.Foldable.Extra (anyM)
 
 data PruningPosition =
     Flexible
@@ -36,6 +42,12 @@ data OccursData where
              -> OccursData
   deriving (Eq, Show)
 
+initOccursData :: (MonadTcReader m, MonadTcReaderEnv m) => I.MetaVarId -> m OccursData
+initOccursData current = do
+  g <- fmap (fmap $ maybeToList . fmap fst . nameAndFreeVarsInDecl) SA.getDecls
+  l <-  fmap (fmap $ maybeToList . fmap fst . nameAndFreeVarsInDecl) Env.getLocalCtx
+  return $ OccursData (concat g) (concat l) current Rigid
+
 extendLocal :: OccursData -> I.TName -> OccursData
 extendLocal (OccursData g l c p) x = OccursData g (x : l) c p
 
@@ -47,6 +59,14 @@ switchPosition (OccursData g l c _) = OccursData g l c
 
 switchToFlexible :: OccursData -> OccursData
 switchToFlexible od = switchPosition od Flexible
+
+occursCheck :: (MonadSolver c m) =>
+               I.MetaVarId ->
+               I.Term ->
+               m I.Term
+occursCheck i t = do
+  d <- initOccursData i
+  occurs d t
 
 class Occurs a where
   occurs :: (MonadSolver c m) => OccursData -> a -> m a
@@ -117,12 +137,15 @@ instance Occurs I.Term where
         (I.DCon n args) -> do
           args' <- occurs env args
           return $ I.DCon n args'
---      (I.Case t alts) -> _
+        (I.Case term alts) -> do
+            t' <- occurs env term
+            alts' <- occurs env alts
+            return $ I.Case t' alts'
 
         (I.MetaVar mc) -> I.MetaVar <$> occurs env mc
         _ -> Env.err [ DS "whnf returned something that doesn't have constructor as a head"
                      , DD wt]
-      Just mb ->
+      Just b ->
         -- we're in a flexible position, so no pruning, only checking
         let env' = switchToFlexible env
         in case wt of
@@ -158,20 +181,20 @@ instance Occurs I.Term where
 
 --          I.TyBool -> _
 --          (I.LitBool b) -> _
-          (I.If b t e) -> do
-            b' <- occurs env' b
-            t' <- occurs env' t
-            e' <- occurs env' e
+          (I.If cond thent elset) -> do
+            b' <- occurs env' cond
+            t' <- occurs env' thent
+            e' <- occurs env' elset
             return $ I.If b' t' e'
 
 --        (I.Sigma a body) -> _
 --        (I.Prod a b) -> _
-          (I.LetPair a b) -> do
-            a' <- occurs env' a
-            ((x, y), body) <- Unbound.unbind b
+          (I.LetPair term bbody) -> do
+            term' <- occurs env' term
+            ((x, y), body) <- Unbound.unbind bbody
             let env'' = extendLocals env' [x,y]
             body' <- occurs env'' body
-            return $ I.LetPair a' (Unbound.bind (x, y) body')
+            return $ I.LetPair term' (Unbound.bind (x, y) body')
 --          (I.TyEq a b) -> _
 --          I.Refl -> return I.Refl
           (I.Subst st e) -> do
@@ -181,13 +204,14 @@ instance Occurs I.Term where
 --        (I.Contra ct) -> _
 --        (I.TCon n args) -> _
 --        (I.DCon n args) -> _
-          (I.Case t alts) -> do
-            t' <- occurs env' t
+          (I.Case term alts) -> do
+            t' <- occurs env' term
             alts' <- occurs env' alts
             return $ I.Case t' alts'
           -- using env and not env' here because we still
           -- want to prune things inside the meta
           (I.MetaVar mc) -> I.MetaVar <$> occurs env mc
+          _ -> Env.err [DS "whnf got blocked and returned something unexected", DD wt]
 
 instance Occurs I.MetaClosure where
   occurs env mc@(I.MetaVarClosure nid nc) = if nid == current env
@@ -196,7 +220,10 @@ instance Occurs I.MetaClosure where
     if position env /= Flexible
     then do
      pr <- prune env mc
-     -- FIXME instantiate here
+     (I.MetaVar (I.MetaVarClosure mid mc)) <-
+           if pr == PrunedSomething || pr == PrunedEverything
+           then SA.substMetas $ I.MetaVar mc
+           else return $ I.MetaVar mc
      let (names, terms) = unzip nc
          env' = switchToFlexible env
      terms' <- mapM (occurs env') terms
@@ -216,8 +243,11 @@ instance Occurs I.Match where
 
 instance Occurs I.TName where
   occurs env v =
-    if v `elem` locals env ++ globals env
-    then Env.err [DS "Encountered a variable which isn't allowed", DD v]
+    if v `notElem` locals env ++ globals env
+    then Env.err [ DS "Encountered a variable which isn't allowed"
+                 , DD v
+                 , DS "or, explicitly,"
+                 , DS $ show v]
     else return v
 
 instance Occurs I.Arg where
@@ -243,10 +273,10 @@ prune env (I.MetaVarClosure m cl) =
   then return PrunedNothing
   else do
     (Just (mtel, mty)) <- lookupMetaVarType m
-    (cl, tel) <- pruneClosure env mtel mty cl
+    (pcl, tel) <- pruneClosure env mtel mty cl
     -- create a new metavar with appropriate tel and closure
     mn <- createMetaVar $ I.MetaVarTag tel mty
-    SA.solveMeta m (I.MetaVar $ I.MetaVarClosure mn cl)
+    SA.solveMeta m (I.MetaVar $ I.MetaVarClosure mn pcl)
     return PrunedNothing
 
 pruneClosure :: (MonadSolver c m)
@@ -268,25 +298,20 @@ pruneClosure env tel ty cl = do
   (killed, ncl, ntel) <- killType env killlist cl decls ty
   let remaining = filter (\(x,_) -> I.unIgnore x `notElem` killed) cl
   return (remaining, I.Telescope ntel)
-   where
-     collectAllFlexible :: (MonadSolver c m) => I.Term -> m [I.TName]
-     collectAllFlexible = undefined
 
 killType :: (MonadSolver c m) =>
             OccursData -> [I.TName] ->
             I.Closure -> [I.Decl] -> I.Type ->
             m ([I.TName], I.Closure, [I.Decl])
 killType env killlist cl tel typ = do
-  let rettypevars = fvs typ
-      killlist = filter (`notElem` rettypevars) killlist
+  let rettypevars = Unbound.toListOf Unbound.fv typ
+      truekilllist = filter (`notElem` rettypevars) killlist
 
-  (nkl, ntel) <- go killlist tel
+  (nkl, ntel) <- go truekilllist tel
   -- compute the new closure from the arguments that were actually killed
   let ncl = undefined
   return (nkl, ncl, ntel)
   where
-    fvs = Unbound.toListOf Unbound.fv
-
     -- do one kill at a time
     go :: (MonadSolver c m) =>
           [I.TName] -> [I.Decl] ->
@@ -308,44 +333,92 @@ killType env killlist cl tel typ = do
     then take that list and go over the telescope right to left
     when you see a variable declaration check if it's in the wishlist
     if it is and there are no flexible dependencies:
-      traverse the telescope already traversed left to right to check that no signature depends on this variable flexibly
+      traverse part of the telescope that's already been traversed left to right to check that no signature depends on this variable flexibly
     if there are flexible dependecies:
       don't prune and delete the variable from the wishlist
     if it is not in the wishlist:
       preserve it
     -}
+
+    collectReverseDependecies :: [I.TName] ->
+                                 [I.Decl] ->
+                                 [I.TName]
+    collectReverseDependecies tokill [] = tokill
+    collectReverseDependecies tokill (h : t) =
+      case nameAndFreeVarsInDecl h of
+        Nothing -> collectReverseDependecies tokill t
+        Just (n, hfv) ->
+          if any (`elem` hfv) tokill
+          then collectReverseDependecies (n : tokill) t
+          else collectReverseDependecies tokill t
+
     killOne :: (MonadSolver c m) =>
                I.TName -> [I.Decl] ->
                m (Maybe [I.Decl])
     killOne tokill tel = do
-      
-    [] = return . Just $ ([])
-    killOne tokill ((I.TypeSig sig) : (I.Def m td) : tel)
-      | I.sigName sig == m = undefined
-      | otherwise = undefined
-    killOne tokill (I.Demote ep : tel) = do
-      fmap (I.Demote ep :) <$> killOne tokill tel
-    killOne tokill (I.TypeSig sig : tel) = do
-      if I.sigName sig == tokill
-      then do
-        rgx <- collectAllRigid tel
-        flx <- collectAllFlexible tel
-        if tokill `elem` flx
-        then
-        else 
-      else undefined
+      let deps = collectReverseDependecies [tokill] tel
+      foldrM (\d md -> case md of Nothing -> return Nothing;
+                                  (Just ttel) -> killThisCheckRight deps d ttel)
+             (Just []) tel
+
+
+    killThisCheckRight :: (MonadSolver c m) =>
+                          [I.TName] ->
+                          I.Decl ->
+                          [I.Decl] ->
+                          m (Maybe [I.Decl])
+    killThisCheckRight tokill decl tel = do
+      rigs <- collectAllRigid decl
+      flxs <- collectAllFlexible decl
+      if any (`elem` flxs) tokill
+      then return Nothing
+      else if any (`elem` rigs) tokill
+        then case decl of
+             (I.TypeSig (I.Sig n _ _)) -> ifM (checkRight n tel)
+                                              (return Nothing)
+                                              (return . Just $ decl : tel)
+             (I.Def n _) -> ifM (checkRight n tel)
+                                (return Nothing)
+                                (return . Just $ decl : tel)
+        else return $ Just (decl : tel)
+
+    checkRight :: (MonadSolver c m) =>
+                  I.TName -> [I.Decl] -> m Bool
+    checkRight n = anyM (fmap (n `elem`) . collectAllFlexible)
+
+nameAndFreeVarsInDecl :: I.Decl -> Maybe (I.TName, [Unbound.Name I.Term])
+nameAndFreeVarsInDecl d = case d of
+  I.TypeSig (I.Sig n _ t) -> Just (n, fvs t)
+  I.Def n t -> Just (n, fvs t)
+  _ -> Nothing
+  where
+    fvs = Unbound.toListOf Unbound.fv
+
+
+class CheckForFlexible a where
+  collectAllFlexible :: (MonadSolver c m) => a -> m [I.TName]
+  collectAllFlexible = collectAllFlexible' Rigid
+
+  collectAllFlexible' :: (MonadSolver c m) => PruningPosition -> a -> m [I.TName]
 
 
 class CheckForRigid a where
   collectAllRigid :: (MonadSolver c m) => a -> m [I.TName]
-  hasRigids :: (MonadSolver c m) => a -> m Bool
-  hasRigids t = not . null <$> collectAllRigid t
+
 
 collectAllBoundRigid :: (MonadSolver c m,
                          Unbound.Alpha a, Unbound.Alpha t, CheckForRigid t) => Unbound.Bind a t -> m [I.TName]
 collectAllBoundRigid bod = Unbound.runFreshM $ do
   (x, t) <- Unbound.unbind bod
   return $ collectAllRigid t
+
+collectAllBoundFlexible' :: (MonadSolver c m,
+                            Unbound.Alpha a, Unbound.Alpha t, CheckForFlexible t) =>
+                            PruningPosition -> Unbound.Bind a t -> m [I.TName]
+collectAllBoundFlexible' p bod = Unbound.runFreshM $ do
+  (x, t) <- Unbound.unbind bod
+  return $ collectAllFlexible' p t
+
 
 instance CheckForRigid I.Epsilon where
   collectAllRigid _ = return []
@@ -364,11 +437,12 @@ instance CheckForRigid I.Term where
             mtyp <- collectAllRigid typ
             mbod <- collectAllBoundRigid bod
             return $ mep ++ mtyp ++ mbod
-          (I.Ann t ty) -> do
-            mt <- collectAllRigid t
+            return $ mtyp ++ mbod
+          (I.Ann term ty) -> do
+            mt <- collectAllRigid term
             mty <- collectAllRigid ty
             return $ mt ++ mty
-          (I.Pos _ t) -> collectAllRigid t
+          (I.Pos _ term) -> collectAllRigid term
           I.TrustMe -> return []
           I.PrintMe -> return []
           I.TyUnit -> return []
@@ -391,11 +465,11 @@ instance CheckForRigid I.Term where
           (I.Contra ct) -> collectAllRigid ct
           (I.TCon _ args) -> collectAllRigid args
           (I.DCon _ args) -> collectAllRigid args
-      Just block ->
+      Just _ ->
         case rt of
           (I.App f a) -> collectAllRigid f
           (I.If cond thent elset) -> collectAllRigid cond
-          (I.LetPair t b) -> collectAllRigid t
+          (I.LetPair term branches) -> collectAllRigid term
           (I.Subst st e) -> collectAllRigid st
           (I.Case ct alts) -> collectAllRigid ct
           (I.MetaVar mc) -> return []
@@ -421,3 +495,74 @@ instance CheckForRigid I.Decl where
 
 instance CheckForRigid a => CheckForRigid [a] where
   collectAllRigid = fmap concat . traverse collectAllRigid
+
+
+instance CheckForFlexible I.Term where
+  collectAllFlexible' p t = do
+    (rt, mblock) <- whnf t
+    case mblock of
+      Nothing ->
+        case rt of
+          I.Type -> return []
+          (I.Var x) -> return $ if p == Flexible && Unbound.isFreeName x then [x] else []
+          (I.Lam _ b) -> collectAllBoundFlexible' p b
+          (I.Pi ep typ bod) -> do
+            mtyp <- collectAllFlexible' p typ
+            mbod <- collectAllBoundFlexible' p bod
+            return $ mtyp ++ mbod
+          (I.Ann term ty) -> do
+            mt <- collectAllFlexible' p term
+            mty <- collectAllFlexible' p ty
+            return $ mt ++ mty
+          (I.Pos _ term) -> collectAllFlexible' p term
+          I.TrustMe -> return []
+          I.PrintMe -> return []
+          I.TyUnit -> return []
+          I.LitUnit -> return []
+          I.TyBool -> return []
+          (I.LitBool _) -> return []
+          (I.Sigma term bod) -> do
+            mterm <- collectAllFlexible' p term
+            mbod <- collectAllBoundFlexible' p bod
+            return $ mterm ++ mbod
+          (I.Prod t1 t2) -> do
+            mt1 <- collectAllFlexible' p t1
+            mt2 <- collectAllFlexible' p t2
+            return $ mt1 ++ mt2
+          (I.TyEq t1 t2) -> do
+            mt1 <- collectAllFlexible' p t1
+            mt2 <- collectAllFlexible' p t2
+            return $ mt1 ++ mt2
+          I.Refl -> return []
+          (I.Contra ct) -> collectAllFlexible' p ct
+          (I.TCon _ args) -> collectAllFlexible' p args
+          (I.DCon _ args) -> collectAllFlexible' p args
+      Just _ ->
+        case rt of
+          (I.App f a) -> collectAllFlexible' Flexible a
+          (I.If cond thent elset) -> do
+            ft <- collectAllFlexible' Flexible thent
+            fe <- collectAllFlexible' Flexible elset
+            return $ ft ++ fe
+          (I.LetPair term branches) -> collectAllBoundFlexible' Flexible branches
+          (I.Subst st e) -> collectAllFlexible' Flexible e
+          (I.Case ct alts) -> collectAllFlexible' Flexible alts
+          (I.MetaVar mc) -> collectAllFlexible' Flexible mc
+
+instance CheckForFlexible I.MetaClosure where
+  collectAllFlexible' p (I.MetaVarClosure mid cl) = return $ Unbound.toListOf Unbound.fv cl
+
+instance CheckForFlexible I.Arg where
+  collectAllFlexible' p (I.Arg _ t) = collectAllFlexible' p t
+
+instance CheckForFlexible I.Match where
+  collectAllFlexible' p (I.Match bod) = collectAllBoundFlexible' p bod
+
+instance CheckForFlexible I.Decl where
+  collectAllFlexible' p (I.TypeSig (I.Sig _ _ ty)) = collectAllFlexible' p ty
+  collectAllFlexible' p (I.Def n term) = collectAllFlexible' p term
+  collectAllFlexible' p (I.Demote _) = return []
+  collectAllFlexible' p _ = return []
+
+instance CheckForFlexible a => CheckForFlexible [a] where
+  collectAllFlexible' p = fmap concat . traverse (collectAllFlexible' p)
