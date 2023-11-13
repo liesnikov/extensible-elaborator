@@ -11,11 +11,16 @@ import           Syntax.Internal (Term(MetaVar)
                                  , invertClosure
                                  , closure2Subst
                                  )
+import           PrettyPrint (D(..))
+import           TypeCheck.Environment as Env (extendErrList)
+
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
                                        , match
                                        )
+
+import           TypeCheck.OccursCheck
 import           TypeCheck.Solver.Base
 import           TypeCheck.Solver.Identity (identitySymbol)
 
@@ -39,8 +44,11 @@ leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m1 c1)) = t1
-      -- FIXME do an occurs check
-      (Just ic1) = closure2Subst <$> invertClosure c1
+  t2 <- extendErrList (occursCheck m1 t2) [ DS "while trying to occurs-check"
+                                          , DD t2
+                                          , DS "for"
+                                          , DD constr]
+  let (Just ic1) = closure2Subst <$> invertClosure c1
       st2 = Unbound.substs ic1 t2
   solveMeta m1 st2
   solveMeta m st2
@@ -78,8 +86,12 @@ rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m2 c2)) = t2
-       -- FIXME do an occurs check
-      (Just ic2) = closure2Subst <$> invertClosure c2
+  t1 <- Env.extendErrList (occursCheck m2 t1) [ DS "while trying to occurs check"
+                                              , DD t1
+                                              , DS "for"
+                                              , DD constr
+                                              ]
+  let (Just ic2) = closure2Subst <$> invertClosure c2
       st1 = Unbound.substs ic2 t1
   solveMeta m2 st1
   solveMeta m st1

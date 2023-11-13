@@ -13,7 +13,7 @@ import TypeCheck.State (Err)
 import TypeCheck.StateActions as SA ( lookupAnyDef
                                     , lookupMetaVarSolution)
 import TypeCheck.Blockers ( Blocker, blockOnMeta )
-import TypeCheck.Monad (MonadTcReader(..), MonadTcReaderEnv(..))
+import TypeCheck.Monad.Typeclasses (MonadTcReader(..), MonadTcReaderEnv(..))
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 whnf :: (MonadTcReader m, MonadTcReaderEnv m,
