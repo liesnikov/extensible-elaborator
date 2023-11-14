@@ -156,7 +156,7 @@ instance (Display a) => Display (Unbound.Ignore a) where
 
 instance Display Term where
   display Type = return $ PP.text "Type"
-  display (Var n) = display n
+  display (Var n) = displayTName n
   display a@(Lam _ b) = do
     n <- ask prec
     (binds, body) <- withPrec levelLam $ gatherBinders a

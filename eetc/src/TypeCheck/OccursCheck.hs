@@ -220,7 +220,7 @@ instance Occurs I.MetaClosure where
     if position env /= Flexible
     then do
      pr <- prune env mc
-     (I.MetaVar (I.MetaVarClosure mid mc)) <-
+     (I.MetaVar (I.MetaVarClosure nid nc)) <-
            if pr == PrunedSomething || pr == PrunedEverything
            then SA.substMetas $ I.MetaVar mc
            else return $ I.MetaVar mc
@@ -274,10 +274,13 @@ prune env (I.MetaVarClosure m cl) =
   else do
     (Just (mtel, mty)) <- lookupMetaVarType m
     (pcl, tel) <- pruneClosure env mtel mty cl
-    -- create a new metavar with appropriate tel and closure
-    mn <- createMetaVar $ I.MetaVarTag tel mty
-    SA.solveMeta m (I.MetaVar $ I.MetaVarClosure mn pcl)
-    return PrunedNothing
+    if not $ Unbound.aeq tel mtel
+    then do -- create a new metavar with appropriate tel and closure
+      mn <- createMetaVar $ I.MetaVarTag tel mty
+      SA.solveMeta m (I.MetaVar $ I.MetaVarClosure mn pcl)
+      return PrunedSomething
+    else do
+      return PrunedNothing
 
 pruneClosure :: (MonadSolver c m)
   => OccursData

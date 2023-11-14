@@ -141,15 +141,21 @@ solveAllConstraintsTc = do
   cons <- getsTc State.constraints
   (Just solver) <- fmap State.solvers getTc
   _ <- solveAllPossible solver
+  allconstrs <- getsTc State.constraints
   unsolved <- getsTc (State.active . State.constraints)
   solutions <- getsTc (State.metaSolutions . State.meta)
   -- warn [DS "metavariable solution dump in the solver",
   --       DD $ solutions]
   if not . null $ unsolved
-    then warn [DS "After checking an entry there are unsolved constraints",
-               DD $ Map.map fst unsolved,
-               DS "with these solutions to metas",
-               DD $ solutions
+    then warn [ DS "After checking an entry there are unsolved constraints"
+              , DS $ "With current active constraints being"
+              , DD $ Map.map fst $ unsolved
+              , DS $ "And current solutions to metas being"
+              , DD $ solutions
+              , DS $ "Solved constraints are"
+              , DD $ Map.map fst $ State.solved allconstrs
+              , DS $ "Blocked constraints are"
+              , DD $ Map.map fst $ State.asleep allconstrs
               ]
     else return ()
 --  where

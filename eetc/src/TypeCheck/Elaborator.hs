@@ -275,7 +275,7 @@ checkType (S.Lam ep1 lam) ty = do
   (x, body) <- Unbound.unbind lam
   (y', tyB') <- Unbound.unbind mbnd
   tx <- transName x
-  let (_, tyB)= second (Unbound.subst y' (I.Var tx)) (y', tyB')
+  let tyB = Unbound.subst y' (I.Var tx) tyB'
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
