@@ -1,6 +1,6 @@
 module TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
                                    , asksEnv, getSourceLocation
-                                   , warn) where
+                                   , warn, warnErr) where
 
 import TypeCheck.Monad.Prelude
 
@@ -28,3 +28,6 @@ warn :: (Disp a, MonadTcReaderEnv m, MonadIO m) => a -> m ()
 warn e = do
   loc <- getSourceLocation
   liftIO $ putStrLn $ "warning: " ++ render (disp (Err loc (disp e)))
+
+warnErr :: (MonadTcReaderEnv m, MonadIO m) => Err -> m ()
+warnErr e = liftIO $ putStrLn $ "warning: " ++ render (disp e)

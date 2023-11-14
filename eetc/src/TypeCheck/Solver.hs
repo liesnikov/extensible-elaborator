@@ -9,12 +9,15 @@ import TypeCheck.Solver.TrivialMetas
 import TypeCheck.Solver.TypeConstructor
 import TypeCheck.Solver.PiInjectivity
 import TypeCheck.Solver.ConstructorInjectivity
+import TypeCheck.Solver.Reduce
 
 import TypeCheck.Solver.Allsolver
 
 allSolvers:: [Plugin BasicConstraintsF]
 allSolvers = [ identityPlugin
              , propagateSolvedMetasPlugin
+             , reduceLeftPlugin
+             , reduceRightPlugin
              , leftMetaPlugin
              , rightMetaPlugin
              , typeConstructorPlugin

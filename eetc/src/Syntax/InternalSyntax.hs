@@ -18,6 +18,7 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Unbound.Generics.LocallyNameless.Bind as Unbound
 import qualified Unbound.Generics.LocallyNameless.Ignore as Unbound
 import qualified Unbound.Generics.LocallyNameless.Internal.GSubst as Unbound
+import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
 
 import           Syntax.ModuleStub as MM
 
@@ -255,6 +256,9 @@ isPatVar :: Pattern -> Bool
 isPatVar (PatVar _) = True
 isPatVar _ = False
 
+freeVarList :: (Unbound.Alpha a, Typeable b) => a -> [Unbound.Name b]
+freeVarList  = Unbound.toListOf Unbound.fv
+
 -------------------------------------------------------------------
 -- Prelude declarations for datatypes
 
@@ -472,7 +476,7 @@ substsClosure c ss =
       trancss = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mss) mc
   in Map.toList $ Map.union trancss mc
 
-invertSubst :: [(TName, Term)] -> Maybe [(TName, Term)]
+invertSubst :: Substitution -> Maybe Substitution
 invertSubst c = do
   mc <- traverse (\(f,s) -> case s of {Var i -> Just (f, i); _ -> Nothing}) c
   rmap <- go mc Map.empty
@@ -485,8 +489,24 @@ invertSubst c = do
       then Nothing
       else go kvs (Map.insert v k acc)
 
+-- invert only on the variables that occur in vars
+invertSubstOn :: Substitution -> [TName] -> Maybe Substitution
+invertSubstOn c vars =
+  let cfl = filter (\(_,s) -> case s of {Var i -> i `elem` vars; _ -> False}) c
+      (Just is) = invertSubst cfl
+      checkMap = Map.fromList is
+  in if all (`Map.member` checkMap) vars
+     then Just is
+     else Nothing
+
 invertClosure :: Closure -> Maybe Closure
 invertClosure = fmap subst2Closure . invertSubst . closure2Subst
+
+invertClosure2SubstOn :: Closure -> [TName] -> Maybe Substitution
+invertClosure2SubstOn cl vars =
+  let s = closure2Subst cl
+  in invertSubstOn s vars
+
 
 -------------------
 

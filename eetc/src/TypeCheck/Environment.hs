@@ -21,6 +21,7 @@ module TypeCheck.Environment
     getSourceLocation,
     err,
     warn,
+    warnErr,
     extendErr,
     extendErrList,
     D (..),
@@ -32,10 +33,11 @@ module TypeCheck.Environment
   )
 where
 
+import Control.Monad.IO.Class ( MonadIO(..) )
 import Control.Monad.Except  ( unless, MonadError(..))
 import Data.List
 import Data.Maybe ( listToMaybe )
-import PrettyPrint ( SourcePos, D(..), Disp(..), Doc )
+import PrettyPrint ( SourcePos, D(..), Disp(..), Doc, render)
 
 import Syntax.Internal
 import Syntax.ModuleStub
@@ -44,7 +46,9 @@ import TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
                                    , localEnv
                                    , asksEnv
                                    , getSourceLocation
-                                   , warn)
+                                   , warn
+                                   , warnErr
+                                   )
 import Text.PrettyPrint.HughesPJ ( ($$), sep )
 
 -- | Find a name's user supplied type signature.

@@ -107,6 +107,7 @@ library
     TypeCheck.Solver.TrivialMetas
     TypeCheck.Solver.TypeConstructor
     TypeCheck.Solver.ConstructorInjectivity
+    TypeCheck.Solver.Reduce
     TypeCheck.Solver.Allsolver
   build-depends:
     array >= 0.3.0.2 && < 0.6,

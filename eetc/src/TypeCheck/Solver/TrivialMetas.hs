@@ -6,21 +6,23 @@ import           Data.Maybe (isJust)
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
-import           Syntax.Internal (Term(MetaVar)
+import           Syntax.Internal ( Term(MetaVar)
                                  , MetaClosure(MetaVarClosure)
-                                 , invertClosure
-                                 , closure2Subst
+                                 , invertClosure2SubstOn
+                                 , freeVarList
                                  )
-import           PrettyPrint (D(..))
-import           TypeCheck.Environment as Env (extendErrList)
+import           Control.Monad.Except (MonadError(..))
 
+import           PrettyPrint (D(..))
+
+import           TypeCheck.Environment as Env (warnErr, warn)
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
                                        , match
                                        )
-
 import           TypeCheck.OccursCheck
+
 import           TypeCheck.Solver.Base
 import           TypeCheck.Solver.Identity (identitySymbol)
 
@@ -34,9 +36,7 @@ leftMetaHandler constr = do
         MetaVar (MetaVarClosure m1 c1)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m1
-          -- FIXME should only happen after pruning
-          let mic1 = invertClosure c1
-          return $ not solved && isJust mic1
+          return $ not solved
         _ -> return False
     Nothing -> return False
 
@@ -44,15 +44,25 @@ leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m1 c1)) = t1
-  t2 <- extendErrList (occursCheck m1 t2) [ DS "while trying to occurs-check"
-                                          , DD t2
-                                          , DS "for"
-                                          , DD constr]
-  let (Just ic1) = closure2Subst <$> invertClosure c1
-      st2 = Unbound.substs ic1 t2
-  solveMeta m1 st2
-  solveMeta m st2
-  return True
+  mt2 <- (fmap Right $ occursCheck m1 t2) `catchError` (\e -> return $ Left e)
+  case mt2 of
+    Left e -> do
+--      Env.warnErr e
+--      Env.warn [ DS "occurs-check failed"
+--               , DD t2
+--               , DS "for"
+--               , DD constr]
+      return False
+    Right t2 ->
+      let t2fvs = freeVarList t2
+          ms = invertClosure2SubstOn c1 t2fvs
+      in case ms of
+        Just s -> do
+          let st2 = Unbound.substs s t2
+          solveMeta m1 st2
+          solveMeta m st2
+          return True
+        Nothing -> return False
 
 leftMetaSymbol :: PluginId
 leftMetaSymbol = "solver for equalities where left side is an unsolved meta"
@@ -76,9 +86,7 @@ rightMetaHandler constr = do
         MetaVar (MetaVarClosure m2 c2)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m2
-          -- FIXME should only happen after pruning
-          let mic2 = invertClosure c2
-          return $ not solved && isJust mic2
+          return $ not solved
         _ -> return False
     Nothing -> return False
 
@@ -86,16 +94,25 @@ rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m2 c2)) = t2
-  t1 <- Env.extendErrList (occursCheck m2 t1) [ DS "while trying to occurs check"
-                                              , DD t1
-                                              , DS "for"
-                                              , DD constr
-                                              ]
-  let (Just ic2) = closure2Subst <$> invertClosure c2
-      st1 = Unbound.substs ic2 t1
-  solveMeta m2 st1
-  solveMeta m st1
-  return True
+  mt1 <- (fmap Right $ occursCheck m2 t1) `catchError` (\e -> return $ Left e)
+  case mt1 of
+    Left e -> do
+--      Env.warnErr e
+--      Env.warn [ DS "occurs-check failed"
+--               , DD t1
+--               , DS "for"
+--               , DD constr]
+      return False
+    Right rt1 ->
+      let t1fvs = freeVarList rt1
+          ms = invertClosure2SubstOn c2 t1fvs
+      in case ms of
+        Just s -> do
+          let st1 = Unbound.substs s rt1
+          solveMeta m2 st1
+          solveMeta m st1
+          return True
+        Nothing -> return False
 
 rightMetaSymbol :: PluginId
 rightMetaSymbol = "solver for equalities where right side is an unsolved meta"
