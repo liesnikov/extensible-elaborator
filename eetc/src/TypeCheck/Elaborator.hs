@@ -261,20 +261,21 @@ checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 
 -- | abstraction  `\x. a`
 checkType (S.Lam ep1 lam) ty = do
+  (x, body) <- Unbound.unbind lam
+  -- tx is the canonical name for all things bound on this level of labmda/telescope
+  tx <- transName x
+
+
   -- FIXME
   -- we're defaulting to relevant arguments for now
   let mep = I.Rel
   mtyA <- SA.createMetaTerm I.Type
-  mtx <- createUnknownVar
-  mtyB <- Env.extendCtx (I.TypeSig (I.Sig mtx mep mtyA)) (SA.createMetaTerm I.Type)
-  let mbnd = Unbound.bind mtx mtyB
+  mtyB <- Env.extendCtx (I.TypeSig (I.Sig tx mep mtyA)) (SA.createMetaTerm I.Type)
+  let mbnd = Unbound.bind tx mtyB
       metaPi = I.Pi mep mtyA mbnd
 
   CA.constrainEquality ty metaPi I.Type
-
-  (x, body) <- Unbound.unbind lam
   (y', tyB') <- Unbound.unbind mbnd
-  tx <- transName x
   let tyB = Unbound.subst y' (I.Var tx) tyB'
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
