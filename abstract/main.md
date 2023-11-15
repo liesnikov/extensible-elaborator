@@ -107,7 +107,7 @@ Our idea for a new design is to shift focus more towards the constraints themsel
 First we give a stable API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
 This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, ch. 4.4] or communication between actors [@allaisTypOSOperatingSystem2022a].
 Second, to make the language more modular we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
-Our prototype is implemented in Haskell as is available at [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator).
+Our prototype is implemented in Haskell and is available at [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator).
 
 For example, to solve unification problems we need to define a constraint that models them:
 ```haskell
