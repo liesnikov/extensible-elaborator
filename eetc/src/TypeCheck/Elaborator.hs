@@ -81,8 +81,6 @@ inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred"
 -- application
 inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
-  -- FIXME: move this to a solver
-  (nty1, _) <- whnf ty1
 
   -- FIXME
   -- we're defaulting to relevant arguments for now
@@ -93,13 +91,14 @@ inferType (S.App t1 t2) = do
   let bnd = Unbound.bind tx tyB
   let metaPi = I.Pi epx tyA bnd
 
-  CA.constrainEquality nty1 metaPi I.Type
 --  Env.warn [DS "constraining equality while inferring an application",
 --            DD (S.App t1 t2),
 --            DS "equality is between",
 --            DD ty1,
 --            DS "and",
 --            DD metaPi]
+
+  CA.constrainEquality ty1 metaPi I.Type
 
   unless (epx == transEpsilon (S.argEp t2)) $ Env.err
     [DS "In application, expected",
