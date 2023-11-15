@@ -1,6 +1,5 @@
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
-import           Control.Arrow (second)
 import           Control.Monad ( unless, when )
 import           Control.Monad.Except ( MonadError(..)
                                       , MonadIO(..)
@@ -40,6 +39,11 @@ transName n = do
       let s = Unbound.name2String n
       m <- Unbound.fresh $ Unbound.string2Name s
       modifyTcNames (Map.insert n m)
+--      Env.warn [Env.DS "generated a new renaming, old name",
+--                Env.DS $ show n,
+--                Env.DS "new name",
+--                Env.DS $ show m
+--               ]
       return m
     Just m -> return m
 
@@ -90,6 +94,12 @@ inferType (S.App t1 t2) = do
   let metaPi = I.Pi epx tyA bnd
 
   CA.constrainEquality nty1 metaPi I.Type
+--  Env.warn [DS "constraining equality while inferring an application",
+--            DD (S.App t1 t2),
+--            DS "equality is between",
+--            DD ty1,
+--            DS "and",
+--            DD metaPi]
 
   unless (epx == transEpsilon (S.argEp t2)) $ Env.err
     [DS "In application, expected",
@@ -265,7 +275,6 @@ checkType (S.Lam ep1 lam) ty = do
   -- tx is the canonical name for all things bound on this level of labmda/telescope
   tx <- transName x
 
-
   -- FIXME
   -- we're defaulting to relevant arguments for now
   let mep = I.Rel
@@ -274,13 +283,24 @@ checkType (S.Lam ep1 lam) ty = do
   let mbnd = Unbound.bind tx mtyB
       metaPi = I.Pi mep mtyA mbnd
 
+--  Env.warn [DS "constraining equality while checking a lambda",
+--            DD (S.Lam ep1 lam),
+--            DS "against",
+--            DD ty,
+--            DS "equality is between",
+--            DD ty,
+--            DS "and",
+--            DD metaPi]
+
   CA.constrainEquality ty metaPi I.Type
+
   (y', tyB') <- Unbound.unbind mbnd
   let tyB = Unbound.subst y' (I.Var tx) tyB'
   let tep1 = transEpsilon ep1
   tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
   let tlam = Unbound.bind tx tbody
   return $ I.Lam tep1 tlam
+
 -- | application `a b`
 -- checkType t@(S.App terma termb) typ =
 --   Env.err [DS "Type of an application must be inferred not checked",
@@ -533,6 +553,12 @@ checkType (S.Case scrut alts) ty = do
 -- c-infer
 checkType tm ty = do
   (etm, ty') <- inferType tm
+--  Env.warn [DS "constraining equality while checking an inferred type for",
+--            DD tm,
+--            DS "equality is between",
+--            DD ty',
+--            DS "and",
+--            DD ty]
   CA.constrainEquality ty' ty I.Type
   return etm
 
