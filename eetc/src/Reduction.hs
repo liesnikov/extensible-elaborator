@@ -96,10 +96,15 @@ whnf (Case scrut mtchs) = do
       _ -> return (Case nf mtchs, Nothing)
 
 -- metavariables are substituted
-whnf tm@(MetaVar _) = do
+whnf tm@(MetaVar (MetaVarClosure _ cl)) = do
   msol <- SA.lookupMetaVarSolution tm
   case msol of
-    (Just sol) -> whnf sol
+    (Just sol) -> do
+      (rsol, mb) <- whnf sol
+      case mb of
+        Nothing -> do
+          whnf Unbound.substs (closure2Subst cl) rsol
+        Just b -> (Unbound.substs (closure2Subst cl) rsol, b)
     Nothing ->
      maybe (Env.err [DS "Internal error: couldn't block on a meta", DD tm])
            (\b -> return (tm, Just b))
