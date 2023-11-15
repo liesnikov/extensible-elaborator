@@ -1,7 +1,7 @@
 module IdTest where
 
-id : (z:Type) -> z -> z
-id = \x y . y
+id : (x:Type) -> x -> x
+id = \y z . z
 
-id2 : (y:Type) -> y -> (id Type y)
-id2 = \x y . y
+id2 : (a:Type) -> a -> (id Type a)
+id2 = \b c . c
