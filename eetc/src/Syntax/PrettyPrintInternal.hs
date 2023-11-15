@@ -316,7 +316,7 @@ displayTName :: TName -> DispInfo -> Doc
 displayTName m = do
   let number = Unbound.name2Integer m
       name = Unbound.name2String m
-  if (name == "?") || (name == "_")
+  if (Unbound.isFreeName m) && ((name == "?") || (name == "_"))
   then do
     dnumber <- display number
     return $ (PP.text $ name) <> dnumber
