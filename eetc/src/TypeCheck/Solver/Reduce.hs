@@ -13,6 +13,7 @@ import           TypeCheck.Constraints ( (:<:)
                                        )
 import           TypeCheck.Solver.Base
 import           TypeCheck.Solver.PropagateSolutions (propagateSolvedMetasSymbol)
+--import qualified TypeCheck.Environment as Env
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import           Reduction (whnf)
@@ -28,7 +29,15 @@ reduceLeftHandler constr = do
       (rt1,_) <- whnf t1
       if Unbound.aeq rt1 t1
       then return False
-      else return True
+      else do
+--        Env.warn [Env.DS "about to replace",
+--                  Env.DD t1,
+--                  Env.DS "with",
+--                  Env.DD rt1,
+--                  Env.DS "in",
+--                  Env.DD constr
+--                  ]
+        return True
     Nothing -> return False
 
 reduceLeftSolver :: (EqualityConstraint :<: cs) => SolverType cs

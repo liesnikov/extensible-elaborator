@@ -31,9 +31,25 @@ piEqInjectivitySolver constr = do
   if (e1 == e2)
     then do
       ma <- constrainEquality a1 a2 I.Type
+--      Env.warn [Env.DS "constrainting equality in pi-injectivity rule of",
+--                Env.DD (I.Pi e1 a1 b1),
+--                Env.DS "and",
+--                Env.DD (I.Pi e2 a2 b2),
+--                Env.DS "equality is between",
+--                Env.DD a1,
+--                Env.DS "and",
+--                Env.DD a2]
       (x, tyB1, _, tyB2) <- Unbound.unbind2Plus b1 b2
       let mat = I.identityClosure ma
-      mb <- Env.extendCtx (I.TypeSig (I.Sig x e1 mat)) $
+      mb <- Env.extendCtx (I.TypeSig (I.Sig x e1 mat)) $ do
+--        Env.warn [Env.DS "constrainting equality in pi-injectivity rule of",
+--                  Env.DD (I.Pi e1 a1 b1),
+--                  Env.DS "and",
+--                  Env.DD (I.Pi e2 a2 b2),
+--                  Env.DS "equality is between",
+--                  Env.DD tyB1,
+--                  Env.DS "and",
+--                  Env.DD tyB2]
         constrainEquality tyB1 tyB2 I.Type
       let mbt = Unbound.bind x $ I.identityClosure mb
       solveMeta m (I.Pi e1 mat mbt)

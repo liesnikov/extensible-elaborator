@@ -276,7 +276,7 @@ lookupMetaVarSolution _ = return $ Nothing
 substMetas :: (MonadTcReader m, Unbound.Subst Term a) => a -> m a
 substMetas t = do
   solutions <- asksTc (metaSolutions . meta)
-  return $ Unbound.substs (Map.toList $ Map.mapKeys (unMapVarId) solutions) t
+  return $ Unbound.substs (Map.toList $ Map.mapKeys unMapVarId solutions) t
 
 -- perform recursive substitution of metas
 substAllMetas :: (MonadTcReader m, Unbound.Subst Term a, Unbound.Alpha a) => a -> m a

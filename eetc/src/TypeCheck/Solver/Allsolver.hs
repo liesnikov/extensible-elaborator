@@ -139,12 +139,13 @@ solveAllPossible' n a = do
         -- remove the constraint from the set
         let (Just sconstr') = SA.deactivateSucConstraint cid newsconstr
 
-        -- let diffconstr = foldr Map.delete newsconstr (Map.keys sconstr)
-
-        --Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
-        --         , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
-        --         , Env.DS " which generated new constraints"
-        --         , Env.DD $ Map.map fst $ diffconstr]
+--        let diffconstr = foldr Map.delete (State.active newsconstr)
+--                                          (Map.keys (State.active sconstr'))
+--
+--        Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
+--                 , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
+--                 , Env.DS " which generated new constraints"
+--                 , Env.DD $ Map.map fst $ diffconstr]
 
         -- update the set of constraints
         modifyTc $ \s -> s { State.constraints = sconstr' }

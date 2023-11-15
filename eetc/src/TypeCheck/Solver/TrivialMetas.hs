@@ -44,7 +44,7 @@ leftMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 leftMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m1 c1)) = t1
-  mt2 <- (fmap Right $ occursCheck m1 t2) `catchError` (\e -> return $ Left e)
+  mt2 <- fmap Right (occursCheck m1 t2) `catchError` (return . Left)
   case mt2 of
     Left e -> do
 --      Env.warnErr e
@@ -94,7 +94,7 @@ rightMetaSolver :: (EqualityConstraint :<: cs) => SolverType cs
 rightMetaSolver constr = do
   let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m2 c2)) = t2
-  mt1 <- (fmap Right $ occursCheck m2 t1) `catchError` (\e -> return $ Left e)
+  mt1 <- fmap Right (occursCheck m2 t1) `catchError` (return . Left)
   case mt1 of
     Left e -> do
 --      Env.warnErr e
