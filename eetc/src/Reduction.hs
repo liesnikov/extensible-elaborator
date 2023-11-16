@@ -104,8 +104,8 @@ whnf tm@(MetaVar (MetaVarClosure _ cl)) = do
       (rsol, mb) <- whnf sol
       case mb of
         Nothing -> do
-          whnf Unbound.substs (closure2Subst cl) rsol
-        Just b -> (Unbound.substs (closure2Subst cl) rsol, b)
+          whnf (Unbound.substs (closure2Subst cl) rsol)
+        Just b -> return (Unbound.substs (closure2Subst cl) rsol, mb)
     Nothing ->
      maybe (Env.err [DS "Internal error: couldn't block on a meta", DD tm])
            (\b -> return (tm, Just b))
