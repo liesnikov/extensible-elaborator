@@ -248,10 +248,8 @@ inferType t@(S.Case scrut alts) =
           ]
 
 inferType t@S.Implicit =
-  Env.err [DS "Encountered implicit argument",
-           DD t,
-           DS "not supported yet"
-          ]
+  Env.err [DS "Implicit must be checked not inferred",
+           DD t]
 
 checkType :: (MonadElab c m) => S.Term -> I.Type -> m I.Term
 
@@ -547,6 +545,11 @@ checkType (S.Case scrut alts) ty = do
     exhaustivityCheck escrut' sty epats
     CA.constrainEquality elabpromise (I.Case escrut ealts) ty
   return elabpromise
+
+checkType S.Implicit ty = do
+  term <- SA.createMetaTerm ty
+  CA.constrainMetaFilledIn term (Just ty)
+  return term
 
 -- c-infer
 checkType tm ty = do

@@ -108,6 +108,7 @@ library
     TypeCheck.Solver.TypeConstructor
     TypeCheck.Solver.ConstructorInjectivity
     TypeCheck.Solver.Reduce
+    TypeCheck.Solver.Implicit
     TypeCheck.Solver.Allsolver
   build-depends:
     array >= 0.3.0.2 && < 0.6,

@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeApplications #-}
 module TypeCheck.ConstraintsActions ( constrainEquality
                                     , constrainTConAndFreeze
+                                    , constrainMetaFilledIn
                                     ) where
 
 import           Syntax.Internal as Syntax
@@ -15,6 +16,7 @@ import           TypeCheck.Environment as Env
 import           TypeCheck.Constraints ( BasicConstraintsF
                                        , EqualityConstraint(..)
                                        , TypeConstructorConstraint(..)
+                                       , FillInImplicit (..)
                                        , (:<:)(..)
                                        )
 
@@ -36,3 +38,10 @@ constrainTConAndFreeze ty frozen =
   raiseConstraintAndFreeze
     (inj @_ @BasicConstraintsF $ TConConstraint ty)
     frozen
+
+
+constrainMetaFilledIn :: (MonadTcReaderEnv m,
+                           MonadConstraints m, BasicConstraintsF :<: (MConstr m))
+                      => Syntax.Term -> Maybe (Syntax.Type) -> m ()
+constrainMetaFilledIn term mty =
+  raiseConstraint $ inj @_ @BasicConstraintsF $ FillInImplicit term mty

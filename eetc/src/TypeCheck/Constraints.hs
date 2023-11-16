@@ -5,6 +5,7 @@ module TypeCheck.Constraints ( ConstraintF
                              , EmptyConstraint(..)
                              , EqualityConstraint(..)
                              , TypeConstructorConstraint(..)
+                             , FillInImplicit(..)
                              , ConjunctionConstraint(..)
                              , BasicConstraintsF
                              , (:+:)
@@ -76,12 +77,17 @@ instance Disp1 ConjunctionConstraint where
                                                PP.text " , " <+>
                                                f c2)
 
+data FillInImplicit e = FillInImplicit Syntax.Term (Maybe Syntax.Type)
   deriving Functor
 
+instance Disp1 FillInImplicit where
+  liftdisp _ (FillInImplicit t ty) = PP.text "have to fill in an implicit" <+> disp t <+>
+                                     PP.text "of potential type" <+> disp ty
 
 type BasicConstraintsF =   EqualityConstraint
                        :+: ConjunctionConstraint
                        :+: TypeConstructorConstraint
+                       :+: FillInImplicit
                        :+: EmptyConstraint
 
 ----------------------------------------------------------

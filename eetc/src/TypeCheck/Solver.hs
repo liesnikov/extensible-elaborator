@@ -11,6 +11,8 @@ import TypeCheck.Solver.PiInjectivity
 import TypeCheck.Solver.ConstructorInjectivity
 import TypeCheck.Solver.Reduce
 
+import TypeCheck.Solver.Implicit
+
 import TypeCheck.Solver.Allsolver
 
 allSolvers:: [Plugin BasicConstraintsF]
@@ -27,6 +29,7 @@ allSolvers = [ identityPlugin
              , typeInjectivityPlugin
              , unificationStartMarker
              , unificationEndMarker
+             , fillInImplicitPlugin
              ]
 
 allsolver :: Allsolver BasicConstraintsF
