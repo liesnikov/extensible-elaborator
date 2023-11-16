@@ -14,6 +14,6 @@ jobs:
     - name: Archive paper build
       uses: actions/upload-artifact@v3.1.3
       with:
-        name: paper
+        name: paper.pdf
         path: paper/result/main.pdf
     
