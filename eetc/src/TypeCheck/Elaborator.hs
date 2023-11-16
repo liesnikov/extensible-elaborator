@@ -1,6 +1,6 @@
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
-import           Control.Monad ( unless, when, foldM )
+import           Control.Monad ( unless, when, foldM, mapM )
 import           Control.Monad.IO.Class (MonadIO(..))
 import           Control.Monad.Except ( MonadError(..))
 import           Data.List ( nub )
@@ -771,7 +771,8 @@ elabModule defs modul = do
         elabE
         (return [])
         (moduleEntries modul)
-  return $ modul {moduleEntries = checkedEntries}
+  substEntries <- mapM (SA.substAllMetas) checkedEntries
+  return $ modul {moduleEntries = substEntries}
   where
     elabE :: (MonadElab c m) => S.Decl -> m [I.Decl] -> m [I.Decl]
     d `elabE` m = do
@@ -814,13 +815,14 @@ elabEntry (S.Def n term) = do
                   checkType term (I.sigType sig) `catchError` handler
                 solveAllConstraints
                 selabterm <- SA.substAllMetas elabterm
+                selabsig <- SA.substAllMetas sig
                 return $ if en `elem` Unbound.toListOf Unbound.fv selabterm
                          -- FIXME
                          -- this would be a RecDef, but currently core is erroring out
                          -- on RecDef (rightfully) claiming that this is an internal
                          -- construct
-                         then AddCtx [I.TypeSig sig, I.Def en selabterm]
-                         else AddCtx [I.TypeSig sig, I.Def en selabterm]
+                         then AddCtx [I.TypeSig selabsig, I.Def en selabterm]
+                         else AddCtx [I.TypeSig selabsig, I.Def en selabterm]
     die term' = do
       en <- transName n
       Env.extendSourceLocation (S.unPosFlaky term) term $
@@ -833,7 +835,9 @@ elabEntry (S.Def n term) = do
 elabEntry (S.TypeSig sig) = do
   esig <- elabSig sig
   duplicateTypeBindingCheck esig
-  return $ AddHint esig
+  solveAllConstraints
+  selabsig <- SA.substAllMetas esig
+  return $ AddHint selabsig
 elabEntry (S.Demote ep) = return (AddCtx [I.Demote $ transEpsilon ep])
 -- rule Decl_data
 elabEntry (S.Data t (S.Telescope delta) cs) =
