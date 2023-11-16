@@ -405,20 +405,28 @@ checkType (S.LetPair p bnd) typ = do
            checkType body typ
   let ebnd = Unbound.bind (tx,ty) ebody
   return $ I.LetPair ep ebnd
+
 -- | Equality type  `a = b`
-checkType t@(S.TyEq ta tb) typ =
-  Env.err [DS "Equality type must be inferred not checked",
-           DD t
-          ]
+-- checkType t@(S.TyEq ta tb) typ = do
+--   Env.err [DS "Equality type must be inferred not checked",
+--            DD t
+--           ]
+
 -- | Proof of equality `Refl`
 checkType S.Refl typ@(I.TyEq a b) = do
   -- FIXME
   -- Is creating a meta term the right thing to do here?
   unknownType <- SA.createMetaTerm I.Type
+--  Env.warn [DS "constraining equality while checking refl"
+--           , DD a
+--           , DS "="
+--           , DD b
+--           , DS "of", DD unknownType]
   CA.constrainEquality a b unknownType
   return I.Refl
 checkType S.Refl typ =
   Env.err [DS "Refl annotated with ", DD typ]
+
 -- | equality type elimination  `subst a by b`
 checkType (S.Subst a b) typ = do
   -- infer the type of the proof 'b'
