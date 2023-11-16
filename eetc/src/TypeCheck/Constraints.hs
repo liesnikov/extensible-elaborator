@@ -76,19 +76,12 @@ instance Disp1 ConjunctionConstraint where
                                                PP.text " , " <+>
                                                f c2)
 
-
--- do the occurs check on term t of type ty with respect to support tele
-data OccursCheck e = OccursCheck Syntax.Term Syntax.Type [Syntax.TName]
   deriving Functor
 
-instance Disp1 OccursCheck where
-  liftdisp _ (OccursCheck t ty tele) =
-    PP.text "occurs_check" <+> disp t <+> disp ty <+> displist tele
 
 type BasicConstraintsF =   EqualityConstraint
                        :+: ConjunctionConstraint
                        :+: TypeConstructorConstraint
-                       :+: OccursCheck
                        :+: EmptyConstraint
 
 ----------------------------------------------------------
