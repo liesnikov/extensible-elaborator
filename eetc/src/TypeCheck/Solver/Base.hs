@@ -129,32 +129,3 @@ checkArgEq nargs margs
       mr <- go tl
       return $ fmap (\t -> rarg : t) mr
     go _ = return Nothing
-
-
-
--- checkArgEqTyDi (EqualityConstraint :<: cs) =>
---               [Syntax.Arg] -> [Syntax.Arg] -> [Syntax.Decl] ->
---               SolverReturnType cs (Maybe [Syntax.Arg])
--- checkArgEqTyDi nargs margs decls
---   | length nargs == length margs = go (zip nargs margs) decls
---   | otherwise = return Nothing
---   where
---     go :: (EqualityConstraint :<: cs) =>
---           [(Syntax.Arg, Syntax.Arg)] -> [Syntax.Decl] ->
---           SolverReturnType cs (Maybe [Syntax.Arg])
---     go [] [] = return $ Just []
---     go ((Syntax.Arg Rel t1, Syntax.Arg Rel t2) : tl)
---        (Syntax.TypeSig (I.Sig x Rel ty) : decls)
---       = do
---       mh <- constrainEquality t1 t2 ty
---       let mt = Syntax.identityClosure mh
---           marg = Syntax.Arg Rel mt
---       Unbound.subst 
---       mr <- go tl decls
---       return $ fmap (\t -> marg : t) mr
---     go ((Syntax.Arg Irr t1, Syntax.Arg Irr t2) : tl) = do
---       -- don't check equality for irrelevant arguments
---       let rarg = Syntax.Arg Irr t1
---       mr <- go tl
---       return $ fmap (\t -> rarg : t) mr
---     go _ = return Nothing
