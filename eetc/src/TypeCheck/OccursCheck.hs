@@ -436,10 +436,8 @@ instance CheckForRigid I.Term where
           (I.Var x) -> return $ if Unbound.isFreeName x then [x] else []
           (I.Lam _ b) -> collectAllBoundRigid b
           (I.Pi ep typ bod) -> do
-            mep <- collectAllRigid ep
             mtyp <- collectAllRigid typ
             mbod <- collectAllBoundRigid bod
-            return $ mep ++ mtyp ++ mbod
             return $ mtyp ++ mbod
           (I.Ann term ty) -> do
             mt <- collectAllRigid term

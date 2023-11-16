@@ -16,7 +16,7 @@ module TypeCheck.Constraints ( ConstraintF
 import qualified Syntax.Internal as Syntax
 import           Text.PrettyPrint ( (<+>) )
 import qualified Text.PrettyPrint as PP
-import PrettyPrint (Disp, Disp1(..), disp, displist)
+import PrettyPrint (Disp, Disp1(..), disp)
 
 -- following data types a-la carte approach
 
@@ -25,7 +25,7 @@ import PrettyPrint (Disp, Disp1(..), disp, displist)
 data ConstraintF f = In ConstraintId (f (ConstraintF f))
 
 instance (Disp1 f) => Disp (ConstraintF f) where
-  disp (In i f) = PP.text "constraint" <+> (PP.integer i <> PP.text ":") <+> liftdisp (disp) f
+  disp (In i f) = PP.text "constraint" <+> (PP.integer i <> PP.text ":") <+> liftdisp disp f
 
 instance Eq (ConstraintF f) where
   c1 == c2 = getConstraintId c1 == getConstraintId c2
@@ -51,8 +51,7 @@ data EqualityConstraint e =
   deriving Functor
 
 instance Disp1 EqualityConstraint where
-  liftdisp _ (EqualityConstraint t1 t2 ty _ ) = (PP.parens $
-                                                 disp t1 <+>
+  liftdisp _ (EqualityConstraint t1 t2 ty _ ) = PP.parens (disp t1 <+>
                                                  PP.text "~" <+>
                                                  disp t2) <+>
                                                 PP.text ":" <+> disp ty
@@ -73,9 +72,9 @@ data ConjunctionConstraint e = ConjunctionConstraint e e
 
 instance Disp1 ConjunctionConstraint where
   liftdisp f (ConjunctionConstraint c1 c2) = PP.parens (
-                                               (f c1) <+>
+                                               f c1 <+>
                                                PP.text " , " <+>
-                                               (f c2))
+                                               f c2)
 
 
 -- do the occurs check on term t of type ty with respect to support tele

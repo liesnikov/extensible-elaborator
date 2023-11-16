@@ -2,8 +2,6 @@
 module TypeCheck.Solver.TrivialMetas ( leftMetaSymbol, leftMetaPlugin
                                      , rightMetaSymbol, rightMetaPlugin) where
 
-import           Data.Maybe (isJust)
-
 import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import           Syntax.Internal ( Term(MetaVar)
