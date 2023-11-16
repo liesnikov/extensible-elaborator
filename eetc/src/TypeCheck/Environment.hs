@@ -33,8 +33,10 @@ module TypeCheck.Environment
   )
 where
 
+
+import Control.Monad (unless)
 import Control.Monad.IO.Class ( MonadIO(..) )
-import Control.Monad.Except  ( unless, MonadError(..))
+import Control.Monad.Except  ( MonadError(..))
 import Data.List
 import Data.Maybe ( listToMaybe )
 import PrettyPrint ( SourcePos, D(..), Disp(..), Doc, render)

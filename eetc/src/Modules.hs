@@ -7,6 +7,7 @@ import Parser(parseModuleFile, parseModuleImports)
 
 import Text.ParserCombinators.Parsec.Error ( ParseError )
 
+import Control.Monad (filterM)
 import Control.Monad.Except
 import Control.Monad.State.Lazy
 import System.FilePath

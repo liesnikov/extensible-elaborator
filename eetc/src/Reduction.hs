@@ -2,7 +2,8 @@
 
 module Reduction (whnf) where
 
-import Control.Monad.Except (MonadError, zipWithM, catchError)
+import Control.Monad (zipWithM)
+import Control.Monad.Except (MonadError, catchError)
 --only available from mtl 2.3
 --import Control.Monad.Error.Class (tryError)
 

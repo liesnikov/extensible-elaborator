@@ -3,7 +3,9 @@ module TypeCheck.Equal (whnf, equate, ensurePi,
                         ensureTyEq,
                         ensureTCon, unify ) where
 
-import Control.Monad.Except (MonadError(..), MonadPlus, unless, catchError, zipWithM, zipWithM_)
+
+import Control.Monad (unless, zipWithM, zipWithM_, MonadPlus)
+import Control.Monad.Except (MonadError(..), catchError)
 
 import Syntax.Internal
 import Syntax.ModuleStub

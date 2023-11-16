@@ -1,9 +1,8 @@
 module TypeCheck.Elaborator (elabModules, elabTerm) where
 
-import           Control.Monad ( unless, when )
-import           Control.Monad.Except ( MonadError(..)
-                                      , MonadIO(..)
-                                      , foldM )
+import           Control.Monad ( unless, when, foldM )
+import           Control.Monad.IO.Class (MonadIO(..))
+import           Control.Monad.Except ( MonadError(..))
 import           Data.List ( nub )
 import           Data.Maybe ( catMaybes )
 import qualified Data.Map.Strict as Map
