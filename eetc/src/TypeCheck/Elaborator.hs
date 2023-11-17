@@ -455,7 +455,9 @@ checkType (S.Contra p) typ = do
   b <- SA.createMetaTerm ty
   let metaEq = I.TyEq a b
   CA.constrainEquality typ metaEq I.Type
-
+  --FIXME
+  -- this only makes sense to do after the constraint has been solved,
+  -- so we have to freeze here
   (a', ba) <- whnf a
   (b', bb) <- whnf b
   case (a, b) of
@@ -607,8 +609,10 @@ elabTypeTele tele =
 -- | Create a Def if either side normalizes to a single variable
 def :: (MonadElab c m) => I.Term -> I.Term -> m [I.Decl]
 def t1 t2 = do
-  (nf1,_) <- whnf t1
-  (nf2,_) <- whnf t2
+  st1 <- SA.substAllMetas t1
+  st2 <- SA.substAllMetas t2
+  (nf1,_) <- whnf st1
+  (nf2,_) <- whnf st2
   case (nf1, nf2) of
     (I.Var x, I.Var y) | x == y -> return []
     (I.Var x, _) -> return [I.Def x nf2]
