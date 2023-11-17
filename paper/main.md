@@ -58,7 +58,7 @@ Unification problems can be seen as a kind of constraints -- a viewpoint that al
 In this paper we propose a new architecture for an extensible elaborator for dependently-typed languages.
 The idea is to provide an API for developers to tap into the elaboration procedure with custom solvers that can manipulate metavariables and constraints placed on them.
 This design separates the what the solvers are doing from the when, making it explicit what are the interaction points between different parts of the type-checker.
-In its own turn, this allows the developer to reason more easily about exceptions and asynchronisity in the type-checker and add new features in a more contained fashion.
+In its own turn, this allows the developer to reason more easily about exceptions and asynchronicity in the type-checker and add new features in a more contained fashion.
 Practically, this means that adding a new feature for the most part is contained within one module, as opposed to being spread around the codebase.
 
 Contributions:
