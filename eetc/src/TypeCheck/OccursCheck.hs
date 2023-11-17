@@ -87,9 +87,17 @@ instance Occurs I.Term where
           let env' = extendLocal env x
           body' <- occurs env' body
           return $ I.Lam h (Unbound.bind x body')
---      (I.App h arg) -> _
---      (I.Ann t ty) -> _
---      (I.Pos s t) -> _
+        (I.App h arg) -> do
+          h' <- occurs env h
+          arg' <- occurs env arg
+          return $ I.App h' arg'
+        (I.Ann t ty) -> do
+          t' <- occurs env t
+          ty' <- occurs env ty
+          return $ I.Ann t' ty'
+        (I.Pos s t) -> do
+          t' <- occurs env t
+          return $ I.Pos s t'
         (I.Pi e h b) -> do
             -- ^ extend the context of allowed vars with a new binding
           (x, body) <- Unbound.unbind b
@@ -99,14 +107,23 @@ instance Occurs I.Term where
 
         I.TrustMe -> return I.TrustMe
         I.PrintMe -> return I.PrintMe
---      (I.Let t b) -> _
+        (I.Let t b) -> do
+          t' <- occurs env t
+          (x, body) <- Unbound.unbind b
+          let env' = extendLocal env x
+          body' <- occurs env' body
+          return $ I.Let t' (Unbound.bind x body')
 
         I.TyUnit -> return I.TyUnit
         I.LitUnit -> return I.LitUnit
 
         I.TyBool -> return I.TyBool
         (I.LitBool b) -> return $ I.LitBool b
---      (I.If b t e) -> _
+        (I.If b t e) -> do
+          b' <- occurs env b
+          t' <- occurs env t
+          e' <- occurs env e
+          return $ I.If b' t' e'
 
         (I.Sigma a body) -> do
           a' <- occurs env a
@@ -119,14 +136,22 @@ instance Occurs I.Term where
           a' <- occurs env a
           b' <- occurs env b
           return $ I.Prod a' b'
---     (I.LetPair a b) -> _
+        (I.LetPair a b) -> do
+          a' <- occurs env a
+          ((x, y), body) <- Unbound.unbind b
+          let env' = extendLocals env' [x,y]
+          body' <- occurs env' body
+          return $ I.LetPair a' (Unbound.bind (x,y) body')
 
         (I.TyEq a b) -> do
           a' <- occurs env a
           b' <- occurs env b
           return $ I.TyEq a' b'
         I.Refl -> return I.Refl
---      (I.Subst t e) -> _
+        (I.Subst t e) -> do
+          t' <- occurs env t
+          e' <- occurs env e
+          return $ I.Subst t' e'
         (I.Contra ct) -> do
           t' <- occurs env ct
           return $ I.Contra t'

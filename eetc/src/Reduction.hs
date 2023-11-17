@@ -31,9 +31,7 @@ whnf (App t1 t2) = do
     Just b -> return (App nf t2, Just b)
     Nothing -> case nf of
       (Lam ep bnd) -> return (Unbound.instantiate bnd [unArg t2], Nothing)
-      _ -> Env.err [ DS "reduction of an application head didn't block and returned a non-lambda"
-                   , DD nf
-                   ]
+      t -> return (App nf t2, Nothing)
 
 -- ignore/remove type annotations and source positions when normalizing
 whnf (Ann tm _) = whnf tm
@@ -49,9 +47,7 @@ whnf (If t1 t2 t3) = do
     Nothing -> case nf of
         (LitBool True) -> whnf t2
         (LitBool False) -> whnf t3
-        _ -> Env.err [ DS "reduction of an if condition didn't block and returned a non-boolean"
-                     , DD nf
-                     ]
+        c -> return (If nf t2 t3, Nothing)
 
 
 whnf (LetPair a bnd) = do
@@ -60,9 +56,7 @@ whnf (LetPair a bnd) = do
     Just b -> return (LetPair nf bnd, Just b)
     Nothing -> case nf of
       (Prod b1 c) -> whnf (Unbound.instantiate bnd [b1, c])
-      _ -> Env.err [ DS "reduction of a pair didn't block and returned a non-pair"
-                   , DD nf
-                   ]
+      t -> return (LetPair nf bnd, Nothing)
 
 
 whnf (Subst tm pf) = do
@@ -72,9 +66,8 @@ whnf (Subst tm pf) = do
     Nothing -> do
       case tm' of
         Refl -> whnf pf
-        _ -> Env.err [ DS "reduction of an equality proof in a subst didn't block and returned a non-refl"
-                     , DD tm'
-                     ]
+        _ -> return (Subst tm' pf, Nothing)
+
 
 whnf (Case scrut mtchs) = do
   (nf, mblock) <- whnf scrut
