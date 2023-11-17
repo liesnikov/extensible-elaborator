@@ -11,4 +11,4 @@ jobs:
       with:
         nix_path: nixpkgs=https://releases.nixos.org/nixos/23.05-small/nixos-23.05.4461.21443a102b1a/nixexprs.tar.xz
     - uses: DeterminateSystems/magic-nix-cache-action@v2
-    - run: make -C eetc
+    - run: cd eetc; cabal build
