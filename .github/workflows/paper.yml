@@ -1,0 +1,19 @@
+name: "Build paper"
+on:
+  pull_request:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v22
+      with:
+        nix_path: nixpkgs=https://releases.nixos.org/nixos/23.05-small/nixos-23.05.4461.21443a102b1a/nixexprs.tar.xz
+    - uses: DeterminateSystems/magic-nix-cache-action@v2
+    - run: make -C paper
+    - name: Archive paper build
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: paper.pdf
+        path: paper/result/main.pdf
