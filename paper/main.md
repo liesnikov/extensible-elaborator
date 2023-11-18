@@ -20,7 +20,7 @@ header-includes: |
     \begin{abstract}
     Dependently-typed languages are used for statically enforcing properties of programs and for enabling type-driven development.
     While there's been a lot of work to find the right theoretical foundations for the core type theory, the implementations have been studied to a smaller extent.
-    In particular, theoretical works rarely consider the plethora of features that exist in bigger languages like Agda, so the developers have to make a lot of adaptations in the implementations, making them rather ad-hoc, in particular in the elaborator.
+    In particular, theoretical works rarely consider the plethora of features that exist in bigger languages like Agda, so the developers have to make a lot of adaptations in the implementations, making them rather ad hoc, in particular in the elaborator.
     And when these features appear organically over time they can lead to codebases that are hard to maintain.
     We present a new design for the elaboration of dependently-typed languages based on the idea of an open datatype for constraints and plugin system for solvers to tackle these issues.
     This allows for a more compact base elaborator implementation while enabling extensions to the type system.
@@ -32,7 +32,7 @@ header-includes: |
 Strongly-typed languages allow us to catch certain classes of bugs at compile-time by checking the implementation against the type-signature.
 When the types are provided by the user it can be viewed as a form of specification, constraining the behaviour of the programs.
 This comes with the benefit of more static guarantees but with an increased toll on the user to supply more precise information about the program.
-Since type is part of the specification we can use this information to infer parts of our program, following an idea that Connor McBride aptly worded as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
+Since type is part of the specification we can use this information to infer parts of the program, following an idea that Connor McBride aptly worded as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
 Some examples here include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
 
 In dependently-typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2022], Coq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
@@ -40,7 +40,7 @@ This gives us an opportunity to infer even larger parts of our programs from the
 Techniques here include implicit arguments in Agda, implicit coercions in Coq, and tactic arguments in Idris.
 The inference or "solving" can be not only automatic but also interactive or partially automatic.
 For example, holes in Agda, proof obligations and canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq, and holes in Haskell [@koppelSearchingEntangledProgram2022].
-All of these mechanisms use different solvers and have various degrees of extensibility.
+All these mechanisms use different solvers and have various degrees of extensibility.
 They are usually not isolated from each other and can therefore interact in the way the user expects them to (for example, in this case between implicits and instances [@agdausersPerformanceRegressionIssue2018]).
 
 In all of these examples, the solvers evolved organically over time together with the language.
@@ -76,17 +76,17 @@ In the former case, they are even reflected and can be manipulated by the user [
 This has proved to be a good design decision for GHC, as is reflected, for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
 
 In the land of dependently-typed languages constraints are much less principled.
-Agda has a family of constraints[^agda-constraints-datatype] that grew organically, currently counting 17 constructors.
+Agda has a family of constraints[^agda-constraints-datatype] that grew organically, currently counting 17 \todo{update to 18? 19?} constructors.
 Idris technically has constraints[^idris-constraints-datatype] with the only two constructors being equality constraint for two terms and for two sequences of terms.
 The same[^lean-constraints-datatype] holds for Lean.
-These languages either use constraints in a very restricted, single use-case manner -- for unification, namely -- or in an unprincipled way.
-In our view, more methodical approach to constraints will result in a more robust elaborator as a whole.
+These languages either use constraints in a restricted, single use-case manner -- namely, for unification -- or in an unprincipled way.
+In our view, more methodical approach to constraints will result in more robust elaborators across the board.
 
 In this section we go over three typical challenges that come up while building a compiler for a dependently-typed language and the way they are usually solved.
-We cover unification of the base language and the complexity of managing the state of the unifier in section @sec:conversion_checking.
-Then we take a look at different kinds of implicit arguments and their implementation in section @sec:implicit-arguments.
-We briefly touch on the problem of extending the unifier in section @sec:extending-unification.
-Finally, we talk about the ideas behind the new design in section
+We cover unification of the base language and the complexity of managing the state of the unifier in Section @sec:conversion_checking.
+Then we take a look at different kinds of implicit arguments and their implementation in Section @sec:implicit-arguments.
+We briefly touch on the problem of extending the unifier in Section @sec:extending-unification.
+Finally, we talk about the ideas behind the new design in Section
 @sec:what-is-our-design-bringing-into-the-picture.
 
 [^agda-constraints-datatype]:
@@ -100,10 +100,9 @@ We shorten the links in footnotes to paths in the repository, the source code ca
 ## Conversion checking in the presence of a meta-variables ## {#sec:conversion_checking}
 
 As mentioned in the introduction, in the process of type-checking a program we need to compare terms and it is the job of the unifier, which is notoriously hard to implement.
-The complexity stems from the desire of compiler writers to implement the most powerful unifier, while being limited by the fact that it higher-order unification is undecidable in general.
-Some of this complexity is unavoidable, but we can manage it better by splitting it up into small modular components.
+The complexity stems from the wish of compiler writers to implement the most powerful unifier, while being limited by the fact that higher-order unification is undecidable in general.
+Some of this complexity is unavoidable, but we can manage it better by splitting up the unifier into smaller modular parts.
 In practice, this means that one doesn't have to fit together an always-growing conversion checker but can instead write different cases separately.
-We rely on the constraint solver machinery to distribute the problems to the fitting solvers.
 
 An example from Agda's conversion checker is `compareAs` function[^compareAs-fucntion] which provides type-driven conversion checking.
 The function is almost 90 lines long, and yet the vast majority of it is special cases of metavariables.
@@ -111,7 +110,7 @@ This function calls the `compareTerm'` function[^compareTerm-function], which it
 `compareTerm'` calls the `compareAtom` function[^compareAtom-function]:.
 Which itself is almost 200 lines of code.
 Each of the above functions implements part of the "business logic" of the conversion checker.
-But each of them contains a lot of code dealing with bookkeeping related to metavariables and constraints:
+But each of them contains a lot of code that deals with bookkeeping related to metavariables and constraints:
 
 1. They have to throw and catch exceptions, driving the control flow of the unification.
 2. They have to compute blocking tags that determine when a postponed constraint is retried.
@@ -138,8 +137,8 @@ case (m, n) of
 
 
 The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large modules that are hard to understand.
-The sizes of modules with unifiers are as follows: Idris ([1.5kloc](https://github.com/idris-lang/Idris2/blob/102d7ebc18a9e881021ed4b05186cccda5274cbe/src/Core/Unify.idr)), Lean ([1.8kloc](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)), Coq ([1.8kloc](https://github.com/coq/coq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/pretyping/evarconv.mli)).
-For Haskell, which is not a dependently-typed language yet but does have a constraints system [@peytonjonesTypeInferenceConstraint2019], this number is at [2kloc](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs).
+The sizes of modules with unifiers are as follows: Idris (1.5kloc[^idris-unifier]), Lean (1.8kloc[^lean-unifier]), Coq (1.8kloc[^coq-unifier]).
+For Haskell, which is not a dependently-typed language yet, but does have a constraints system [@peytonjonesTypeInferenceConstraint2019], this number is at 2kloc[^ghc-unifier].
 
 [^compareAs-fucntion]: [./src/full/Agda/TypeChecking/Conversion.hs#L146-L218](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218)
 [^compareTerm-function]: [./src/full/Agda/TypeChecking/Conversion.hs#L255-L386](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386)
@@ -148,14 +147,21 @@ For Haskell, which is not a dependently-typed language yet but does have a const
 [^20lines-compareAtom]:
 [./src/full/Agda/TypeChecking/Conversion.hs#L530-L579](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579)
 
+
+[^idris-unifier]: [./src/Core/Unify.idr](https://github.com/idris-lang/Idris2/blob/102d7ebc18a9e881021ed4b05186cccda5274cbe/src/Core/Unify.idr)
+[^lean-unifier]: [./src/Lean/Meta/ExprDefEq.lean](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)
+[^coq-unifier]: [./pretyping/evarconv.mli](https://github.com/coq/coq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/pretyping/evarconv.mli)
+[^ghc-unifier]:
+[./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs)
+
 ## Type-checking function application in the presence of implicit arguments ## {#sec:implicit-arguments}
 
 During the type-checking of function application there may be different kinds of arguments to process, for example, instance arguments, implicit arguments, or tactic arguments.
 If we start from a simple case of type-checking an application of a function symbol to regular arguments, every next extension requires to be handled in a special case.
 
-Take Agda -- when checking an application during the insertion of implicit arguments [^agda-insertion-of-implicit-arguments] we already have to carry the information on how the argument will be resolved and then create a specific kind of metavariables [^agda-specific-kinds-of-metavariables] [@norellPracticalProgrammingLanguage2007 chap. 3] - for each of those cases.
+Take Agda -- when checking an application during the insertion of implicit arguments[^agda-insertion-of-implicit-arguments] we already have to carry the information on how the argument will be resolved and then create a specific kind of metavariables[^agda-specific-kinds-of-metavariables] [@norellPracticalProgrammingLanguage2007 chap. 3] - for each of those cases.
 
-Idris 2 [@theidristeamIdrisTutorial2021, chap. 13.1] in the case of `auto` variables  has to essentially do inline the search procedure through a chain of elaboration function calls (`checkApp` to `checkAppWith` to `checkAppWith'`) to `makeAutoImplicit`[^idris2-makeautoimplicit-source].
+Idris 2 [@theidristeamIdrisTutorial2021, chap. 13.1] in the case of `auto` variables  has to essentially inline the search procedure through a chain of elaboration function calls (`checkApp` to `checkAppWith` to `checkAppWith'`) to `makeAutoImplicit`[^idris2-makeautoimplicit-source].
 This can accommodate interfaces (or type classes), but one can imagine that if a different kind of implicit was added, like tactic arguments, or Canonical Structures we'd have to inline the search again, requiring a non-trivial modification to the elaboration mechanism.
 
 [^idris2-makeautoimplicit-source]:
@@ -165,84 +171,7 @@ This can accommodate interfaces (or type classes), but one can imagine that if a
 
 [^agda-specific-kinds-of-metavariables]: [./src/full/Agda/TypeChecking/Implicit.hs#L131-L150](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150)
 
-While the codebases above show that it is certainly possible to extend languages with new features if the language wasn't written with extensibility in mind this can lead to rather ad-hoc solutions.
-Instead is of handling every kind of metavariable in a separate way we'd like to uniformly dispatch a search for the solution, which is then handled by the constraint solvers.
-We can achieve this by creating metavariables for the unknown terms and then raising a constraint for the meta containing the type of the meta.
-Then this constraint can be matched on by the appropriate solver based on the type and the elaborator for the application of a function doesn't have to know anything about the implicits at all.
-The only thing we require is that the elaboration of the argument is called with the type information available.
-This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
-
-``` haskell
-inferType (App t1 t2) = do
-  (et1, Pi tyA tyB) <- inferType t1
-  et2 <- checkType t2 tyA
-  return (App et1 et2, subst tyB et2)
-```
-
-```haskell
-checkType (Implicit) ty = do
-  m <- createMetaTerm
-  raiseConstraint $ FillInTheMeta m ty
-  return m
-```
-
-This metavariable in its own turn gets instantiated by a fitting solver.
-The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
-
-If it is a regular implicit, however, the only solver that's needed is a trivial one that checks that the metavariable has been instantiated indeed.
-This is because a regular implicit should be instantiated by a unification problem encountered at some point later.
-This serves as a guarantee that all implicits have been filled in.
-
-Let us go through an example of the elaboration process for a simple term: \todo{remove?}
-
-```
-plus  :  {A : Type} -> {{PlusOperation A}}
-     -> (a : A) -> (b : A) -> A
-
-instance PlusNat : PlusOperation Nat where
-  plus = plusNat
-
-two = plus 1 1
-```
-
-We will step through the elaboration of the term `two`.
-
-1. First, the pre-processor eliminates the implicits and type-class arguments.
-   We end with the following declarations:
-   ```
-   plus : (impA : Implicit Type)
-       -> TypeClass PlusOperation (deImp impA)
-       -> (a : deImp impA) -> (b :  deImp impA)
-       ->  deImp impA
-   
-   PlusNat = Instance {
-       class = PlusOperation Nat,
-       body = {plus = plusNat}}
-   
-   two = plus _ _ 1 1
-   ```
-2. We go into the elaboration of `two` now.
-   The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders.
-   The output of the elaborator is
-   ```
-   two = plus ?_1 ?_2 1 1
-   ```
-   And the state of the elaborator contains four more constraints:
-   ```
-   C1: FillInTheTerm ?_1 (Implicit Type)
-   C2: FillInTheTerm ?_2 (TypeClass
-                          PlusOperation (deImp ?_1))
-   C3: EqualityConstraint ?_1 Nat Type
-   C4: EqualityConstraint ?_1 Nat Type
-   ```
-   
-   The first two correspond to implicit arguments.
-   The latter two are unification problems rendered into constraints.
-
-3. Now we step into the constraint-solving world.
-   First, the unifier solves the latter two, instantiating `?_1` to `Nat`.
-   Next, the typeclass resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
-   Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
+While the codebases above show that it is certainly possible to extend languages with new features if the language wasn't written with extensibility in mind this can lead to rather ad hoc solutions.
 
 ## Extending unification ## {#sec:extending-unification}
 
@@ -255,7 +184,7 @@ One could also provide means to do so manually in a more general case, by allowi
 This is one of the features requested by the Agda users [@agdausersInjectiveUnificationPragma2023].
 
 Another example of this can be adding rules of associativity and commutativity to the unifier, as described in the thesis by @holtenDependentTypeCheckingModulo2023.
-It required 2000 lines of code added while relying on rewrite rules [^holten-source]
+It required 2000 lines of code added while relying on rewrite rules[^holten-source]
 We would like to make changes such as this more feasible.
 
 [^holten-source]: [github.com/LHolten/agda-commassoc/tree/defenitional-commutativity](https://github.com/LHolten/agda-commassoc/tree/defenitional-commutativity)
@@ -265,15 +194,15 @@ We would like to make changes such as this more feasible.
 The examples above show that when building a dependently-typed language while the core might be perfectly elegant and simple, the features that appear on top of it complicate the design.
 
 One can also observe that while the code above might rely on constraints, the design at large doesn't put at the centre of the picture and instead is primarily seen as a gadget.
-To give a concrete example, Agda's constraint solver[^agda-constraint-solver-source] relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
-To give a concrete example, functions `noConstraints` or `dontAssignMetas` rely on specific behaviour of the constraint solver system and are used throughout the type-checker.
+In Agda constraint solver[^agda-constraint-solver-source] relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
+Concretely, functions `noConstraints` or `dontAssignMetas` rely on specific behaviour of the constraint solver system and are used throughout the type-checker.
 `abortIfBlocked`, `reduce` and `catchConstraint`/`patternViolation` force the programmer to make a choice between letting the constraint system handle blockers or doing it manually.
 These things are known to be brittle and pose an increased mental overhead when making changes.
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 
 1. We give a stable API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
-This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, ch. 4.4] or communication between actors [@allaisTypOSOperatingSystem2022a].
+This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4] or communication between actors [@allaisTypOSOperatingSystem2022a].
 
 2. Make the language more modular we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
 
@@ -286,7 +215,7 @@ From a birds-eye view the architecture looks as depicted in [Figure 1](#architec
 In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
 It can raise a constraint that gets registered by the Solver Director.
 Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
-All of the components have some read access to the state, including Solver which might e.g. verify that there are no additional constraints on the meta.
+All components have some read access to the state, including Solver which might for example verify that there are no extra constraints on the meta.
 
 [^agda-constraint-solver-source]:
 [src/full/Agda/TypeChecking/Constraints.hs#L251-L301](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301)
@@ -401,7 +330,7 @@ For the purposes of the base language it suffices to have the following.
        FillInTheTerm Syntax.Term (Maybe Syntax.Type)
   ```
 * Lastly, we provide a constraint which ensures that a term is a type constructor.
-  This could've been encoded as a unification problem, but since we don't have to limit ourselves in the constructors of the constaint datatype and there are no real downsides to factoring a problem out we include it separately:
+  This could've been encoded as a unification problem, but since we don't have to limit ourselves in the constructors of the constraint datatype and there are no real downsides to factoring a problem out we include it separately:
   ```haskell
   -- the term passed to the constraint
   -- should be a type constructor
@@ -470,7 +399,7 @@ At the time of running the compiler, these preferences are loaded into a big pre
 
 ## Unification ##
 
-We implement a system that is very close to the system implemented by @abelHigherOrderDynamicPattern2011 with the exception that every function call in the simplification procedure is now a raised constraint.
+We implement a system that is close to the system described by @abelHigherOrderDynamicPattern2011 with the exception that every function call in the simplification procedure is now a raised constraint.
 
 For example, the "decomposition of functions" [@abelHigherOrderDynamicPattern2011, fig. 2] rule is translated to the following implementation:
 
@@ -496,7 +425,7 @@ When an equality constraint is created we return a metavariable that stands for 
 This metavariable is used for unification problems that are created in the extended contexts -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
 We do this to solve the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- we operate according to the "well-typed modulo constraints" principle essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context.
 In case one of the constraints created in the extended context when solving it we might need to know the exact shape of `ma`.
-In which case we can can block on the metavariable, freezing the rest of the problem until it is instantiated.
+In which case we can block on the metavariable, freezing the rest of the problem until it is instantiated.
 
 As for the actual unification steps, we implement them in a similar fashion to simplification procedure.
 Take a look at the following example, when only the left hand side of the constaint is an unsolved meta:
@@ -593,6 +522,86 @@ In this section we'll first briefly describe how implicit arguments are implemen
     In that case `deImp` is unnecessary.
 * implement tactic arguments with a custom solver for each tactic, like one that just exhaustively searches constructors
 
+
+Instead of handling every kind of metavariable in a separate way we'd like to uniformly dispatch a search for the solution, which would be handled by the a fitting solver.
+We can achieve this by creating metavariables for the unknown terms and then raising constraints that encode appropriate conditions, in our case -- in the type of the meta.
+Every such constraint can be matched on by the appropriate solver based on the type.
+The elaborator for function application doesn't have to know anything about the implicits at all.
+The only thing we require is that the elaboration of the argument is called with the type information available.
+This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
+
+``` haskell
+inferType (App t1 t2) = do
+  (et1, Pi tyA tyB) <- inferType t1
+  et2 <- checkType t2 tyA
+  return (App et1 et2, subst tyB et2)
+```
+
+```haskell
+checkType (Implicit) ty = do
+  m <- createMetaTerm
+  raiseConstraint $ FillInTheMeta m ty
+  return m
+```
+
+Metavariables in its own turn gets instantiated by a fitting solver.
+The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
+
+If it is a regular implicit, however, the only solver that's needed is a trivial one that checks that the metavariable has been instantiated indeed.
+This is because a regular implicit should be instantiated by a unification problem encountered at some point later.
+This serves as a guarantee that all implicits have been filled in.
+
+Let us go through an example of the elaboration process for a simple term: \todo{remove?}
+
+```
+plus  :  {A : Type} -> {{PlusOperation A}}
+     -> (a : A) -> (b : A) -> A
+
+instance PlusNat : PlusOperation Nat where
+  plus = plusNat
+
+two = plus 1 1
+```
+
+We will step through the elaboration of the term `two`.
+
+1. First, the pre-processor eliminates the implicits and type-class arguments.
+   We end with the following declarations:
+   ```
+   plus : (impA : Implicit Type)
+       -> TypeClass PlusOperation (deImp impA)
+       -> (a : deImp impA) -> (b :  deImp impA)
+       ->  deImp impA
+   
+   PlusNat = Instance {
+       class = PlusOperation Nat,
+       body = {plus = plusNat}}
+   
+   two = plus _ _ 1 1
+   ```
+2. We go into the elaboration of `two` now.
+   The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders.
+   The output of the elaborator is
+   ```
+   two = plus ?_1 ?_2 1 1
+   ```
+   And the state of the elaborator contains four more constraints:
+   ```
+   C1: FillInTheTerm ?_1 (Implicit Type)
+   C2: FillInTheTerm ?_2 (TypeClass
+                          PlusOperation (deImp ?_1))
+   C3: EqualityConstraint ?_1 Nat Type
+   C4: EqualityConstraint ?_1 Nat Type
+   ```
+   
+   The first two correspond to implicit arguments.
+   The latter two are unification problems rendered into constraints.
+
+3. Now we step into the constraint-solving world.
+   First, the unifier solves the latter two, instantiating `?_1` to `Nat`.
+   Next, the typeclass resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
+   Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
+
 ## Type classes ##
 
 **Plan**:
@@ -609,9 +618,9 @@ In this section we describe a few examples of extensions that don't quite fit in
 
 ## Handling of meta-variables outside of definition sites ##
 
-After we elaborate a definition there can still be unsolved metas in it.
+After we elaborate a definition there can still be unsolved metavariables in it.
 This presents us with a design choice.
-The first option is to freeze the metas and instantiate them per-use site, essentially allowing for an expression to have multiple types.
+The first option is to freeze the metavariables and instantiate them per-use site, essentially allowing for an expression to have multiple types.
 The second option is to leave them up to be solved later, which might make elaboration less predictable since now the use sites can influence whether a particular definition type-checks.
 The third option is to report them as an error and exit immediately.
 
@@ -623,7 +632,7 @@ For example, if we were to implement an erasure inference algorithm as described
 
 Extensibility via constraints allows for a flexible user-specified control flow as soon as we step into the constraints world.
 But control flow of the main body of the basic language elaborator is fixed by the basic language developer.
-For example, consider the following simplified lambda-function typechecking function[^agda-lambda-tc-source] from Agda:
+For example, consider the following simplified lambda-function type-checking function[^agda-lambda-tc-source] from Agda:
 
 ``` haskell
 checkLambda' cmp b xps typ body target = do
@@ -635,7 +644,7 @@ checkLambda' cmp b xps typ body target = do
 
 Here Agda steps away from the bidirectional discipline and infers a (lambda) function if the target type isn't fully known.
 If in our design the developer chooses to go only with a pure bi-directional style of type-checking inferred lambda functions would be impossible to emulate.
-That is unless one essentially renders macros and writes their own typechecking case for an inferrable lambda.
+That is unless one essentially renders macros and writes their own type-checking case for an inferrable lambda.
 
 In order to gain this extra bit of flexibility we provide `inferType` case for lambdas, even though our base language doesn't use it. \todo{actually write this case}
 
@@ -649,7 +658,7 @@ For coercions, we need to substitute every term `t` in the coercible position fo
 This can impact performance.
 
 Alternatively, one can imagine a system where constraint solvers are latching onto non-reduced types and terms in constraints.
-In that case, we can get around with a trick borrowed from Coq, where `coerce f t` computes to `f t`, but since we typechecked an unreduced application the search will still be launched on the right form.
+In that case, we can get around with a trick borrowed from Coq, where `coerce f t` computes to `f t`, but since we type-checked an unreduced application the search will still be launched on the right form.
 
 This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`
 
@@ -658,7 +667,7 @@ This also means that constraints can/have to match on unreduced types in the e.g
 We are certainly not the first ones to try to tackle the extensibility of a language implementation.
 This section is structured according to the part of the compiler pipeline that allows for extensibility.
 Dependently-typed language implementations usually consist of at least four parts:
-parser, elaborator, core type-checker, and proper backend.
+parser, elaborator, core type-checker, and proper back-end.
 The back-end part is currently irrelevant to our interests, since for a language to be specified usually means for specification of the core, anything that happens beyond after core doesn't extend the language, but rather tries to preserve its semantics in some form.
 Therefore we're left with three parts: parser, elaborator and core type-checker.
 
@@ -692,7 +701,7 @@ Metavariables and constraints-wise in contrast with only one kind of meta and co
 
 As for the unification, $\text{Tog}^{+}$ [@victorlopezjuanTog2020; @victorlopezjuanPracticalHeterogeneousUnification2021] focuses on extending it to the case where two sides of equality might not be of the same type.
 The main argument against the usage of anti-unification in Agda provided there is that it is bug-prone.
-On closer inspection, we think that that in Agda, which served as an example of the system where said bugs occur, the problems were stemming from the fact that anti-unification had to be implemented separately from unification, therefore duplicating the code-base.
+On closer inspection, we think that in Agda, which served as an example of the system where said bugs occur, the problems were stemming from the fact that anti-unification had to be implemented separately from unification, therefore duplicating the code-base.
 In which case it is indeed hard to keep the two in sync.
 However, in our case there is no such duplication since unification and anti-unification always move synchronously.
 Regarding twin types as implemented in $\text{Tog}^{+}$ -- we don't see a reason why it couldn't be done in this setting too, but since it required a rewrite of the system we decided against it in the interest of time.
@@ -703,6 +712,9 @@ There are some things we leave for future work.
 
 * Implement erasure inference [@tejiscakDependentlyTypedCalculus2020]?
 * Implement Canonical Structures [@mahboubiCanonicalStructuresWorking2013]?
+* Make occurs-check a constraint
+* Make reduction a constraint?
+* Cache constraints and soluitions
 * Rendering of macros as constraints?
   Map a macro to an implicit term with the right kind of annotation in the type, to get the right expander as an elaboration procedure?
 * Mapping constraint solving onto a concurrent execution model.
@@ -715,7 +727,7 @@ There are some things we leave for future work.
 
 <!---
 Local Variables:
-eval: (progn (olivetti-mode 't) (flyspell-mode 't) (flyspell-buffer)) ;; because it looks better this way!
+eval: (progn (olivetti-mode 't) (flyspell-mode 't) (flyspell-buffer) (flycheck-buffer) (ispell-change-dictionary "en_GB-w_accents"))
 reftex-default-bibliography: ("/home/bohdan/delft/extended-elab/extended-elab/paper/bib.bib") ;; add reftex support
 End:
 -->
