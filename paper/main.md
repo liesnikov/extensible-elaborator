@@ -35,7 +35,7 @@ This comes with the benefit of more static guarantees but with an increased toll
 Since type is part of the specification we can use this information to infer parts of the program, following an idea that Connor McBride aptly worded as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
 Some examples here include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
 
-In dependently-typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2022], Coq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
+In dependently-typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2023a], Coq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
 This gives us an opportunity to infer even larger parts of our programs from the type in the process of elaboration.
 Techniques here include implicit arguments in Agda, implicit coercions in Coq, and tactic arguments in Idris.
 The inference or "solving" can be not only automatic but also interactive or partially automatic.
@@ -76,7 +76,7 @@ In the former case, they are even reflected and can be manipulated by the user [
 This has proved to be a good design decision for GHC, as is reflected, for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
 
 In the land of dependently-typed languages constraints are much less principled.
-Agda has a family of constraints[^agda-constraints-datatype] that grew organically, currently counting 17 \todo{update to 18? 19?} constructors.
+Agda has a family of constraints[^agda-constraints-datatype] that grew organically, currently counting 18 constructors.
 Idris technically has constraints[^idris-constraints-datatype] with the only two constructors being equality constraint for two terms and for two sequences of terms.
 The same[^lean-constraints-datatype] holds for Lean.
 These languages either use constraints in a restricted, single use-case manner -- namely, for unification -- or in an unprincipled way.
@@ -90,8 +90,8 @@ Finally, we talk about the ideas behind the new design in Section
 @sec:what-is-our-design-bringing-into-the-picture.
 
 [^agda-constraints-datatype]:
-We shorten the links in footnotes to paths in the repository, the source code can be found at [github.com/agda/agda/blob/v2.6.2.2/](https://github.com/agda/agda/blob/v2.6.2.2/).
-[./src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Monad/Base.hs#L1064-L1092)
+We shorten the links in footnotes to paths in the repository, the source code can be found at [github.com/agda/agda/blob/v2.6.4/](https://github.com/agda/agda/blob/v2.6.4/).
+[.src/full/Agda/TypeChecking/Monad/Base.hs#L1157-L1191](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Monad/Base.hs#L1157-L1191)
 
 [^idris-constraints-datatype]: [./src/Core/UnifyState.idr](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) at [github.com/idris-lang/Idris2/blob/e673d0](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85)
 
@@ -104,7 +104,7 @@ The complexity stems from the wish of compiler writers to implement the most pow
 Some of this complexity is unavoidable, but we can manage it better by splitting up the unifier into smaller modular parts.
 In practice, this means that one doesn't have to fit together an always-growing conversion checker but can instead write different cases separately.
 
-An example from Agda's conversion checker is `compareAs` function[^compareAs-fucntion] which provides type-driven conversion checking.
+An example from Agda's conversion checker is `compareAs` function[^compareAs-function] which provides type-driven conversion checking.
 The function is almost 90 lines long, and yet the vast majority of it is special cases of metavariables.
 This function calls the `compareTerm'` function[^compareTerm-function], which itself is 130 lines.
 `compareTerm'` calls the `compareAtom` function[^compareAtom-function]:.
@@ -140,12 +140,12 @@ The functions described above are specific to Agda but in other major languages 
 The sizes of modules with unifiers are as follows: Idris (1.5kloc[^idris-unifier]), Lean (1.8kloc[^lean-unifier]), Coq (1.8kloc[^coq-unifier]).
 For Haskell, which is not a dependently-typed language yet, but does have a constraints system [@peytonjonesTypeInferenceConstraint2019], this number is at 2kloc[^ghc-unifier].
 
-[^compareAs-fucntion]: [./src/full/Agda/TypeChecking/Conversion.hs#L146-L218](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L146-L218)
-[^compareTerm-function]: [./src/full/Agda/TypeChecking/Conversion.hs#L255-L386](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L255-L386)
-[^compareAtom-function]: [./src/full/Agda/TypeChecking/Conversion.hs#L419-L675](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L419-L675)
-[^intricate-comments]: [./src/full/Agda/TypeChecking/Conversion.hs#L430-L431](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L430-L431), [./src/full/Agda/TypeChecking/Conversion.hs#L521-L529](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L521-L529)
+[^compareAs-function]: [./src/full/Agda/TypeChecking/Conversion.hs#L157-L243](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs#L157-L243)
+[^compareTerm-function]: [.src/full/Agda/TypeChecking/Conversion.hs#L281-L456](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs#L281-L456)
+[^compareAtom-function]: [./src/full/Agda/TypeChecking/Conversion.hs#L467-L696](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs#L467-L696)
+[^intricate-comments]: [./src/full/Agda/TypeChecking/Conversion.hs##L484-L485](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs#L484-L485), [./src/full/Agda/TypeChecking/Conversion.hs#L541-L549](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs#L541-L549)
 [^20lines-compareAtom]:
-[./src/full/Agda/TypeChecking/Conversion.hs#L530-L579](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Conversion.hs#L530-L579)
+[./src/full/Agda/TypeChecking/Conversion.hs#L550-L599](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs#L550-L599)
 
 
 [^idris-unifier]: [./src/Core/Unify.idr](https://github.com/idris-lang/Idris2/blob/102d7ebc18a9e881021ed4b05186cccda5274cbe/src/Core/Unify.idr)
@@ -167,9 +167,9 @@ This can accommodate interfaces (or type classes), but one can imagine that if a
 [^idris2-makeautoimplicit-source]:
 [./src/TTImp/Elab/App.idr#L224-L241](https://github.com/idris-lang/Idris2/blob/870bc824371d504a03af937f326216302210a875/src/TTImp/Elab/App.idr#L224-L241)
 
-[^agda-insertion-of-implicit-arguments]: [./src/full/Agda/TypeChecking/Implicit.hs#L99-L127](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L99-L127)
+[^agda-insertion-of-implicit-arguments]: [./src/full/Agda/TypeChecking/Implicit.hs#L96-L128](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Implicit.hs#L96-L128)
 
-[^agda-specific-kinds-of-metavariables]: [./src/full/Agda/TypeChecking/Implicit.hs#L131-L150](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Implicit.hs#L131-L150)
+[^agda-specific-kinds-of-metavariables]: [./src/full/Agda/TypeChecking/Implicit.hs#L130-L149](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Implicit.hs#L130-L149)
 
 While the codebases above show that it is certainly possible to extend languages with new features if the language wasn't written with extensibility in mind this can lead to rather ad hoc solutions.
 
@@ -218,7 +218,7 @@ Solver Director then is exactly the component that dispatches solvers on the app
 All components have some read access to the state, including Solver which might for example verify that there are no extra constraints on the meta.
 
 [^agda-constraint-solver-source]:
-[src/full/Agda/TypeChecking/Constraints.hs#L251-L301](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Constraints.hs#L251-L301)
+[src/full/Agda/TypeChecking/Constraints.hs#L247-L298](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Constraints.hs#L247-L298)
 
 # Dependently-typed calculus and bidirectional typing # {#sec:bidirectional}
 
@@ -648,9 +648,7 @@ Here Agda steps away from the bidirectional discipline and infers a (lambda) fun
 If in our design the developer chooses to go only with a pure bi-directional style of type-checking inferred lambda functions would be impossible to emulate.
 That is unless one essentially renders macros and writes their own type-checking case for an inferrable lambda.
 
-In order to gain this extra bit of flexibility we provide `inferType` case for lambdas, even though our base language doesn't use it. \todo{actually write this case}
-
-[^agda-lambda-tc-source]: [./src/full/Agda/TypeChecking/Rules/Term.hs#L460-L578](https://github.com/agda/agda/blob/v2.6.2.2/src/full/Agda/TypeChecking/Rules/Term.hs#L460-L578)
+[^agda-lambda-tc-source]: [./src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518)
 
 ## Eager reduction and reliance on the pre-processor ##
 
@@ -664,6 +662,7 @@ In that case, we can get around with a trick borrowed from Coq, where `coerce f 
 
 This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`
 
+
 # Related work # {#sec:related_work}
 
 We are certainly not the first ones to try to tackle the extensibility of a language implementation.
@@ -675,7 +674,7 @@ Therefore we're left with three parts: parser, elaborator and core type-checker.
 
 We see parser or syntax extensibility as a necessary part of an extensible language.
 This problem has been studied extensively in the past and has a multitude of existing solutions.
-Macros are one of them and are utilised heavily in various forms in almost all established languages [@thecoqdevelopmentteamCoqProofAssistant2022; @theagdateamAgdaUserManual2022; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+Macros are one of them and are utilised heavily in various forms in almost all established languages [@thecoqdevelopmentteamCoqProofAssistant2022; @theagdateamAgdaUserManual2023a; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
 
 Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
 Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at extensible definitional equality but is quite far from a usable dependently-typed language.
@@ -697,7 +696,7 @@ Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; 
 They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
 In a way, this is an imperative view on extensibility.
 
-Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second and doesn't provide either a plugin or hook system at all, except for reflection \todo{citation}.
+Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second and doesn't provide either a plugin or hook system at all, except for reflection.
 Idris also focuses on tactics as the main mechanism for elaboration.
 Metavariables and constraints-wise in contrast with only one kind of meta and constraints in Idris [@bradyIdrisGeneralpurposeDependently2013 chap. 4.2, chap. 4.3.1].
 
