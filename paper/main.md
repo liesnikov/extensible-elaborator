@@ -261,10 +261,10 @@ data Term =
   | MetaVar MetaClosure
 ```
 
-Equality isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` of type `forall A. True = False -> A`.
+Equality isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different inductive type constructors and produces any type.
 
 On top of the above we include indexed inductive datatypes and case-constructs for their elimination.
-Indexed inductive datatypes are encoded using a well-known trick \todo{citation} as parameterised inductive datatypes with an equality argument constraining the index.
+Indexed inductive datatypes are encoded using a well-known trick as parameterised datatypes with an equality argument constraining the index.
 
 ## Syntax traversal ##
 
@@ -296,23 +296,23 @@ checkType (S.Lam lam) ty = do
 ```
 
 At certain points we have to raise a constraint which has an associated continuation.
-Like for checking the type of a data constructor -- the part of the program that comes as an argument to `CA.constrainTConAndFreeze` will be suspended (or "blocked") until the constraint has been resolved.
+Like for checking the type of a data constructor -- the part of the program that comes as an argument to `constrainTConAndFreeze` will be suspended (or "blocked") until the constraint has been resolved.
 
 ```haskell
 checkType t@(S.DCon c args) ty = do
   elabpromise <- createMetaTerm
-  CA.constrainTConAndFreeze ty $ do
-    mty <- SA.substMetas ty
+  constrainTConAndFreeze ty $ do
+    mty <- substMetas ty
     case mty of
       (I.TCon tname params) -> do
-t        ...
+        ...
       _ -> ...
 ```
 
 # Constraints and unification # {#sec:constraints_and_unification}
 
 The datatype of constraints is open which means the user can write a plugin to extend it.
-However, we provide a few out of the box to be able to type-check the base language.
+However, we offer a few out of the box to be able to type-check the base language.
 
 For the purposes of the base language it suffices to have the following.
 
@@ -329,8 +329,8 @@ For the purposes of the base language it suffices to have the following.
   data FillInTheTerm e =
        FillInTheTerm Syntax.Term (Maybe Syntax.Type)
   ```
-* Lastly, we provide a constraint which ensures that a term is a type constructor.
-  This could've been encoded as a unification problem, but since we don't have to limit ourselves in the constructors of the constraint datatype and there are no real downsides to factoring a problem out we include it separately:
+* Lastly, we give a constraint which ensures that a term is a type constructor.
+  This could have been encoded as a unification problem, but since we don't have to limit ourselves in the constructors of the constraint datatype and there are no real downsides to factoring a problem out we include it separately:
   ```haskell
   -- the term passed to the constraint
   -- should be a type constructor
@@ -338,7 +338,7 @@ For the purposes of the base language it suffices to have the following.
        TypeConstructorConstraint Syntax.Type
   ```
 
-The type-checker raises them supplying the information necessary, but agnostic of how they'll be solved.
+The type-checker raises them supplying the information necessary, but agnostic of how they will be solved.
 
 ## Introduction to the solvers ##
 
@@ -359,12 +359,10 @@ syntactic  = Plugin { solver  = syntacticSolver
 ```
 
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
-In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
-Then we define the solver itself.
-Which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it's been cleared to do so by the handler.
+In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal, then we define the solver itself.
+Which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it has been cleared to do so by the handler.
 The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
 Finally, we register the solver by declaring it using a plugin interface.
-This plugin symbol will be picked up by the linker and registered at the runtime.
 
 Similarly, we can define solvers that only work on problems where only one of the sides is a metavariable, `leftMetaSolver` and `rightMetaSolver` of the same type as the syntactic solver above and corresponding handlers and plugins.
 
@@ -395,12 +393,12 @@ complex2 = Plugin { ...
                   }
 ```
 
+Where `pre` and `suc` fields of the plugin interface point out before or after, respectively, which other plugin currently defined one is supposed to run.
 At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
 
 ## Unification ##
 
-We implement a system that is close to the system described by @abelHigherOrderDynamicPattern2011 with the exception that every function call in the simplification procedure is now a raised constraint.
-
+We implement a system close to the one described by @abelHigherOrderDynamicPattern2011 with the exception that every function call in the simplification procedure is now a raised constraint and every simplification rule is a separate solver.
 For example, the "decomposition of functions" [@abelHigherOrderDynamicPattern2011, fig. 2] rule is translated to the following implementation:
 
 ```haskell
@@ -434,17 +432,21 @@ Take a look at the following example, when only the left hand side of the consta
 leftMetaSolver :: (EqualityConstraint :<: cs)
                => SolverType cs
 leftMetaSolver constr = do
-  let (Just (EqualityConstraint t1 t2 _ m)) = match @EqualityConstraint constr
+  let (Just (EqualityConstraint t1 t2 _ m)) =
+        match @EqualityConstraint constr
       (MetaVar (MetaVarClosure m1 c1)) = t1
   mt2 <- occursCheck m1 t2
   case mt2 of
-    Left e -> do -- indicates a failure in occurs-check
-      return False
-    Right t2 -> -- indicates a passed occurs-check
+    -- indicates a failure in occurs-check
+    Left e -> return False
+    -- indicates a passed occurs-check
+    Right t2 ->
       case (invertClosureOn c1 (freeVarList t2)) of
         Just s -> do
           let st2 = Unbound.substs s t2
+          -- apply the subsitution
           solveMeta m1 st2
+          -- instantiate the anti-unification variable
           solveMeta m st2
           return True
         Nothing -> return False
