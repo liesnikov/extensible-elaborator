@@ -508,30 +508,22 @@ However, implementing something like commutativity and associativity unifiers ca
 
 # Open datatype of constraints and case studies # {#sec:casestudies}
 
-Let's now take a look at what the openness of the constraint datatype buys us in this design.
-In this section we'll first briefly describe how implicit arguments are implemented and then showcase how to build an extension implementing type-classes into the language.
+Once we implement basic elaboration and unification we can extend the language.
+This is where we will need the constraints datatype to be open.
 
-## Implicit arguments ##
-
-**Plan**:
-
-* show what we need the pre-processor to produce
-  * one option here is what's described in section 1, to translate
-    ```
-    def f : {a : A} -> B a -> C
-    
-    def f : (A : Implicit Type)
-         -> (a : Implicit (deImp A))
-         -> (b : B (deIpm a)) -> C
-    ```
-  * the other option is to make `Implcit A` compute to `A` and make solvers not eager to reduce.
-    In that case `deImp` is unnecessary.
-* implement tactic arguments with a custom solver for each tactic, like one that just exhaustively searches constructors
-
-
-Instead of handling every kind of metavariable in a separate way we'd like to uniformly dispatch a search for the solution, which would be handled by the a fitting solver.
+We saw before in Section @sec:implicit-arguments that conventional designs require separate handling of different kinds of implicit variables.
+Instead we would like to uniformly dispatch a search for the solution with, which would be handled by the a fitting solver.
 We can achieve this by creating metavariables for the unknown terms and then raising constraints that encode appropriate conditions, in our case -- in the type of the meta.
-Every such constraint can be matched on by the appropriate solver based on the type.
+
+```haskell
+checkType (Implicit) ty = do
+  m <- createMetaTerm
+  raiseConstraint $ FillInTheMeta m ty
+  return m
+```
+
+The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
+
 The elaborator for function application doesn't have to know anything about the implicits at all.
 The only thing we require is that the elaboration of the argument is called with the type information available.
 This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
@@ -543,21 +535,76 @@ inferType (App t1 t2) = do
   return (App et1 et2, subst tyB et2)
 ```
 
-```haskell
-checkType (Implicit) ty = do
-  m <- createMetaTerm
-  raiseConstraint $ FillInTheMeta m ty
-  return m
+In the first subsection (@sec:case-implicits) we discuss the implementation of implicit arguments and different options available in the design space.
+In the second subsection (@sec:case-typeclasses) we describe the implementation of type classes added on top of the implicit arguments.
+
+## Implicit arguments ## {#sec:case-implicits}
+
+An attentive reader might realise that the rule for `Implicit` has to be added to the syntax traversal part of the elaborator and they'll be correct in this observation.
+In fact, we require not one but two modifications that lie outside of the solvers-constraints part of the system.
+
+The first one is, indeed, the addition of a separate rule, however contained.
+The second one lies in the purely syntactical of the compiler.
+We need the pre-processor to insert the placeholder terms in the surface syntax.
+Particularly, we would like to desugar the declarations of functions in the following way:
+
+For any declaration of a function `f` with some implicit argument `a`:
+```
+def f : {A : Type} -> {a : A} -> B a -> C
 ```
 
-Metavariables in its own turn gets instantiated by a fitting solver.
-The solvers match the shape of the type that metavariable stands for and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument.
+We would like for it to desugar to the following:
 
-If it is a regular implicit, however, the only solver that's needed is a trivial one that checks that the metavariable has been instantiated indeed.
+```
+def f : (A : Implicit Type)
+     -> (a : Implicit (deImp A))
+     -> (b : B (deIpm a)) -> C
+```
+
+Then, for each function call `f b1` we would like the pre-processor to insert the corresponding number of implicit arguments, transforming it to `f _ _ b1`.
+
+For simple implicits this suffices -- as soon as we have the placeholders in the surface syntax we will create the constraints in the `Implicit` case of the syntax traversal.
+The only solver that's needed in this case is a trivial one that checks that the metavariable has been instantiated indeed.
 This is because a regular implicit should be instantiated by a unification problem encountered at some point later.
 This serves as a guarantee that all implicits have been filled in.
 
-Let us go through an example of the elaboration process for a simple term: \todo{remove?}
+```haskell
+fillInImplicitSymbol :: PluginId
+
+fillInImplicitHandler :: (FillInImplicit :<: cs)
+                      => HandlerType cs
+fillInImplicitHandler constr = do
+  let ficm = match @FillInImplicit constr
+  case ficm of
+    Just (FillInImplicit term ty) -> do
+      case term of
+        MetaVar (MetaVarClosure mid _) ->
+          isMetaSolved mid
+        _ -> return False
+    Nothing -> return False
+
+fillInImplicitPlugin :: (FillInImplicit :<: cs)
+                     => Plugin cs
+fillInImplicitPlugin = Plugin {
+  solver = fillInImplicitSolver,
+  handler = fillInImplicitHandler,
+  symbol = fillInImplicitSymbol,
+  pre = [],
+  suc = [unificationEndMarkerSymbol]
+  }
+```
+
+
+Additionally, we would like to remark on is the implementation of `Implicit A` and `deImp`.
+One option is to turn them into a constructor and a projection of a record type, the other is to make them computationally equivalent to `id`.
+In the former case we need to manually unwrap them both in the pre-processor and during the constraint-solving, but since the head symbol is distinct we can guarantee that other solvers won't match on it, unless explicitly instructed to.
+In the latter case, which we opt for, one has to be cautious of the order in which the solvers are activated, particularly in the case of different search procedures, should they be implemented.
+
+## Type classes ## {#sec:case-typeclasses}
+
+
+
+Let us go through an example of the elaboration process for a simple term:
 
 ```
 plus  :  {A : Type} -> {{PlusOperation A}}
