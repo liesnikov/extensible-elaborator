@@ -230,7 +230,7 @@ However, for all other purposes, we leave the core rules intact and therefore, t
 
 This is dependently-typed calculus that includes Pi, Sigma and indexed inductive types.
 
-Here's an almost complete surface-language term data type:
+Here's the internal syntax term data type, apart from service constructor omissions, like a placeholder `TRUSTME`.
 
 ```haskell
 data Term =
@@ -321,13 +321,15 @@ For the purposes of the base language it suffices to have the following.
   -- two terms given should be equal
   data EqualityConstraint e =
        EqualityConstraint Syntax.Term Syntax.Term
-                          Syntax.Type Sytax.MetaVarId
+                          Syntax.Type
+                          Sytax.MetaVarId
   ```
 * Ensures that a metavariable is resolved eventually:
   ```haskell
   -- this terms has to be filled in
   data FillInTheTerm e =
-       FillInTheTerm Syntax.Term (Maybe Syntax.Type)
+       FillInTheTerm Syntax.Term
+                     (Maybe Syntax.Type)
   ```
 * Lastly, we give a constraint which ensures that a term is a type constructor.
   This could have been encoded as a unification problem, but since we don't have to limit ourselves in the constructors of the constraint datatype and there are no real downsides to factoring a problem out we include it separately:
@@ -407,7 +409,7 @@ piEqInjectivitySolver :: (EqualityConstraint :<: cs)
 piEqInjectivitySolver constr = do
   let (Just (EqualityConstraint (I.Pi a1 b1)
                                 (I.Pi a2 b2) _ m)) =
-      match @EqualityConstraint constr
+        match @EqualityConstraint constr
   ma <- constrainEquality a1 a2 I.Type
   (x, tyB1, _, tyB2) <- unbind2Plus b1 b2
   let mat = I.identityClosure ma
@@ -468,14 +470,16 @@ The actual implementation is relatively simple and isn't dissimilar to the Pi-in
 userInjectivitySolver :: (EqualityConstraint :<: cs)
                       => SolverType cs
 userInjectivitySolver constr = do
-  let (Just EqualityConstraint (I.App (I.Var f) a)
-                               (I.App (I.Var g) b) _ m)) =
-      match @EqualityConstraint constr
+  let (Just EqualityConstraint
+              (I.App (I.Var f) a)
+              (I.App (I.Var g) b) _ m)) =
+        match @EqualityConstraint constr
   if f == g
   then do
     ifM (queryInjectiveDeclarations f)
         (do
-           solveMeta m =<< constrainEquality a b I.Type
+           ms <- constrainEquality a b I.Type
+           solveMeta m ms
            return True)
         (return False)
   else return False
@@ -602,9 +606,9 @@ We will step through the elaboration of the term `two`.
 3. Now we step into the constraint-solving world.
    First, the unifier solves the latter two, instantiating `?_1` to `Nat`.
    Next, the typeclass resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
-   Finally, C1 is discarded as solved since `?_1` is already instantiated to `Nat`.
 
 ## Type classes ##
+   Finally, `C1` is discarded as solved since `?_1` is already instantiated to `Nat`.
 
 **Plan**:
 
