@@ -144,8 +144,16 @@ solveAllConstraintsTc = do
   allconstrs <- getsTc State.constraints
   unsolved <- getsTc (State.active . State.constraints)
   solutions <- getsTc (State.metaSolutions . State.meta)
-  -- warn [DS "metavariable solution dump in the solver",
-  --       DD $ solutions]
+--  warn [ DS "After checking an entry the state is"
+--       , DS $ "With current active constraints being"
+--       , DD $ Map.map fst $ unsolved
+--       , DS $ "And current solutions to metas being"
+--       , DD $ solutions
+--       , DS $ "Solved constraints are"
+--       , DD $ Map.map fst $ State.solved allconstrs
+--       , DS $ "Blocked constraints are"
+--       , DD $ Map.map fst $ State.asleep allconstrs
+--       ]
   if not . null $ unsolved
     then warn [ DS "After checking an entry there are unsolved constraints"
               , DS $ "With current active constraints being"
@@ -158,21 +166,6 @@ solveAllConstraintsTc = do
               , DD $ Map.map fst $ State.asleep allconstrs
               ]
     else return ()
---  where
---    solveOne :: Disp1 c =>
---                Allsolver c ->
---                ConstraintF c ->
---                TcMonad c (Either (ConstraintF c) ())
---    solveOne s c = do
---      mid <- solve s c
---      case mid of
---        Nothing -> return . Left $ c
---        Just pid -> do
---          warn [DS "managed to solve constraint",
---                DD c,
---                DS "with plugin",
---                DD pid]
---          return . Right $ ()
 
 instance MonadConstraints (TcMonad c) where
   type MConstr (TcMonad c) = c
