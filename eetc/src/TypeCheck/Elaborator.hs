@@ -105,7 +105,7 @@ inferType (S.App t1 t2) = do
      DD t2, DS "instead." ]
   -- if the argument is Irrelevant, resurrect the context
   tt2 <- (if epx == I.Irr then Env.extendCtx (I.Demote I.Rel) else id) $
-    checkType (S.unArg t2) tyA
+           checkType (S.unArg t2) tyA
   return (I.App et1 (I.Arg (transEpsilon $ S.argEp t2) tt2),
           Unbound.instantiate bnd [tt2])
 
