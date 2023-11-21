@@ -113,7 +113,7 @@ solveAllPossible' n a = do
   -- get a set of constraints
   allconstrs <- getsTc State.constraints
   let sconstr = State.active allconstrs
-  if (n >= Map.size sconstr) then return $ Map.keys sconstr
+  if n >= Map.size sconstr then return $ Map.keys sconstr
   else do
     -- pick the one we're currently working on
     let (cid, constr) = Map.elemAt n sconstr
