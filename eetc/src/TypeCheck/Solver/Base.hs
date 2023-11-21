@@ -109,16 +109,21 @@ unificationEndMarker = Plugin { solver = dummySolver
 -- utilities
 
 checkArgEq :: (EqualityConstraint :<: cs) =>
-              [Syntax.Arg] -> [Syntax.Arg] -> SolverReturnType cs (Maybe [Syntax.Arg])
-checkArgEq nargs margs
-  | length nargs == length margs = go $ zip nargs margs
+              [Syntax.Arg] -> [Syntax.Arg] -> [Syntax.Decl] -> SolverReturnType cs (Maybe [Syntax.Arg])
+checkArgEq nargs margs tel
+  -- FIXME
+  -- this is definitely buggy -- we should only take those elements of the telescope
+  -- that are typesig, throwing away anything that's let-bound, demote and others
+  | length nargs == length margs = go $ zip3 nargs margs tel
   | otherwise = return Nothing
   where
     go :: (EqualityConstraint :<: cs) =>
-          [(Syntax.Arg, Syntax.Arg)] -> SolverReturnType cs (Maybe [Syntax.Arg])
+          [(Syntax.Arg, Syntax.Arg, Syntax.Decl)] -> SolverReturnType cs (Maybe [Syntax.Arg])
     go [] = return $ Just []
-    go ((Syntax.Arg Rel t1, Syntax.Arg Rel t2) : tl) = do
-      mh <- constrainEquality t1 t2 undefined
+    go ((Syntax.Arg Rel t1,
+         Syntax.Arg Rel t2,
+         (Syntax.TypeSig (Syntax.Sig _ _ ty))) : tl) = do
+      mh <- constrainEquality t1 t2 ty
       let mt = Syntax.identityClosure mh
           marg = Syntax.Arg Rel mt
       mr <- go tl
