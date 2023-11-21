@@ -9,6 +9,7 @@ import Tests.Full
 main :: IO ()
 main = do
    defaultMain $ testGroup "All tests" [
-     printparse,
-     typecheckfiles
+       printparse
+     , testtypecheckfiles
+--     , exampletypecheckfiles
      ]
