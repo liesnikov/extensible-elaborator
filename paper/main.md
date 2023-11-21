@@ -208,14 +208,15 @@ This is not dissimilar to the idea of mapping object-language unification variab
 
 In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
-From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure) \todo{redo and update}
+From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure).
 
-![Architecture diagram](architecture-diagram.svg){#architecture-figure width=50%}
+![Architecture diagram](architecture-diagram.png){#architecture-figure width=50%}
 
 In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
-It can raise a constraint that gets registered by the Solver Director.
-Solver Director then is exactly the component that dispatches solvers on the appropriate constraints and constitutes our main contribution.
-All components have some read access to the state, including Solver which might for example verify that there are no extra constraints on the meta.
+It can raise a constraint that gets registered by the Solver dispatcher.
+Solver dispatcher then is exactly the component that fires the solvers on the appropriate constraints and constitutes our main contribution.
+All components have some read access to the state, including solvers which might for example verify that there are no extra constraints on the metavariable.
+We indicate that the solvers are supplied both by us (`unification`) and by the user (`Plugin A`) by drawing two nodes, but they both have the same capabilities.
 
 [^agda-constraint-solver-source]:
 [src/full/Agda/TypeChecking/Constraints.hs#L247-L298](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Constraints.hs#L247-L298)
