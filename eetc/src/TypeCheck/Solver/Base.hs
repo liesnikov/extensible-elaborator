@@ -128,9 +128,11 @@ checkArgEq nargs margs tel
           marg = Syntax.Arg Rel mt
       mr <- go tl
       return $ fmap (\t -> marg : t) mr
-    go ((Syntax.Arg Irr t1, Syntax.Arg Irr t2) : tl) = do
-      -- don't check equality for irrelevant arguments
-      let rarg = Syntax.Arg Irr t1
-      mr <- go tl
-      return $ fmap (\t -> rarg : t) mr
+    go ((Syntax.Arg e1 t1, Syntax.Arg e2 t2, ty) : tl)
+      | e1 == Irr && e2 == Irr = do
+        -- don't check equality for irrelevant arguments
+        let rarg = Syntax.Arg Irr t1
+        mr <- go tl
+        return $ fmap (\t -> rarg : t) mr
+      | otherwise = return Nothing
     go _ = return Nothing
