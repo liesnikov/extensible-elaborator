@@ -802,8 +802,11 @@ elabEntry (S.Def n term) = do
       lkup <- SA.lookupHint en
       case lkup of
         Nothing -> do
-          (eterm, ty) <- inferType term
-          return $ AddCtx [I.TypeSig (I.Sig en I.Rel ty), I.Def en eterm]
+          (eterm, ety) <- inferType term
+          solveAllConstraints
+          seterm <- SA.substAllMetas eterm
+          sety <- SA.substAllMetas ety
+          return $ AddCtx [I.TypeSig (I.Sig en I.Rel sety), I.Def en seterm]
         Just sig ->
           let handler (Env.Err ps msg) = throwError $ Env.Err ps (msg $$ msg')
               msg' =
