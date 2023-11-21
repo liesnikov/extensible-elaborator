@@ -1,18 +1,19 @@
 {-# LANGUAGE TypeApplications #-}
-module TypeCheck.Solver.PropagateSolutions ( propagateSolvedMetasPlugin
-                                           , propagateSolvedMetasSymbol) where
+module TypeCheck.Solver.PropagateSolutionsEq ( propagateMetasEqPlugin
+                                             , propagateMetasEqSymbol) where
 
 import           TypeCheck.StateActions
 import           Syntax.Internal (Term(MetaVar), MetaClosure(..))
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
+                                       , TypeConstructorConstraint(..)
                                        , match
                                        )
 import           TypeCheck.Solver.Identity (identitySymbol)
 import           TypeCheck.Solver.Base
 
-propagateSolvedMetasHandler :: (EqualityConstraint :<: cs) => HandlerType cs
-propagateSolvedMetasHandler constr = do
+propagateMetasEqHandler :: (EqualityConstraint :<: cs) => HandlerType cs
+propagateMetasEqHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
     Just (EqualityConstraint mt1 mt2 ty _) ->
@@ -23,22 +24,23 @@ propagateSolvedMetasHandler constr = do
       in (||) <$> solved mt1 <*> solved mt2
     Nothing -> return False
 
-propagateSolvedMetasSolver :: (EqualityConstraint :<: cs) => SolverType cs
-propagateSolvedMetasSolver constr = do
+propagateMetasEqSolver :: (EqualityConstraint :<: cs) => SolverType cs
+propagateMetasEqSolver constr = do
   let Just (EqualityConstraint mt1 mt2 ty m) = match @EqualityConstraint constr
   t1 <- substMetas mt1
   t2 <- substMetas mt2
   constrainEqualityMeta t1 t2 ty m
   return True
 
-propagateSolvedMetasSymbol :: PluginId
-propagateSolvedMetasSymbol = "propagate solved metas to equality constraints"
+propagateMetasEqSymbol :: PluginId
+propagateMetasEqSymbol = "propagate solved metas to equality constraints"
 
-propagateSolvedMetasPlugin :: (EqualityConstraint :<: cs) => Plugin cs
-propagateSolvedMetasPlugin = Plugin {
-  solver = propagateSolvedMetasSolver,
-  handler = propagateSolvedMetasHandler,
-  symbol = propagateSolvedMetasSymbol,
+propagateMetasEqPlugin :: (EqualityConstraint :<: cs) => Plugin cs
+propagateMetasEqPlugin = Plugin {
+  solver = propagateMetasEqSolver,
+  handler = propagateMetasEqHandler,
+  symbol = propagateMetasEqSymbol,
   pre = [unificationEndMarkerSymbol],
   suc = [identitySymbol, unificationStartMarkerSymbol]
   }
+

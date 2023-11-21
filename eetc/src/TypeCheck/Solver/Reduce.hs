@@ -12,7 +12,7 @@ import           TypeCheck.Constraints ( (:<:)
                                        , match
                                        )
 import           TypeCheck.Solver.Base
-import           TypeCheck.Solver.PropagateSolutions (propagateSolvedMetasSymbol)
+import           TypeCheck.Solver.PropagateSolutionsEq (propagateMetasEqSymbol)
 --import qualified TypeCheck.Environment as Env
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
@@ -53,7 +53,7 @@ reduceLeftPlugin = Plugin {
   handler = reduceLeftHandler,
   symbol = reduceLeftSymbol,
   pre = [unificationEndMarkerSymbol],
-  suc = [propagateSolvedMetasSymbol, unificationStartMarkerSymbol]
+  suc = [propagateMetasEqSymbol, unificationStartMarkerSymbol]
   }
 
 reduceRightSymbol :: PluginId
@@ -83,5 +83,5 @@ reduceRightPlugin = Plugin {
   handler = reduceRightHandler,
   symbol = reduceRightSymbol,
   pre = [unificationEndMarkerSymbol],
-  suc = [propagateSolvedMetasSymbol, unificationStartMarkerSymbol]
+  suc = [propagateMetasEqSymbol, unificationStartMarkerSymbol]
   }

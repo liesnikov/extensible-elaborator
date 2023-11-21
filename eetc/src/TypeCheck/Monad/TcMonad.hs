@@ -124,8 +124,8 @@ lookupMetaVarTypeTc mid = do
   dict <- State.metaTypes . State.meta <$> getTc
   return $ Map.lookup mid dict
 
---FIXME
--- dispatch simplifier before storing the constraints
+-- FIXME
+-- dispatch a simplifier before storing the constraints
 raiseConstraintMaybeFreezeTc :: (c :<: cs)
                              => c (ConstraintF cs)
                              -> Maybe (TcMonad cs ())

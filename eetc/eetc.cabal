@@ -102,7 +102,7 @@ library
 
     TypeCheck.Solver.Base
     TypeCheck.Solver.Identity
-    TypeCheck.Solver.PropagateSolutions
+    TypeCheck.Solver.PropagateSolutionsEq
     TypeCheck.Solver.PiInjectivity
     TypeCheck.Solver.TrivialMetas
     TypeCheck.Solver.TypeConstructor
