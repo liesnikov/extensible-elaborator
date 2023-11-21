@@ -460,10 +460,15 @@ instance CheckForRigid I.Term where
           I.Type -> return []
           (I.Var x) -> return $ if Unbound.isFreeName x then [x] else []
           (I.Lam _ b) -> collectAllBoundRigid b
+          (I.App f a) -> do
+            mf <- collectAllRigid f
+            ma <- collectAllRigid a
+            return $ mf ++ ma
           (I.Pi ep typ bod) -> do
             mtyp <- collectAllRigid typ
             mbod <- collectAllBoundRigid bod
             return $ mtyp ++ mbod
+
           (I.Ann term ty) -> do
             mt <- collectAllRigid term
             mty <- collectAllRigid ty
@@ -471,10 +476,18 @@ instance CheckForRigid I.Term where
           (I.Pos _ term) -> collectAllRigid term
           I.TrustMe -> return []
           I.PrintMe -> return []
+
           I.TyUnit -> return []
           I.LitUnit -> return []
+
           I.TyBool -> return []
           (I.LitBool _) -> return []
+          (I.If t1 t2 t3) -> do
+            mt1 <- collectAllRigid t1
+            mt2 <- collectAllRigid t2
+            mt3 <- collectAllRigid t3
+            return $ mt1 ++ mt2 ++ mt3
+
           (I.Sigma term bod) -> do
             mterm <- collectAllRigid term
             mbod <- collectAllBoundRigid bod
@@ -483,19 +496,33 @@ instance CheckForRigid I.Term where
             mt1 <- collectAllRigid t1
             mt2 <- collectAllRigid t2
             return $ mt1 ++ mt2
+          (I.LetPair term elim) -> do
+            mt <- collectAllRigid term
+            melim <- collectAllBoundRigid elim
+            return $ mt ++ melim
+
           (I.TyEq t1 t2) -> do
             mt1 <- collectAllRigid t1
             mt2 <- collectAllRigid t2
             return $ mt1 ++ mt2
           I.Refl -> return []
+          (I.Subst st e) -> do
+            mt1 <- collectAllRigid st
+            mt2 <- collectAllRigid e
+            return $ mt1 ++ mt2
           (I.Contra ct) -> collectAllRigid ct
+
           (I.TCon _ args) -> collectAllRigid args
           (I.DCon _ args) -> collectAllRigid args
+          (I.Case ct alts) -> do
+            mct <- collectAllRigid ct
+            malts <- collectAllRigid alts
+            return $ mct ++ malts
       Just _ ->
         case rt of
           (I.App f a) -> collectAllRigid f
           (I.If cond thent elset) -> collectAllRigid cond
-          (I.LetPair term branches) -> collectAllRigid term
+          (I.LetPair term elim) -> collectAllRigid term
           (I.Subst st e) -> collectAllRigid st
           (I.Case ct alts) -> collectAllRigid ct
           (I.MetaVar mc) -> return []
@@ -532,10 +559,15 @@ instance CheckForFlexible I.Term where
           I.Type -> return []
           (I.Var x) -> return $ if p == Flexible && Unbound.isFreeName x then [x] else []
           (I.Lam _ b) -> collectAllBoundFlexible' p b
+          (I.App f a) -> do
+            mf <- collectAllFlexible' p f
+            ma <- collectAllFlexible' p a
+            return $ mf ++ ma
           (I.Pi ep typ bod) -> do
             mtyp <- collectAllFlexible' p typ
             mbod <- collectAllBoundFlexible' p bod
             return $ mtyp ++ mbod
+
           (I.Ann term ty) -> do
             mt <- collectAllFlexible' p term
             mty <- collectAllFlexible' p ty
@@ -543,10 +575,18 @@ instance CheckForFlexible I.Term where
           (I.Pos _ term) -> collectAllFlexible' p term
           I.TrustMe -> return []
           I.PrintMe -> return []
+
           I.TyUnit -> return []
           I.LitUnit -> return []
+
           I.TyBool -> return []
           (I.LitBool _) -> return []
+          (I.If t1 t2 t3) -> do
+            mt1 <- collectAllFlexible' p t1
+            mt2 <- collectAllFlexible' p t2
+            mt3 <- collectAllFlexible' p t3
+            return $ mt1 ++ mt2 ++ mt3
+
           (I.Sigma term bod) -> do
             mterm <- collectAllFlexible' p term
             mbod <- collectAllBoundFlexible' p bod
@@ -555,14 +595,28 @@ instance CheckForFlexible I.Term where
             mt1 <- collectAllFlexible' p t1
             mt2 <- collectAllFlexible' p t2
             return $ mt1 ++ mt2
+          (I.LetPair term elim) -> do
+            mt <- collectAllFlexible' p term
+            melim <- collectAllBoundFlexible' p elim
+            return $ mt ++ melim
+
           (I.TyEq t1 t2) -> do
             mt1 <- collectAllFlexible' p t1
             mt2 <- collectAllFlexible' p t2
             return $ mt1 ++ mt2
           I.Refl -> return []
+          (I.Subst st e) -> do
+            mt1 <- collectAllFlexible' p st
+            mt2 <- collectAllFlexible' p e
+            return $ mt1 ++ mt2
           (I.Contra ct) -> collectAllFlexible' p ct
+
           (I.TCon _ args) -> collectAllFlexible' p args
           (I.DCon _ args) -> collectAllFlexible' p args
+          (I.Case ct alts) -> do
+            mct <- collectAllFlexible' p ct
+            malts <- collectAllFlexible' p alts
+            return $ mct ++ malts
       Just _ ->
         case rt of
           (I.App f a) -> collectAllFlexible' Flexible a
