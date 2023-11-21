@@ -519,7 +519,11 @@ checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
   (escrut',_) <- whnf escrut
   elabpromise <- SA.createMetaTerm ty
-  CA.constrainTConAndFreeze ty $ do
+--  Env.warn [ DS "checking term"
+--           , DD $ S.Case scrut alts
+--           , DS "against type"
+--           , DD ty]
+  CA.constrainTConAndFreeze sty $ do
     let ensureTCon :: (MonadElab c m) => I.Term -> m (TCName, [I.Arg])
         ensureTCon (I.TCon c args) = return (c, args)
         ensureTCon term = Env.err [DS "can't verify that",

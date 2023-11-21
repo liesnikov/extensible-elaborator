@@ -13,7 +13,10 @@ import           TypeCheck.Constraints ((:<:)
                                        , match
                                        )
 import           TypeCheck.StateActions (substMetas)
+import qualified TypeCheck.Environment as Env
 import           TypeCheck.Solver.Base
+
+import           Reduction (whnf)
 
 typeConstructorHandler :: TypeConstructorConstraint :<: cs => HandlerType cs
 typeConstructorHandler constr = do
@@ -56,7 +59,16 @@ typeConstructorWithMetasSolver constr = do
   case tcm of
     Just (TConConstraint mt1) -> do
       t1 <- substMetas mt1
-      case t1 of
+      (rt1, _) <- whnf t1
+--      Env.warn [ Env.DS "trying to solve a constraint"
+--               , Env.DD constr
+--               , Env.DS "with the term being"
+--               , Env.DD mt1
+--               , Env.DS "or, substituted and reduced"
+--               , Env.DD t1
+--               , Env.DD rt1
+--               ]
+      case rt1 of
         TCon _ _ -> return True
         _ -> return False
     Nothing -> return False

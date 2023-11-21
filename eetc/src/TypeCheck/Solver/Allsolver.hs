@@ -9,7 +9,7 @@ import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc, loc
 import qualified TypeCheck.State as State
 import qualified TypeCheck.StateActions as SA
 import qualified TypeCheck.Environment as Env
-import           TypeCheck.Blockers (Blocker(UnblockOnConstraint))
+import           TypeCheck.Blockers (Blocker, unblockAConstraint)
 import           TypeCheck.Constraints
 import           TypeCheck.Solver.Base
 
@@ -79,7 +79,13 @@ solveAndUnfreeze as c = do
     Just (cid, pid) -> do
       allconstrs <- getsTc State.constraints
       allfrozen <- getsTc State.blocks
-      let mblocked = Map.lookup (UnblockOnConstraint cid) allfrozen
+      let (mblocked, newfrozen) =
+            foldr
+              (\(k,v) (a, m) -> case unblockAConstraint cid k of
+                  Nothing -> (v ++ a, m)
+                  Just k' -> (a, Map.insertWith (++) k' v m))
+              ([], Map.empty)
+              (Map.toList allfrozen)
           -- mblocked is a list of either
           -- separate mblockd with left into constrs, right into problems
           (frozenConsts, frozenProblems) =
@@ -87,12 +93,14 @@ solveAndUnfreeze as c = do
                       Left c' -> (c' : c, p)
                       Right p' -> (c, p' : p))
                   ([], [])
-                  (fromMaybe [] mblocked)
-          (Just newconsts) = foldM (\s cid -> SA.wakeupConstraint cid s)
+                  mblocked
+          (Just newconsts) = foldM (flip SA.wakeupConstraint)
                                    allconstrs
                                    frozenConsts
-      modifyTc $ \s -> s { State.constraints = newconsts }
-      _ <- sequence frozenProblems
+      modifyTc $ \s -> s { State.constraints = newconsts,
+                           State.blocks = newfrozen
+                         }
+      sequence_ frozenProblems
       return $ Just pid
 
 solve :: (MonadSolver c m) => Allsolver c -> (ConstraintF c, State.Env) -> m (Maybe PluginId)
@@ -104,7 +112,7 @@ solveAllPossible a = do
   sconstr <- getsTc (Map.keys . State.active . State.constraints)
   res <- solveAllPossible' 0 a
   sconstr' <- getsTc (Map.keys . State.active . State.constraints)
-  if (sconstr == sconstr') then return res
+  if sconstr == sconstr' then return res
   else solveAllPossible a
 
 
