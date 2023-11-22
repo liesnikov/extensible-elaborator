@@ -148,7 +148,7 @@ solveAllPossible' n a = do
         let (Just sconstr') = SA.deactivateSucConstraint cid newsconstr
 
 --        let diffconstr = foldr Map.delete (State.active newsconstr)
---                                          (Map.keys (State.active sconstr'))
+--                                          (Map.keys sconstr)
 --
 --        Env.warn [ Env.DS $ "Solver " ++ pid ++ " solved"
 --                 , Env.DD $ Map.map fst $ Map.fromList [(cid, constr)]
