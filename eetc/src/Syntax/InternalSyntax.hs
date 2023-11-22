@@ -142,8 +142,7 @@ data Epsilon
   = Rel
   | Irr
   deriving
-    ( Eq,
-      Show,
+    ( Show,
       Read,
       Bounded,
       Enum,
@@ -152,6 +151,9 @@ data Epsilon
       Unbound.Alpha,
       Unbound.Subst Term
     )
+
+instance Eq Epsilon where
+  a == b = True
 
 -- | A 'Match' represents a case alternative
 newtype Match = Match (Unbound.Bind Pattern Term)
