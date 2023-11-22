@@ -5,7 +5,7 @@ import           Control.Monad.Extra (ifM)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 
-import           TypeCheck.Monad.Typeclasses (MonadSolver, getsTc, modifyTc, localEnv)
+import           TypeCheck.Monad.Typeclasses (MonadSolver, getTc, putTc, getsTc, modifyTc, localEnv)
 import qualified TypeCheck.State as State
 import qualified TypeCheck.StateActions as SA
 import qualified TypeCheck.Environment as Env
@@ -60,15 +60,16 @@ compile (h : t) =
   in insert h rest
 
 solveAndReport :: (MonadSolver c m) => Allsolver c ->
-                  (ConstraintF c) -> m (Maybe (ConstraintId, PluginId))
+                  ConstraintF c -> m (Maybe (ConstraintId, PluginId))
 solveAndReport [] cs = return Nothing
 solveAndReport (h : t) cs = do
   let tailcall = solveAndReport t cs
   ifM (handler h cs)
-    (ifM (solver h cs)
-         (let cid = getConstraintId cs
-          in return . Just $ (cid, symbol h))
-         tailcall)
+      (do sb <- getTc
+          ifM (solver h cs)
+              (let cid = getConstraintId cs
+               in return . Just $ (cid, symbol h))
+              (putTc sb >> tailcall))
     tailcall
 
 solveAndUnfreeze :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
