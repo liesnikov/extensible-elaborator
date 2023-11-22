@@ -82,9 +82,7 @@ inferType t@(S.Lam ep1 bnd) = Env.err [DS "Lambdas must be checked not inferred"
 inferType (S.App t1 t2) = do
   (et1, ty1) <- inferType t1
 
-  -- FIXME
-  -- we're defaulting to relevant arguments for now
-  let epx = I.Rel
+  epx <- hackyRelevanceInfer ty1
   tyA <- SA.createMetaTerm I.Type
   tx <- createUnknownVar
   tyB <- Env.extendCtx (I.TypeSig (I.Sig tx epx tyA)) (SA.createMetaTerm I.Type)
@@ -272,9 +270,7 @@ checkType (S.Lam ep1 lam) ty = do
   -- tx is the canonical name for all things bound on this level of labmda/telescope
   tx <- transName x
 
-  -- FIXME
-  -- we're defaulting to relevant arguments for now
-  let mep = I.Rel
+  mep <- hackyRelevanceInfer ty
   mtyA <- SA.createMetaTerm I.Type
   mtyB <- Env.extendCtx (I.TypeSig (I.Sig tx mep mtyA)) (SA.createMetaTerm I.Type)
   let mbnd = Unbound.bind tx mtyB
@@ -1014,3 +1010,17 @@ checkSubPats dc (I.TypeSig _ : tele) patss
       _ -> Env.err [DS "All subpatterns must be variables in this version."]
 checkSubPats dc t ps =
   Env.err [DS "Internal error in checkSubPats", DD dc, DS (show ps)]
+
+
+-- cheating function for while we don't have relevance metas
+hackyRelevanceInfer :: (MonadElab c m) => I.Type -> m I.Epsilon
+hackyRelevanceInfer t =
+  case t of
+    (I.Pi ep _ _) -> return ep
+    _ -> do
+     st <- SA.substAllMetas t
+     (rt, _) <- whnf st
+     case rt of
+       (I.Pi ep _ _) -> return ep
+       -- defaulting to relevant arguments for now
+       _ -> return I.Rel
