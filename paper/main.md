@@ -760,6 +760,7 @@ In that case, we can get around with a trick borrowed from Coq, where `coerce f 
 
 This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`
 
+\todo{say something about what features can be rendered as modular and which can't}
 
 # Related work # {#sec:related_work}
 
