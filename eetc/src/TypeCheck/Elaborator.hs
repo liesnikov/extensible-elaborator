@@ -777,6 +777,8 @@ elabModule defs modul = do
   where
     elabE :: (MonadElab c m) => S.Decl -> m [I.Decl] -> m [I.Decl]
     d `elabE` m = do
+--      Env.warn [ DS "elaborating entry..."
+--               , DD d]
       -- Extend the Env per the current Decl before checking
       -- subsequent Decls.
       x <- elabEntry d
