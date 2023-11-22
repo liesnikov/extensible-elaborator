@@ -213,17 +213,22 @@ In the examples in this paper, we follow the bidirectional style of type-checkin
 
 From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure).
 
-![Architecture diagram](architecture-diagram.png){#architecture-figure width=50%}
-\todo{make the figure two-column}
+\begin{figure*}
+  \center
 
-\todo{more explanation about each component, signpost future section?}
+  \includegraphics[width=\textwidth]{architecture-diagram.png}
 
-In the diagram type-checker is precisely the part that implements syntax-driven traversal of the term.
-It can raise a constraint that gets registered by the Solver dispatcher.
-Solver dispatcher then is exactly the component that fires the solvers on the appropriate constraints and constitutes our main contribution.
-All components have some read access to the state, including solvers which might for example verify that there are no extra constraints on the metavariable.
-We indicate that the solvers are supplied both by us (`unification`) and by the user (`Plugin A`) by drawing two nodes, but they both have the same capabilities.
+  \caption{Architecture diagram}
+  \label{architecture-figure}
+\end{figure*}
 
+The type-checking begins by initializing state and doing the syntax traversal.
+The traversal raises the constraints, and for the moment, the constraints are simply stored.
+As soon as we finish the traversal of some block (one declaration in our case), the solver dispatcher is called.
+It goes over the set of constraints, and for each active constraint calls different plugins to make an attempt at solving it.
+Each plugin, whether user-supplied (`Plugin A`) or provided by us (`unification`) uses a handler to determine if it can potentially solve a constraint, and if so the dispatcher runs the corresponding solver.
+All components have some read access to the state, including handlers which might for example verify that there are no extra constraints on the metavariable.
+For the write access: syntax traversal writes new metavariables to the state and elaborated definitions; solver dispatcher writes updated meta-information; solvers write solutions to the metavariables and can raise new constraints.
 
 [^agda-constraint-solver-source]:
 [src/full/Agda/TypeChecking/Constraints.hs#L247-L298](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Constraints.hs#L247-L298)
@@ -269,12 +274,14 @@ data Term =
   | MetaVar MetaClosure
 ```
 
-\todo{add an explanation of what metavaribles are, drop a couple of references}
-
 Equality isn't defined as a regular inductive type, but is instead built-in with the user getting access to the type and term constructor, but not able to pattern-matching on it, instead getting a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different inductive type constructors and produces any type.
 
 On top of the above we include indexed inductive datatypes and case-constructs for their elimination.
 Indexed inductive datatypes are encoded using a well-known trick as parameterised datatypes with an equality argument constraining the index.
+
+As for metavariables `MetaVar`: as mentioned in the introduction, they are placeholders in the syntax tree (AST) that are produced in the process of elaboration.
+Metavariables don't appear in the surface syntax as they aren't created by the user.
+In this paper we implement metavariables in the contextual style, as described by @abelHigherOrderDynamicPattern2011, therefore they have to carry around a closure `MetaClosure`.
 
 ## Syntax traversal ##
 
@@ -318,6 +325,30 @@ checkType t@(S.DCon c args) ty = do
         ...
       _ -> ...
 ```
+
+We add one more case to the elaborator for implicit arguments.
+
+```haskell
+checkType (Implicit) ty = do
+  m <- createMetaTerm
+  raiseConstraint $ FillInTheMeta m ty
+  return m
+```
+
+This is used for implicit arguments as will be described in more detail in Section @sec:case-implicits.
+The syntax traversal doesn't need to know anything at all about the implicits.
+The only thing we require is that the elaboration of the argument is called with the type information available.
+This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
+
+``` haskell
+inferType (App t1 t2) = do
+  (et1, Pi tyA tyB) <- inferType t1
+  et2 <- checkType t2 tyA
+  return (App et1 et2, subst tyB et2)
+```
+
+
+
 
 # Constraints and unification # {#sec:constraints_and_unification}
 
@@ -375,19 +406,16 @@ syntactic  = Plugin { solver  = syntacticSolver
                     }
 ```
 
-
-\todo{more explanation about the separation: we separate out the handler that only has read-access to the state and solver which has write access. This is to ensure that handlers can be executed as often as possible without doing any "damage" that you'd like to roll back later}
-
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- function that decides whether a given solver has to fire.
-In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal, then we define the solver itself.
-Which in this case doesn't have to do anything except mark the constraint as solved, since we assume it only fires once it has been cleared to do so by the handler.
-The reason for this separation between a decision procedure and execution of it is to ensure separation between effectful and costly solving and cheap decision-making that should require only read-access to the state.
+In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
+Then we define the solver itself.
+Which doesn't have to do anything except `return True` to indicate that the constraint is solved, as we it only fires once it has been cleared to do so by the handler and the equality has already been checked.
+The reason for this separation between a decision procedure and execution of it is to ensure separation between pontentially slow, effectful solving and fast read-only decision-making in the handler.
+We opt for this division since handlers will be run on many constraints that don't fit, therefore any write effects would have to be rolled back, while solvers should be fired only in cases when we can reasonably hope that the constraint will be solved and the effects won't have to be rolled back.
 Finally, we register the solver by declaring it using a plugin interface.
 
 Similarly, we can define solvers that only work on problems where only one of the sides is a metavariable, `leftMetaSolver` and `rightMetaSolver` of the same type as the syntactic solver above and corresponding handlers and plugins.
-
 Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
-If both of those steps are successful we can return `True` and the constraint will be marked as solved.
 
 In the cases above we don't have to worry about the order since the problems they match on don't overlap.
 In the case they don't we can provide priority preferences:
@@ -419,7 +447,21 @@ At the time of running the compiler, these preferences are loaded into a big pre
 ## Implementation of the solvers and unification details ##
 
 We implement a system close to the one described by @abelHigherOrderDynamicPattern2011 with the exception that every function call in the simplification procedure is now a raised constraint and every simplification rule is a separate solver.
-For example, the "decomposition of functions" [@abelHigherOrderDynamicPattern2011, fig. 2] rule is translated to the following implementation:
+For example, the "decomposition of functions" [@abelHigherOrderDynamicPattern2011, fig. 2] rule is translated to the following implementation.
+
+```haskell
+piEqInjectivityHandler :: (EqualityConstraint :<: cs) => HandlerType cs
+piEqInjectivityHandler constr = do
+  let eqcm = match @EqualityConstraint constr
+  case eqcm of
+    Just (EqualityConstraint pi1 pi2 _ _) ->
+      case (pi1, pi2) of
+        (I.Pi _ _ _, I.Pi _ _ _) -> return True
+        _ -> return False
+    _ -> return False
+```
+
+The handler is simply checking that both sides of the equality are indeed Pi-types, and in case either of the matches fails, failure will be reported and the solver won't be fired.
 
 ```haskell
 piEqInjectivitySolver :: (EqualityConstraint :<: cs)
@@ -438,14 +480,17 @@ piEqInjectivitySolver constr = do
   return True
 ```
 
-\todo{explain the steps more, what is identity closure, why do we need it}
+As the solver will only fire after a handler returns successfully, we can assume the matches won't fail.
+Then we constrain the equality of the domain of the Pi-type: `a1` and `a2`.
 
 The seemingly spurious metavariable `m` serves as an anti-unification [@pfenningUnificationAntiunificationCalculus1991] communication channel.
 When an equality constraint is created we return a metavariable that stands for the unified term.
 This metavariable is used for unification problems that are created in the extended contexts -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
 We do this to solve the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- we operate according to the "well-typed modulo constraints" principle essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context.
-In case one of the constraints created in the extended context when solving it we might need to know the exact shape of `ma`.
-In which case we can block on the metavariable, freezing the rest of the problem until it is instantiated.
+`ma` has to be applied to a closure which will keep track of the delayed substitution.
+
+Then we can constrain the co-domains of Pi-types in an extended context.
+In case one of solvers the constraints created in the extended context might need to know the exact shape of `ma`, we can block on the metavariable later, freezing the rest of the problem until it is instantiated.
 
 As for the actual unification steps, we implement them in a similar fashion to simplification procedure.
 Take a look at the following example, when only the left hand side of the constaint is an unsolved meta:
@@ -516,7 +561,7 @@ userInjectivityPlugin :: (EqualityConstraint :<: cs)
 userInjectivityPlugin =
   Plugin { ...
          , solver = userInjectivitySolver
-         , symbol = "userInjectivity"
+         , symbol = PluginId $ "userInjectivity"
          , pre = [ unifyNeutralsDecomposition
                  , unificationStartMarkerSymbol]
          , suc = [unificationStartMarkerSymbol]
@@ -531,39 +576,18 @@ However, implementing something like commutativity and associativity unifiers ca
 Once we implement basic elaboration and unification we can extend the language.
 This is where we make use of the fact that the constraints datatype is open.
 
-\todo{move this to base language description}
-
 We saw before in Section @sec:implicit-arguments that conventional designs require separate handling of different kinds of implicit variables.
 Instead we would like to uniformly dispatch a search for the solution, which would be handled by the a fitting solver.
-We can achieve this by creating metavariables for the unknown terms and then raising constraints that communicate the kind of implicit, in our case we encode this information in the type of the meta.
+We can achieve this by creating metavariables for the unknown terms and then raising constraints that communicate the kind of implicit, in our case we encode this information in the type of the meta in the second argument of `FillInTheMetam ty`
 
-```haskell
-checkType (Implicit) ty = do
-  m <- createMetaTerm
-  raiseConstraint $ FillInTheMeta m ty
-  return m
-```
+The solvers then match on the shape of the type of the metavariable and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument, waiting for regular unification to solve the metavariable for regular implicit arguments.
 
-The solvers match on the shape of the type of the metavariable and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument, waiting for regular unification to solve the metavariable for regular implicit arguments.
-
-The elaborator for function application doesn't have to know anything about the implicits at all.
-The only thing we require is that the elaboration of the argument is called with the type information available.
-This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
-
-``` haskell
-inferType (App t1 t2) = do
-  (et1, Pi tyA tyB) <- inferType t1
-  et2 <- checkType t2 tyA
-  return (App et1 et2, subst tyB et2)
-```
-
-In the first subsection (@sec:case-implicits) we discuss the implementation of implicit arguments and different options available in the design space.
-In the second subsection (@sec:case-typeclasses) we describe the implementation of type classes added on top of the implicit arguments.
-In the last subsection (@sec:coercion-tactics) we sketch the implementation of coercive subtyping and tactic arguments.
+In this section we will describe the implementation details of regular implicit arguments (Section @sec:case-implicits) and different options available in the design space, the implementation of type classes added on top of the implicit arguments (Section @sec:case-typeclasses).
+And finally (Section @sec:coercion-tactics) we sketch the implementation of coercive subtyping and tactic arguments.
 
 ## Implicit arguments ## {#sec:case-implicits}
 
-The rule for `Implicit` has to be added to the syntax traversal part of the elaborator.
+As we mentioned, the rule for `Implicit` had to be added to the syntax traversal part of the elaborator.
 In fact, we require not one but two modifications that lie outside of the solvers-constraints part of the system.
 The first one is, indeed, the addition of a separate case in the syntax traversal, however contained.
 The second one lies in the purely syntactical of the compiler.
@@ -718,7 +742,7 @@ checkLambda' cmp b xps typ body target = do
 ```
 
 Here Agda steps away from the bidirectional discipline and infers a (lambda) function if the target type isn't fully known.
-If in our design the developer chooses to go only with a pure bi-directional style of type-checking inferred lambda functions would be impossible to emulate.
+If in our design the developer chooses to go only with a pure bidirectional style of type-checking inferred lambda functions would be impossible to emulate.
 That is unless one essentially renders macros and writes their own type-checking case for an inferrable lambda.
 
 [^agda-lambda-tc-source]: [./src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518)
