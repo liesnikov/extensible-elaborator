@@ -21,12 +21,15 @@ exitWith (Right b) f = return b
 -- | Type check the given file
 testFile :: String -> TestTree
 testFile name = testCase name $ do
+  putStrLn $ "parsing " ++ name ++ "..."
   v <- runExceptT (getModules ["pi"] name)
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))
+  putStrLn $ "elaborating " ++ name ++ "..."
   let elabState = emptyElabState allsolver
   ev <- runTcStateMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
   (elab, constraints) <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
   putStrLn $ render $ disp (last elab)
+  putStrLn $ "type-checking " ++ name ++ "..."
   d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elab)
   defs <- d `exitWith` (\s -> assertFailure $ "Type error:" ++ render (disp s))
   putStrLn $ render $ disp (last defs)
