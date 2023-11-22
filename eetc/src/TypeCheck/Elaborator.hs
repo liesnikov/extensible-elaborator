@@ -17,6 +17,7 @@ import           Syntax.ModuleStub
 import qualified Syntax.Surface as S
 import qualified Syntax.Internal as I
 import           Reduction (whnf)
+import qualified TypeCheck.Equal as Equal
 import qualified TypeCheck.Environment as Env
 import qualified TypeCheck.StateActions as SA
 import qualified TypeCheck.ConstraintsActions as CA
@@ -539,15 +540,7 @@ checkType (S.Case scrut alts) ty = do
           decls <- declarePat epat I.Rel (I.TCon c args)
           -- add defs to the contents from scrut = pat
           -- could fail if branch is in-accessible
-          --FIXME
-          let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
-              unify ln at bt = do
-                Env.warn [DS "supposed to unify",
-                           DD at,
-                           DD bt,
-                           DS "for now pretending that they are the same"]
-                return []
-          decls' <- unify [] escrut' (pat2Term epat)
+          decls' <- Equal.unify [] escrut' (pat2Term epat)
           ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
           let ebnd = Unbound.bind epat ebody
           return $ I.Match ebnd
