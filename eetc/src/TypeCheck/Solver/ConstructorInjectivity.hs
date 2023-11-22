@@ -21,9 +21,7 @@ consEqInjectivityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   -- check that both sides are DCon
   case eqcm of
-    Just (EqualityConstraint mdc1 mdc2 _ _) -> do
-      dc1 <- substMetas mdc1
-      dc2 <- substMetas mdc2
+    Just (EqualityConstraint dc1 dc2 _ _) -> do
       case (dc1, dc2) of
         (I.DCon _ _, I.DCon _ _) -> return True
         _ -> return False
@@ -31,9 +29,7 @@ consEqInjectivityHandler constr = do
 
 consEqInjectivitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 consEqInjectivitySolver constr = do
-  let (Just (EqualityConstraint mdc1 mdc2 ty mr)) = match @EqualityConstraint constr
-  nc@(I.DCon n argsn) <- substMetas mdc1
-  mc@(I.DCon m argsm) <- substMetas mdc2
+  let (Just (EqualityConstraint (I.DCon n argsn) (I.DCon m argsm) ty mr)) = match @EqualityConstraint constr
   if (n == m && length argsn == length argsm)
   then do
     mty <- substAllMetas ty
@@ -68,9 +64,7 @@ typeEqInjectivityHandler constr = do
   let eqcm = match @EqualityConstraint constr
   -- check that both sides are DCon
   case eqcm of
-    Just (EqualityConstraint mdc1 mdc2 _ _) -> do
-      dc1 <- substMetas mdc1
-      dc2 <- substMetas mdc2
+    Just (EqualityConstraint dc1 dc2 _ _) -> do
       case (dc1, dc2) of
         (I.TCon _ _, I.TCon _ _) -> return True
         _ -> return False
@@ -78,9 +72,7 @@ typeEqInjectivityHandler constr = do
 
 typeEqInjectivitySolver :: (EqualityConstraint :<: cs) => SolverType cs
 typeEqInjectivitySolver constr = do
-  let (Just (EqualityConstraint mdc1 mdc2 _ mr)) = match @EqualityConstraint constr
-  nc@(I.TCon n argsn) <- substMetas mdc1
-  mc@(I.TCon m argsm) <- substMetas mdc2
+  let (Just (EqualityConstraint (I.TCon n argsn) (I.TCon m argsm) _ mr)) = match @EqualityConstraint constr
   if (n == m && length argsn == length argsm)
   then do
     (I.Telescope tel,_) <- lookupTCon n
