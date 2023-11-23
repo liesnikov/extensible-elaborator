@@ -25,7 +25,9 @@ import           TypeCheck.Monad ( MonadElab
                                  , askTcNames
                                  , modifyTcNames
                                  , solveAllConstraints
+                                 , blockAndReblockUntil
                                  )
+import           TypeCheck.Blockers
 
 transEpsilon :: S.Epsilon -> I.Epsilon
 transEpsilon S.Rel = I.Rel
@@ -448,34 +450,48 @@ checkType (S.Subst a b) typ = do
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
   ty <- SA.createMetaTerm I.Type
-  a <- SA.createMetaTerm ty
-  b <- SA.createMetaTerm ty
+  a@(I.MetaVar (I.MetaVarClosure aid _)) <- SA.createMetaTerm ty
+  b@(I.MetaVar (I.MetaVarClosure bid _)) <- SA.createMetaTerm ty
   let metaEq = I.TyEq a b
   CA.constrainEquality typ metaEq I.Type
-  --FIXME
-  -- this only makes sense to do after the constraint has been solved,
-  -- so we have to freeze here
-  (a', ba) <- whnf a
-  (b', bb) <- whnf b
-  case (a, b) of
-    (I.DCon da _, I.DCon db _)
-      | da /= db ->
-        return $ I.Contra ep
-    (I.LitBool b1, I.LitBool b2)
-      | b1 /= b2 ->
-        return $ I.Contra ep
-    (_, _) ->
-      Env.err
-        [ DS "I can't tell that",
-          DD a,
-          DS "and",
-          DD b,
-          DS "are contradictory",
-          DS "the reduction is blocked on",
-          DD ba,
-          DS "and",
-          DD bb
-        ]
+  let blockboth = andBlockers (UnblockOnMeta aid) (UnblockOnMeta bid)
+  let detector = do
+        sa <- SA.substAllMetas a
+        sb <- SA.substAllMetas b
+        ra <- whnf a
+        rb <- whnf b
+        case (sa, sb) of
+          (I.MetaVar (I.MetaVarClosure na _), I.MetaVar (I.MetaVarClosure nb _)) ->
+            return . Just $ andBlockers (UnblockOnMeta na) (UnblockOnMeta nb)
+          (I.MetaVar (I.MetaVarClosure na _), _) ->
+            return . Just . UnblockOnMeta $ na
+          (_, I.MetaVar (I.MetaVarClosure nb _)) ->
+            return . Just . UnblockOnMeta $ nb
+          _ -> return Nothing
+  ret <- SA.createMetaTerm typ
+  blockAndReblockUntil blockboth detector $ do
+    (a', ba) <- whnf a
+    (b', bb) <- whnf b
+    case (a, b) of
+      (I.DCon da _, I.DCon db _)
+        | da /= db ->
+          CA.constrainEquality (I.Contra ep) ret typ
+      (I.LitBool b1, I.LitBool b2)
+        | b1 /= b2 ->
+          CA.constrainEquality (I.Contra ep) ret typ
+      (_, _) ->
+        Env.err
+          [ DS "I can't tell that",
+            DD a,
+            DS "and",
+            DD b,
+            DS "are contradictory",
+            DS "the reduction is blocked on",
+            DD ba,
+            DS "and",
+            DD bb
+          ]
+  return ret
 
 -- | type constructors (fully applied)
 -- checkType t@(S.TCon tcname larg) ty =
