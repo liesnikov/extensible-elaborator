@@ -70,7 +70,7 @@ instance {-# OVERLAPPING #-} Disp String where
   disp = PP.text
 
 instance {-# OVERLAPPABLE #-} Disp a => Disp [a] where
-  disp = PP.hsep . map disp
+  disp l = PP.brackets . PP.hsep . PP.punctuate (PP.comma) $ map disp l
 
 instance Disp Int where
   disp = PP.text . show
@@ -99,15 +99,11 @@ instance (Disp a, Disp b) => Disp (Either a b) where
   disp (Right a) = PP.text "Right" <+> disp a
 
 instance (Disp a) => Disp (S.Set a) where
-  disp l =  PP.text "{"
-        <+> PP.vcat (PP.punctuate (PP.text ",") $ disp <$> S.toList l)
-        <+> PP.text "}"
+  disp l =  PP.braces $ PP.vcat (PP.punctuate PP.comma $ disp <$> S.toList l)
 
 instance (Disp a, Disp b) => Disp (Map a b) where
-  disp m = PP.text "{"
-        <+> PP.vcat (PP.punctuate (PP.text ",") $
-                     (\ (k, v) -> disp k <+> PP.text ":" <+> disp v) <$> Map.toList m)
-        <+> PP.text "}"
+  disp m = PP.braces $ PP.vcat (PP.punctuate PP.comma $
+             map (\ (k, v) -> disp k <+> PP.text ":" <+> disp v) $ Map.toList m)
 
 
 displist :: Disp a => [a] -> Doc

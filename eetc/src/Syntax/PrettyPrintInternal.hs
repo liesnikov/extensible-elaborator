@@ -11,9 +11,7 @@ import PrettyPrint
 import Syntax.InternalSyntax
 import Syntax.ModuleStub
 
-instance Disp (Unbound.Name Term) where
-  disp = PP.text . Unbound.name2String
---    disp = PP.text . show
+instance Disp (Unbound.Name Term)
 
   -------------------------------------------------------------------------
 
@@ -149,8 +147,18 @@ parens b = if b then PP.parens else id
 brackets :: Bool -> Doc -> Doc
 brackets b = if b then PP.brackets else id
 
+displayTName :: TName -> DispInfo -> Doc
+displayTName m = do
+  let number = Unbound.name2Integer m
+      name = Unbound.name2String m
+  if (Unbound.isFreeName m) && ((name == "?") || (name == "_"))
+  then do
+    dnumber <- display number
+    return $ (PP.text $ name) <> dnumber
+  else return $ PP.text $ Unbound.name2String m
+
 instance Display (Unbound.Name Term) where
-  display = return . disp
+  display = displayTName
 
 instance (Display a) => Display (Unbound.Ignore a) where
   display ia = display $ unIgnore ia
@@ -312,16 +320,6 @@ instance Display Term where
     md <- display m
     mc <- displayClosure c
     return $ md <+> mc
-
-displayTName :: TName -> DispInfo -> Doc
-displayTName m = do
-  let number = Unbound.name2Integer m
-      name = Unbound.name2String m
-  if (Unbound.isFreeName m) && ((name == "?") || (name == "_"))
-  then do
-    dnumber <- display number
-    return $ (PP.text $ name) <> dnumber
-  else display m
 
 displayClosure :: Closure -> DispInfo -> Doc
 displayClosure (Closure kvl) = do
