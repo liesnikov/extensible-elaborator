@@ -802,6 +802,8 @@ elabModule defs modul = do
       -- Extend the Env per the current Decl before checking
       -- subsequent Decls.
       x <- elabEntry d
+--      Env.warn [ DS "elaborated entry..."
+--               , DS $ show x]
       case x of
         AddHint hint -> Env.extendHints hint m
         -- Add decls to the Decls to be returned
