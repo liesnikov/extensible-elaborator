@@ -9,7 +9,7 @@ import Control.Monad.Except (MonadError, catchError)
 
 import Syntax.Internal
 import PrettyPrint ( D(DS, DD) )
-import qualified TypeCheck.Environment as Env (err)
+import qualified TypeCheck.Environment as Env
 import TypeCheck.State (Err)
 import TypeCheck.StateActions as SA ( lookupAnyDef
                                     , lookupMetaVarSolution)
@@ -23,7 +23,11 @@ whnf (Var x) = do
   maybeDef <- SA.lookupAnyDef x
   case maybeDef of
     (Just d) -> whnf d
-    _ -> return (Var x, Nothing)
+    _ -> do
+      maybeLocDef <- Env.lookupDef x
+      case maybeLocDef of
+        (Just ld) -> whnf ld
+        _ -> return (Var x, Nothing)
 
 whnf (App t1 t2) = do
   (nf, mblock) <- whnf t1
