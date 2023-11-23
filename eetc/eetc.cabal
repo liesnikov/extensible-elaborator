@@ -104,6 +104,7 @@ library
     TypeCheck.Solver.Identity
     TypeCheck.Solver.PropagateSolutionsEq
     TypeCheck.Solver.PiInjectivity
+    TypeCheck.Solver.TyEqInjectivity
     TypeCheck.Solver.TrivialMetas
     TypeCheck.Solver.TypeConstructor
     TypeCheck.Solver.ConstructorInjectivity

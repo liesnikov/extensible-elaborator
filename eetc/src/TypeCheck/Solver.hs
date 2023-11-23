@@ -8,6 +8,7 @@ import TypeCheck.Solver.PropagateSolutionsEq
 import TypeCheck.Solver.TrivialMetas
 import TypeCheck.Solver.TypeConstructor
 import TypeCheck.Solver.PiInjectivity
+import TypeCheck.Solver.TyEqInjectivity
 import TypeCheck.Solver.ConstructorInjectivity
 import TypeCheck.Solver.Reduce
 
@@ -25,6 +26,7 @@ allSolvers = [ identityPlugin
              , typeConstructorPlugin
              , typeConstructorWithMetasPlugin
              , piEqInjectivityPlugin
+             , tyEqInjectivityPlugin
              , consInjectivityPlugin
              , typeInjectivityPlugin
              , unificationStartMarker
