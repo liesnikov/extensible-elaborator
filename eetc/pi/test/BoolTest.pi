@@ -1,7 +1,35 @@
 module BoolTest where
 
-b1 : Bool
-b1 = True
+bT : Bool
+bT = True
 
-b2 : Bool
-b2 = False
+bF : Bool
+bF = False
+
+not : Bool -> Bool
+not = \ b . if b then False else True
+
+--data Void : Type where {}
+--
+---- to be or not to be, that is the question
+--not_not_equal : (b : Bool) -> (b = not b) -> Void
+--not_not_equal = \b pf.
+--  if b then (contra pf) else (contra pf)
+
+--andb : Bool -> Bool -> Bool
+--andb = \ b1 b2.
+--  case b1 of {
+--     True -> b2;
+--     False -> False }
+--
+--orb : Bool -> Bool -> Bool
+--orb = \b1 b2.
+--  case b1 of
+--    True -> True
+--    False -> b2
+
+--implb : Bool -> Bool -> Bool
+--implb = \b1 b2. if b1 then b2 else True
+--
+--negb : Bool -> Bool
+--negb = \ b . if b then False else True
