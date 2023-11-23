@@ -66,8 +66,11 @@ data D
 
 -------------------------------------------------------------------------
 
-instance Disp String where
+instance {-# OVERLAPPING #-} Disp String where
   disp = PP.text
+
+instance {-# OVERLAPPABLE #-} Disp a => Disp [a] where
+  disp = PP.hsep . map disp
 
 instance Disp Int where
   disp = PP.text . show
@@ -96,15 +99,15 @@ instance (Disp a, Disp b) => Disp (Either a b) where
   disp (Right a) = PP.text "Right" <+> disp a
 
 instance (Disp a) => Disp (S.Set a) where
-  disp l =  PP.text "[ "
-        <+> PP.hsep (PP.punctuate (PP.text ",") $ disp <$> S.toList l)
-        <+> PP.text " ]"
+  disp l =  PP.text "{"
+        <+> PP.vcat (PP.punctuate (PP.text ",") $ disp <$> S.toList l)
+        <+> PP.text "}"
 
 instance (Disp a, Disp b) => Disp (Map a b) where
-  disp m = PP.text "{ "
-        <+> PP.hsep (PP.punctuate (PP.text ",") $
+  disp m = PP.text "{"
+        <+> PP.vcat (PP.punctuate (PP.text ",") $
                      (\ (k, v) -> disp k <+> PP.text ":" <+> disp v) <$> Map.toList m)
-        <+> PP.text " }"
+        <+> PP.text "}"
 
 
 displist :: Disp a => [a] -> Doc
