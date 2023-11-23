@@ -6,7 +6,10 @@ import           Control.Monad.Except ( MonadError(..))
 import           Data.List ( nub )
 import           Data.Maybe ( catMaybes )
 import qualified Data.Map.Strict as Map
+import           GHC.Generics (Generic)
+
 import           PrettyPrint ( D(..), Disp(..))
+import           Text.PrettyPrint ((<+>))
 import           Text.PrettyPrint.HughesPJ ( ($$) )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
@@ -775,6 +778,11 @@ elabModules = foldM elabM []
 data HintOrCtx
   = AddHint I.Sig
   | AddCtx [I.Decl]
+  deriving (Show, Generic, Unbound.Alpha)
+
+instance Disp HintOrCtx where
+  disp (AddHint sig) = disp "AddHint" <+> disp sig
+  disp (AddCtx ctx)  = disp "AddCtx" <+> disp ctx
 
 elabModule :: (MonadElab c m) => [I.Module] -> S.Module -> m I.Module
 elabModule defs modul = do
