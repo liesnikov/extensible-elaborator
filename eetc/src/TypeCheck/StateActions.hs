@@ -26,6 +26,8 @@ module TypeCheck.StateActions ( lookupTy
                               , addConstraint
                               , addBlockedAction
                               ) where
+
+import           Control.Monad (foldM)
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
 import           Data.Maybe ( listToMaybe )
@@ -304,11 +306,34 @@ solveMeta m t = do
              DD m,
              DS "that already has a solution",
              DD $ Map.lookup m solutions]
-    else
---  FIXME
---  typecheck the solution in meta's context to check relevances
-    modifyTc (\s -> s {meta = let ms = meta s
-                              in ms {metaSolutions = Map.insert m t (metaSolutions ms)}})
+    else do
+      --  FIXME
+      --  typecheck the solution in meta's context to check relevances
+      allconstrs <- asksTc constraints
+      allfrozen <- asksTc blocks
+      let (mblocked, newfrozen) =
+            foldr
+              (\(k,v) (a, mp) -> case unblockAMeta m k of
+                  Nothing -> (v ++ a, mp)
+                  Just k' -> (a, Map.insertWith (++) k' v mp))
+              ([], Map.empty)
+              (Map.toList allfrozen)
+          -- mblocked is a list of either
+          -- separate mblockd with left into constrs, right into problems
+          (frozenConsts, frozenProblems) =
+            foldl (\(c, p) x -> case x of
+                     Left c' -> (c' : c, p)
+                     Right p' -> (c, p' : p))
+                  ([], [])
+                  mblocked
+          (Just newconsts) = foldM (flip wakeupConstraint)
+                                   allconstrs
+                                   frozenConsts
+      modifyTc (\s -> s {meta = let ms = meta s
+                                in ms {metaSolutions = Map.insert m t (metaSolutions ms)},
+                         constraints = newconsts,
+                         blocks = newfrozen})
+      sequence_ frozenProblems
 
 extendCtxMods :: (MonadTcReaderEnv m) => [Module] -> m a -> m a
 extendCtxMods = Env.extendCtxMods
