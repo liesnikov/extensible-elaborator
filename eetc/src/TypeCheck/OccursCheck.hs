@@ -249,15 +249,15 @@ instance Occurs I.MetaClosure where
            if pr == PrunedSomething || pr == PrunedEverything
            then SA.substMetas $ I.MetaVar mc
            else return $ I.MetaVar mc
-     let (names, terms) = unzip nc
+     let (names, terms) = unzip $ I.unclosure nc
          env' = switchToFlexible env
      terms' <- mapM (occurs env') terms
-     return $ I.MetaVarClosure nid (zip names terms)
+     return $ I.MetaVarClosure nid $ I.Closure (zip names terms)
     else do
-     let (names, terms) = unzip nc
+     let (names, terms) = unzip $ I.unclosure nc
          env' = switchToFlexible env
      terms' <- mapM (occurs env') terms
-     return $ I.MetaVarClosure nid (zip names terms)
+     return $ I.MetaVarClosure nid $ I.Closure (zip names terms)
 
 
 instance Occurs I.Match where
@@ -316,15 +316,15 @@ pruneClosure :: (MonadSolver c m)
 pruneClosure env tel ty cl = do
   let (I.Telescope decls) = tel
 
-  clrigids <- traverse (\(x,t) -> collectAllRigid t >>= (\r -> return (x,r))) cl
+  clrigids <- traverse (\(x,t) -> collectAllRigid t >>= (\r -> return (x,r))) $ I.unclosure cl
   let violators = map fst $ filter (\(_,rs) -> any (`notElem` locals env) rs) clrigids
 
-  clflexes <- traverse (\(x,t) -> collectAllFlexible t >>= (\r -> return (x,r))) cl
+  clflexes <- traverse (\(x,t) -> collectAllFlexible t >>= (\r -> return (x,r))) $ I.unclosure cl
   let nonprunable = map fst $ filter (\(_,fs) -> any (`notElem` locals env) fs) clflexes
       killlist = map I.unIgnore $ filter (`notElem` nonprunable) violators
 
   (killed, ncl, ntel) <- killType env killlist cl decls ty
-  let remaining = filter (\(x,_) -> I.unIgnore x `notElem` killed) cl
+  let remaining = I.Closure $ filter (\(x,_) -> I.unIgnore x `notElem` killed) $ I.unclosure cl
   return (remaining, I.Telescope ntel)
 
 killType :: (MonadSolver c m) =>

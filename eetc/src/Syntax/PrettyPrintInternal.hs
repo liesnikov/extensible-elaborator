@@ -25,6 +25,7 @@ instance Disp Term
 
 instance Disp Arg
 
+instance Disp Closure
 
 instance Disp Pattern
 
@@ -323,7 +324,7 @@ displayTName m = do
   else display m
 
 displayClosure :: Closure -> DispInfo -> Doc
-displayClosure kvl = do
+displayClosure (Closure kvl) = do
   dkvl <- traverse (\(k,v) -> do
                        dk <- displayTName $ unIgnore k
                        dv <- display v
@@ -334,6 +335,9 @@ displayClosure kvl = do
                      fmap (\(k,v) -> k PP.<+> PP.text " → " PP.<+> v) $
                      dkvl)
         <+> PP.text "]"
+
+instance Display (Closure) where
+  display = displayClosure
 
 instance Disp (MetaVarId) where
   disp m = PP.text $ show m

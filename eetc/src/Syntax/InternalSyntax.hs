@@ -131,7 +131,9 @@ data MetaClosure where
   deriving (Show, Eq, Ord, Generic, Typeable)
   deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
 
-type Closure = [(Unbound.Ignore TName, Term)]
+newtype Closure = Closure {unclosure :: [(Unbound.Ignore TName, Term)]}
+  deriving newtype (Show, Eq, Ord, Generic)
+  deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
 
 -- | An argument to a function
 data Arg = Arg {argEp :: Epsilon, unArg :: Term}
@@ -433,19 +435,19 @@ unIgnore (Unbound.I a) = a
 type Substitution = [(TName, Term)]
 
 closure2Subst :: Closure -> Substitution
-closure2Subst = map (\(n,t) -> (unIgnore n, t))
+closure2Subst (Closure l) = map (\(n,t) -> (unIgnore n, t)) l
 
 subst2Closure :: Substitution -> Closure
-subst2Closure = map (\(n,t) -> (Unbound.I n, t))
+subst2Closure = Closure . map (\(n,t) -> (Unbound.I n, t))
 
 -- | Convert a telescope into an identity closure
 ctx2Clos :: [Decl] -> Closure
-ctx2Clos tel = reverse $ go (reverse tel) []
+ctx2Clos tel = Closure $ reverse $ go (reverse tel) []
   where
     -- go over the telescope right to left,
     -- dropping variables that have associated definitions
     -- and everything that isn't a type signature
-    go :: [Decl] -> [TName] -> Closure
+    go :: [Decl] -> [TName] -> [(Unbound.Ignore TName, Term)]
     go [] _ = []
     go (TypeSig (Sig {sigName = n}) : t) defns =
       if n `elem` defns
@@ -463,20 +465,20 @@ ctx2Clos tel = reverse $ go (reverse tel) []
 -- since that widens the support of a
 composeClosures :: Closure -> Closure -> Closure
 composeClosures a b =
-  let ma = Map.fromList a
-      mb = Map.fromList b
+  let ma = Map.fromList . unclosure $ a
+      mb = Map.fromList . unclosure $ b
       tranab = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mb) ma
-  in Map.toList tranab
+  in Closure $ Map.toList tranab
 
 -- used to propagate a substitution into a closure
 -- keeps things that were in a but don't get mapped to anything in b
 -- since if you're in a term and a variable doesn't get mapped you don't throw it away
 substsClosure :: Closure -> Substitution -> Closure
 substsClosure c ss =
-  let mc = Map.fromList c
-      mss = Map.fromList . subst2Closure $ ss
+  let mc = Map.fromList $ unclosure c
+      mss = Map.fromList . unclosure . subst2Closure $ ss
       trancss = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mss) mc
-  in Map.toList $ Map.union trancss mc
+  in Closure $ Map.toList $ Map.union trancss mc
 
 invertSubst :: Substitution -> Maybe Substitution
 invertSubst c = do
@@ -520,7 +522,7 @@ isMeta (MetaVar m) = Just m
 isMeta _ = Nothing
 
 identityClosure :: MetaVarId -> Term
-identityClosure mid = MetaVar $ MetaVarClosure mid []
+identityClosure mid = MetaVar $ MetaVarClosure mid $ Closure []
 
 class CheckForMetas a where
   collectAllMetas :: a -> [MetaVarId]
