@@ -2,6 +2,7 @@
 module TypeCheck.Monad.TcMonad ( TcMonad, runTcStateMonad, runTcMonad
                                ) where
 
+import           Data.Either
 import qualified Data.Map.Strict as Map
 import           Control.Applicative (Alternative(..))
 import           Control.Monad (join, MonadPlus(..))
@@ -143,7 +144,6 @@ solveAllConstraintsTc = do
   _ <- solveAllPossible solver
   allconstrs <- getsTc State.constraints
   unsolved <- getsTc (State.active . State.constraints)
-  solutions <- getsTc (State.metaSolutions . State.meta)
 --  warn [ DS "After checking an entry the state is"
 --       , DS $ "With current active constraints being"
 --       , DD $ Map.map fst $ unsolved
@@ -155,16 +155,27 @@ solveAllConstraintsTc = do
 --       , DD $ Map.map fst $ State.asleep allconstrs
 --       ]
   if not . null $ unsolved
-    then warn [ DS "After checking an entry there are unsolved constraints"
-              , DS $ "With current active constraints being"
-              , DD $ Map.map fst $ unsolved
-              , DS $ "And current solutions to metas being"
-              , DD $ solutions
-              , DS $ "Solved constraints are"
-              , DD $ Map.map fst $ State.solved allconstrs
-              , DS $ "Blocked constraints are"
-              , DD $ Map.map fst $ State.asleep allconstrs
-              ]
+    then do
+      solutions <- getsTc (State.metaSolutions . State.meta)
+      blocks <- getsTc State.blocks
+      let
+        separated = Map.map (partitionEithers) blocks
+        blockedActions = Map.filter (not . null) $ Map.map snd separated
+        blockedConstraints = Map.filter (not . null) $ Map.map fst separated
+      warn [ DS "After checking an entry there are unsolved constraints"
+           , DS $ "With current active constraints being"
+           , DD $ Map.map fst $ unsolved
+           , DS $ "And current solutions to metas being"
+           , DD $ solutions
+           , DS $ "Solved constraints are"
+           , DD $ Map.map fst $ State.solved allconstrs
+           , DS $ "Blocked constraints are"
+           , DD $ Map.map fst $ State.asleep allconstrs
+           , DS $ "Which are blocked on"
+           , DD $ blockedConstraints
+           , DS $ "And blocked actions are"
+           , DD $ Map.map (length) blockedActions
+           ]
     else return ()
 
 instance MonadConstraints (TcMonad c) where
