@@ -10,6 +10,7 @@ module TypeCheck.Blockers ( Blocker(..)
                           , orBlockers
                           ) where
 
+import           Data.Maybe
 import           Data.Set as Set
 import           Text.PrettyPrint ((<+>))
 import qualified Text.PrettyPrint as PP (text)
@@ -52,23 +53,35 @@ blockOnMeta :: Term -> Maybe Blocker
 blockOnMeta (MetaVar (MetaVarClosure mid _)) = Just $ UnblockOnMeta mid
 blockOnMeta _           = Nothing
 
-unblockAMeta :: MetaVarId -> Blocker -> Maybe Blocker
-unblockAMeta mid (UnblockOnMeta umid) | mid == umid = Nothing
-                                      | otherwise = Just $ UnblockOnMeta umid
-unblockAMeta mid (UnblockOnAll bs) = if Set.null filtered then Nothing else Just $ UnblockOnAll filtered
-  where filtered = Set.filter (\b -> unblockAMeta mid b /= Nothing) bs
-unblockAMeta mid (UnblockOnAny bs) = if Nothing `elem` unblocked then Nothing else Just $ UnblockOnAny bs
-  where unblocked = Set.map (unblockAMeta mid) bs
-unblockAMeta mid (UnblockOnConstraint cid) = Just $ UnblockOnConstraint cid
-
 blockOnConstraint :: C.ConstraintF f -> Blocker
 blockOnConstraint = UnblockOnConstraint . C.getConstraintId
 
 unblockAConstraint :: C.ConstraintId -> Blocker -> Maybe Blocker
 unblockAConstraint cid (UnblockOnConstraint ucid) | cid == ucid = Nothing
                                                   | otherwise = Just $ UnblockOnConstraint ucid
-unblockAConstraint cid (UnblockOnAll bs) = if Set.null filtered then Nothing else Just $ UnblockOnAll filtered
-  where filtered = Set.filter (\b -> unblockAConstraint cid b /= Nothing) bs
-unblockAConstraint cid (UnblockOnAny bs) = if Nothing `elem` unblocked then Nothing else Just $ UnblockOnAny bs
-  where unblocked = Set.map (unblockAConstraint cid) bs
+unblockAConstraint cid (UnblockOnAll bs) =
+  UnblockOnAll <$> unblockAll bs (unblockAConstraint cid)
+unblockAConstraint cid (UnblockOnAny bs) =
+  UnblockOnAny <$> unblockAny bs (unblockAConstraint cid)
 unblockAConstraint cid (UnblockOnMeta mid) = Just $ UnblockOnMeta mid
+
+unblockAMeta :: MetaVarId -> Blocker -> Maybe Blocker
+unblockAMeta mid (UnblockOnMeta umid) | mid == umid = Nothing
+                                      | otherwise = Just $ UnblockOnMeta umid
+unblockAMeta mid (UnblockOnAll bs) =
+  UnblockOnAll <$> unblockAll bs (unblockAMeta mid)
+unblockAMeta mid (UnblockOnAny bs) =
+  UnblockOnAny <$> unblockAny bs (unblockAMeta mid)
+unblockAMeta mid (UnblockOnConstraint cid) = Just $ UnblockOnConstraint cid
+
+unblockAny :: Set Blocker -> (Blocker -> Maybe Blocker) -> Maybe (Set Blocker)
+unblockAny s ub = if Nothing `elem` unblocked then Nothing else Just reblocked
+  where unblocked = Set.map ub s
+        filtered = Set.filter (isJust) unblocked
+        reblocked = Set.map (fromJust) filtered
+
+unblockAll :: Set Blocker -> (Blocker -> Maybe Blocker) -> Maybe (Set Blocker)
+unblockAll s ub = if Set.null reblocked then Nothing else Just reblocked
+  where unblocked = Set.map ub s
+        filtered = Set.filter (isJust) unblocked
+        reblocked = Set.map (fromJust) filtered

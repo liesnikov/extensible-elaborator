@@ -11,7 +11,9 @@ module TypeCheck.Monad.Typeclasses ( MonadTcReader(..)
                                    , getsTc, modifyTcNames
 
                                    , MonadConstraints(..)
-                                   , raiseConstraint, raiseConstraintAndFreeze
+                                   , raiseConstraint
+                                   , raiseConstraintAndFreeze
+                                   , blockAndReblockUntil
 
                                    , MonadTcCore, MonadElab, MonadSolver
                                    ) where

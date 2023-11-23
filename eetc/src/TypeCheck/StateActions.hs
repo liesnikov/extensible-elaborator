@@ -24,6 +24,7 @@ module TypeCheck.StateActions ( lookupTy
                               , deactivateSusConstraint
                               , blockAction
                               , addConstraint
+                              , addBlockedAction
                               ) where
 import           Control.Monad.Except (MonadError(..))
 import           Data.List (find)
@@ -357,3 +358,7 @@ addConstraint c mcs = do
     Nothing -> return ()
     Just cs -> modifyTc (blockAction
                            (UnblockOnConstraint . getConstraintId . fst $ c)                                         cs)
+
+addBlockedAction :: (MonadTcState m)
+                 => Blocker -> m () -> m ()
+addBlockedAction b a = modifyTc (blockAction b a)

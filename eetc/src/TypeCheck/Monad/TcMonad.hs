@@ -173,6 +173,7 @@ instance MonadConstraints (TcMonad c) where
   lookupMetaVar   = lookupMetaVarTc
   lookupMetaVarType = lookupMetaVarTypeTc
   raiseConstraintMaybeFreeze = raiseConstraintMaybeFreezeTc
+  blockOn = SA.addBlockedAction
   solveAllConstraints = solveAllConstraintsTc
 
 -- Slightly more general version of TcMonad runner, where we don't throw away the state
