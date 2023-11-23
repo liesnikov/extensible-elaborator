@@ -533,7 +533,6 @@ checkType t@(S.DCon c args) ty = do
 -- | case analysis  `case a of matches`
 checkType (S.Case scrut alts) ty = do
   (escrut, sty) <- inferType scrut
-  (escrut',_) <- whnf escrut
   elabpromise <- SA.createMetaTerm ty
 --  Env.warn [ DS "checking term"
 --           , DD $ S.Case scrut alts
@@ -554,17 +553,19 @@ checkType (S.Case scrut alts) ty = do
           -- could fail if branch is in-accessible
           decls <- declarePat epat I.Rel (I.TCon c args)
           -- add defs to the contents from scrut = pat
-          -- could fail if branch is in-accessible
-          decls' <- Equal.unify [] escrut' (pat2Term epat)
+          decls' <- case escrut of
+            (I.Var n) -> return [I.Def n (pat2Term epat)]
+            _ -> Env.err [DS "at the moment can only match on variables, not",
+                          DD escrut]
           ebody <- Env.extendCtxs (decls ++ decls') $ checkType body ty
           let ebnd = Unbound.bind epat ebody
           return $ I.Match ebnd
 
     ealts <- traverse checkAlt alts
-    let epats = map (\(I.Match bnd) -> fst (Unbound.Unsafe.unsafeUnbind bnd)) ealts
-    -- FIXME
-    -- exhaustivityCheck is currently non-functional in terms of empty cases
-    exhaustivityCheck escrut' sty epats
+    --  let epats = map (\(I.Match bnd) -> fst (Unbound.Unsafe.unsafeUnbind bnd)) ealts
+    ---- FIXME
+    ---- exhaustivityCheck is currently non-functional in terms of empty cases
+    --  exhaustivityCheck escrut' sty epats
     CA.constrainEquality elabpromise (I.Case escrut ealts) ty
   return elabpromise
 
