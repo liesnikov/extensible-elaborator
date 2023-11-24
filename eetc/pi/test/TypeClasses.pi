@@ -3,22 +3,31 @@ module TypeClasses where
 data TypeClassT (T : Type -> Type) (A : Type): Type where
   TypeClassC of (T A)
 
-detypeclass : [T : Type -> Type] -> [A : Type] -> TypeClassT T A -> T A
-detypeclass = \[T] [A] t .
+detc : (T : Type -> Type) -> (A : Type) -> TypeClassT T A -> T A
+detc = \T A t .
   case t of
     TypeClassC a -> a
 
 data InstanceT (T : Type -> Type) (A : Type) : Type where
   InstanceC of (TypeClassT T A)
 
+deinst : (T : Type -> Type) -> (A : Type) -> (InstanceT T A) -> TypeClassT T A
+deinst = \T A i.
+  case i of
+    InstanceC t -> t
+
 data PlusOperation (A : Type) : Type where
-  plus of (A -> A -> A)
+  Plus of (A -> A -> A)
+
+deplus : (A : Type) -> PlusOperation A -> A -> A -> A
+deplus = \A P. case P of
+  Plus p -> p
 
 PlusOperation' : Type -> Type
 PlusOperation' = \A. PlusOperation A
 
-andb : Bool -> Bool -> Bool
-andb = \b1 b2 . b1
+plus : (A : Type) -> InstanceT PlusOperation' A -> A -> A -> A
+plus = \A i a b. deplus A (detc PlusOperation' A (deinst PlusOperation' A i)) a b
 
 orb : Bool -> Bool -> Bool
 orb = \b1 b2.
@@ -30,4 +39,7 @@ boolPlus : Bool -> Bool -> Bool
 boolPlus = orb
 
 boolPlusInstance : InstanceT (PlusOperation') (Bool)
-boolPlusInstance = InstanceC boolPlus
+boolPlusInstance = InstanceC (TypeClassC (Plus boolPlus))
+
+two : Bool
+two = plus Bool boolPlusInstance True False
