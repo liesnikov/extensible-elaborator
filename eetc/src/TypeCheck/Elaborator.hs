@@ -433,20 +433,39 @@ checkType (S.Subst a b) typ = do
   (eb, tp) <- inferType b
   -- make sure that it is an equality between m and n
   ty <- SA.createMetaTerm I.Type
-  m <- SA.createMetaTerm ty
-  n <- SA.createMetaTerm ty
+  m@(I.MetaVar (I.MetaVarClosure mid _)) <- SA.createMetaTerm ty
+  n@(I.MetaVar (I.MetaVarClosure nid _)) <- SA.createMetaTerm ty
   let metaeq = I.TyEq m n
   CA.constrainEquality tp metaeq I.Type
 
+  let blockeither = orBlockers (UnblockOnMeta mid) (UnblockOnMeta nid)
+  let detector = do
+        sn <- SA.substAllMetas n
+        sm <- SA.substAllMetas m
+        (rn,_) <- whnf sn
+        (rm,_) <- whnf sm
+        case (rn, rm) of
+          (I.MetaVar (I.MetaVarClosure na _), I.MetaVar (I.MetaVarClosure nb _)) ->
+            return . Just $ orBlockers (UnblockOnMeta na) (UnblockOnMeta nb)
+          (I.Var _, _) ->
+            return Nothing
+          (_, I.Var _) ->
+            return Nothing
+          _ -> return Nothing
+  ret <- SA.createMetaTerm typ
+  blockAndReblockUntil blockeither detector $ do
+    sn <- SA.substAllMetas n
+    sm <- SA.substAllMetas m
+    rn <- whnf sn
+    rm <- whnf sm
+    -- if either side is a variable, add a definition to the context
+    edecl <- def m n
+    -- if proof is a variable, add a definition to the context
+    pdecl <- def eb I.Refl
+    ea <- Env.extendCtxs (edecl ++ pdecl) $ checkType a typ
+    CA.constrainEquality ret (I.Subst ea eb) typ
+  return ret
 
-  --FIXME
-  -- the two defs below probably (?) won't fire because they'll be metas
-  -- if either side is a variable, add a definition to the context
-  edecl <- def m n
-  -- if proof is a variable, add a definition to the context
-  pdecl <- def eb I.Refl
-  ea <- Env.extendCtxs (edecl ++ pdecl) $ checkType a typ
-  return $ I.Subst ea eb
 -- | witness to an equality contradiction
 checkType (S.Contra p) typ = do
   (ep, ty') <- inferType p
@@ -459,9 +478,9 @@ checkType (S.Contra p) typ = do
   let detector = do
         sa <- SA.substAllMetas a
         sb <- SA.substAllMetas b
-        ra <- whnf a
-        rb <- whnf b
-        case (sa, sb) of
+        (ra,_) <- whnf sa
+        (rb,_) <- whnf sb
+        case (ra, rb) of
           (I.MetaVar (I.MetaVarClosure na _), I.MetaVar (I.MetaVarClosure nb _)) ->
             return . Just $ andBlockers (UnblockOnMeta na) (UnblockOnMeta nb)
           (I.MetaVar (I.MetaVarClosure na _), _) ->
