@@ -14,7 +14,7 @@ import           Text.PrettyPrint.HughesPJ ( ($$) )
 
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
-import qualified Unbound.Generics.LocallyNameless.Unsafe as Unbound.Unsafe
+--import qualified Unbound.Generics.LocallyNameless.Unsafe as Unbound.Unsafe
 
 import           Syntax.ModuleStub
 import qualified Syntax.Surface as S
