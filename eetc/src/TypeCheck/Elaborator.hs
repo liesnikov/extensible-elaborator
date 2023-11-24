@@ -704,16 +704,11 @@ doSubst ss [] = return []
 doSubst ss (I.Def x ty : tele') = do
   let tx' = Unbound.substs ss (I.Var x)
   let ty' = Unbound.substs ss ty
-  --FIXME
   let unify :: MonadElab c m  => [I.TName] -> I.Term -> I.Term -> m [I.Decl]
       unify ln at bt = do
         (atw,_) <- whnf at
         (btw,_) <- whnf bt
-        Control.Monad.when (atw /= btw) $ Env.warn [DS "supposed to unify",
-                    DD atw,
-                    DD btw,
-                    DS "for now pretending that they are the same"]
-        return []
+        Equal.unify [] atw btw
   -- relying on a behaviour of unify to produce a Def when tx is a variable
   -- which it is here, so essentially the only thing this does is whnf-reduces the ty'
   -- and then adds (I.Dex tx whnfty') to the decls1
