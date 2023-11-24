@@ -61,17 +61,24 @@ leftMetaSolver constr = do
       t2fvs <- getLocalFreeVars t2
       case invertClosure2SubstOn c1 t2fvs of
         Just s -> do
+          --Env.warn [ DS "closure inversion succeeded in right-hand-meta solver"
+          --         , DD c1
+          --         , DS "on free variables"
+          --         , DD t2fvs
+          --         , DS "inverted it is"
+          --         , DS $ show s
+          --         ]
           let st2 = Unbound.substs s t2
           solveMeta m1 st2
           solveMeta m st2
           return True
         Nothing -> do
---          Env.warn [ DS "left meta solver couldn't invert substitution"
---                   , DD c1
---                   , DS "on free variables"
---                   , DD t2fvs
---                   , DS "for"
---                   , DD constr]
+          --Env.warn [ DS "left meta solver couldn't invert substitution"
+          --         , DD c1
+          --         , DS "on free variables"
+          --         , DD t2fvs
+          --         , DS "for"
+          --         , DD constr]
           return False
 
 leftMetaSymbol :: PluginId
@@ -107,21 +114,33 @@ rightMetaSolver constr = do
   mt1 <- fmap Right (occursCheck m2 t1) `catchError` (return . Left)
   case mt1 of
     Left e -> do
---      Env.warnErr e
---      Env.warn [ DS "occurs-check failed"
---               , DD t1
---               , DS "for"
---               , DD constr]
+      --Env.warnErr e
+      --Env.warn [ DS "occurs-check failed in right-hand-meta-solver"
+      --         , DD t1
+      --         , DS "for"
+      --         , DD constr]
       return False
     Right rt1 -> do
       t1fvs <- getLocalFreeVars rt1
       case invertClosure2SubstOn c2 t1fvs of
         Just s -> do
+          --Env.warn [ DS "closure inversion succeeded in right-hand-meta solver"
+          --         , DD c2
+          --         , DS "on free variables"
+          --         , DD t1fvs
+          --         , DS "inverted it is"
+          --         , DS $ show s
+          --         ]
           let st1 = Unbound.substs s rt1
           solveMeta m2 st1
           solveMeta m st1
           return True
-        Nothing -> return False
+        Nothing -> do
+          --Env.warn [ DS "closure inversion failed in right-hand-meta solver"
+          --         , DD c2
+          --         , DS "on free variables"
+          --         , DD t1fvs]
+          return False
 
 rightMetaSymbol :: PluginId
 rightMetaSymbol = "solver for equalities where right side is an unsolved meta"
