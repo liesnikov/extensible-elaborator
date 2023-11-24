@@ -842,7 +842,10 @@ elabEntry (S.Def n term) = do
                   checkType term (I.sigType sig) `catchError` handler
                 solveAllConstraints
                 selabterm <- SA.substAllMetas elabterm
+                --Env.warn [ DS "elaborated term after substitution"
+                --         , DD selabterm]
                 selabsig <- SA.substAllMetas sig
+                SA.resetSolverState
                 return $ if en `elem` Unbound.toListOf Unbound.fv selabterm
                          -- FIXME
                          -- this would be a RecDef, but currently core is erroring out

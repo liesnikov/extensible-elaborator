@@ -26,6 +26,7 @@ module TypeCheck.StateActions ( lookupTy
                               , blockAction
                               , addConstraint
                               , addBlockedAction
+                              , resetSolverState
                               ) where
 
 import           Control.Monad (foldM)
@@ -53,7 +54,9 @@ import           TypeCheck.Blockers
 import           TypeCheck.Constraints (ConstraintId, getConstraintId)
 import           TypeCheck.State ( MetaStorage(..), TcState(..), Err
                                  , TcConstraint
-                                 , ConstraintsState(..))
+                                 , ConstraintsState(..)
+                                 , clearSolverState
+                                 )
 
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad.TcReader ( MonadTcReader(..)
@@ -403,3 +406,7 @@ addConstraint c mcs = do
 addBlockedAction :: (MonadTcState m)
                  => Blocker -> m () -> m ()
 addBlockedAction b a = modifyTc (blockAction b a)
+
+
+resetSolverState :: (MonadTcState m) => m ()
+resetSolverState = modifyTc clearSolverState

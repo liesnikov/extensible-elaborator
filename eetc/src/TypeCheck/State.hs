@@ -8,6 +8,7 @@ module TypeCheck.State ( SourceLocation(..)
                        , ConstraintsState(..)
                        , fmapState
                        , emptyCoreState, emptyElabState
+                       , clearSolverState
                        , NameMap
                        ) where
 
@@ -105,6 +106,9 @@ data TcState tcaction c solver = TcS {
   , solvers :: Maybe solver
   }
 
+emptyBlocks :: Map Blocker a
+emptyBlocks = Map.empty
+
 -- very ugly funciton we need to lift state through transformers
 fmapState :: (a -> b) -> TcState a c s -> TcState b c s
 fmapState f s = s {blocks = fmap (fmap f) <$> blocks s}
@@ -115,7 +119,7 @@ emptyCoreState = TcS { meta = emptyMetaStorage
                      , vars = Map.empty
                      , decls = []
                      , udecls = []
-                     , blocks = Map.empty
+                     , blocks = emptyBlocks
                      , solvers = Nothing
                      }
 
@@ -125,10 +129,15 @@ emptyElabState s = TcS { meta = emptyMetaStorage
                        , vars = Map.empty
                        , decls = I.preludeDataDecls
                        , udecls = []
-                       , blocks = Map.empty
+                       , blocks = emptyBlocks
                        , solvers = Just s
                        }
 
+
+clearSolverState :: TcState cta c s -> TcState cta c s
+clearSolverState s = s { meta = emptyMetaStorage
+                       , constraints = emptyConstraintsState
+                       , blocks = emptyBlocks}
 
 -- | An error that should be reported to the user
 data Err = Err [SourceLocation] Doc
