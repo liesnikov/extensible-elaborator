@@ -253,7 +253,7 @@ getLocalFreeVars :: (MonadTcReader m) => Term -> m [TName]
 getLocalFreeVars t = do
   let lfvs = freeVarList t
   globals <- names <$> askDecls
-  return $ filter (`notElem` globals) lfvs
+  return . filter ((/= "?") . Unbound.name2String) . filter (`notElem` globals) $ lfvs
   where
     names :: [Decl] -> [TName]
     names [] = []
