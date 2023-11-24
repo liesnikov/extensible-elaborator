@@ -16,6 +16,7 @@ import           GHC.Generics (Generic,from, to)
 import           Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos, newPos)
 import qualified Unbound.Generics.LocallyNameless as Unbound
 import qualified Unbound.Generics.LocallyNameless.Bind as Unbound
+import qualified Unbound.Generics.LocallyNameless.Name as UName
 import qualified Unbound.Generics.LocallyNameless.Ignore as Unbound
 import qualified Unbound.Generics.LocallyNameless.Internal.GSubst as Unbound
 import qualified Unbound.Generics.LocallyNameless.Internal.Fold as Unbound
@@ -132,7 +133,7 @@ data MetaClosure where
   deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
 
 newtype Closure = Closure {unclosure :: [(Unbound.Ignore TName, Term)]}
-  deriving newtype (Show, Eq, Ord, Generic)
+  deriving newtype (Show, Eq, Ord, Generic, LiftBound)
   deriving anyclass (Unbound.Subst Term, Unbound.Alpha)
 
 -- | An argument to a function
@@ -161,6 +162,7 @@ instance Eq Epsilon where
 newtype Match = Match (Unbound.Bind Pattern Term)
   deriving (Show, Eq, Ord, Generic, Typeable)
   deriving anyclass (Unbound.Alpha, Unbound.Subst Term)
+  deriving newtype (LiftBound)
 
 -- | The patterns of case expressions bind all variables
 -- in their respective branches.
@@ -372,27 +374,42 @@ instance Unbound.Subst Term Term where
 --subst  :: Name b -> b -> a -> a
   subst n u x
     | Unbound.isFreeName n =
-      case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
-        Just (Unbound.SubstName m) | m == n -> u
-        _ -> case x of
-          MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
-            if mid == n
-            then Unbound.substs (closure2Subst clos) u
-            else MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos [(n, u)]
-          _ -> to $ Unbound.gsubst n u (from x)
+      case x of
+        Lam ep b -> Lam ep $ Unbound.subst n (lift1 u) b
+        Pi ep ty b -> Pi ep (Unbound.subst n u ty) (Unbound.subst n (lift1 u) b)
+        Let s b -> Let (Unbound.subst n u s) (Unbound.subst n (lift1 u) b)
+        LetPair s b -> LetPair (Unbound.subst n u s) (Unbound.subst n (lift1 u) b)
+        Case t m -> Case (Unbound.subst n u t) (map (Unbound.subst n (lift1 u)) m)
+        _ ->
+          case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
+            Just (Unbound.SubstName m) | m == n -> u
+            _ -> case x of
+              MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
+                if mid == n
+                then Unbound.substs (closure2Subst clos) u
+                else MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos [(n, u)]
+              _ -> to $ Unbound.gsubst n u (from x)
     | otherwise = error $ "Cannot substitute for bound variable " ++ show n
 
 --substs :: [(Name b, b)] -> a -> a
   substs ss x
     | all (Unbound.isFreeName . fst) ss =
-      case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
-        Just (Unbound.SubstName m) | Just (_, u) <- find ((==m) . fst) ss -> u
-        _ -> case x of
-          MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
-            maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos ss)
-                  (Unbound.substs (closure2Subst clos) . snd)
-                  (find ((==mid) . fst) ss)
-          _ -> to $ Unbound.gsubsts ss (from x)
+      let lss = map (\(a,b) -> (a, lift1 b)) ss
+      in case x of
+        Lam ep b -> Lam ep $ Unbound.substs lss b
+        Pi ep ty b -> Pi ep (Unbound.substs ss ty) (Unbound.substs lss b)
+        Let s b -> Let (Unbound.substs ss s) (Unbound.substs lss b)
+        LetPair s b -> LetPair (Unbound.substs ss s) (Unbound.substs lss b)
+        Case t m -> Case (Unbound.substs ss t) (map (Unbound.substs lss) m)
+        _ ->
+          case (Unbound.isvar x :: Maybe (Unbound.SubstName Term Term)) of
+            Just (Unbound.SubstName m) | Just (_, u) <- find ((==m) . fst) ss -> u
+            _ -> case x of
+              MetaVar (MetaVarClosure (MetaVarId mid) clos) ->
+                maybe (MetaVar $ MetaVarClosure (MetaVarId mid) $ substsClosure clos ss)
+                      (Unbound.substs (closure2Subst clos) . snd)
+                      (find ((==mid) . fst) ss)
+              _ -> to $ Unbound.gsubsts ss (from x)
     | otherwise =
       error $ "Cannot substitute for bound variable " ++ show ss ++ " in " ++ show x
 
@@ -577,3 +594,53 @@ instance CheckForMetas Match where
 
 instance CheckForMetas Sig where
   collectAllMetas (Sig _ ep t) = collectAllMetas ep ++ collectAllMetas t
+
+
+bump1VarFrom :: Integer -> Unbound.Name a -> Unbound.Name a
+bump1VarFrom _ v@(UName.Fn _ _) = v
+bump1VarFrom k (UName.Bn n m) = if n >= k then UName.Bn (n+1) m else (UName.Bn n m)
+
+class LiftBound a where
+  lift1 :: a -> a
+  lift1 = lift1From 0
+
+  lift1From :: Integer -> a -> a
+
+instance (LiftBound a, LiftBound b) => LiftBound (a,b) where
+  lift1From n (a,b) = (lift1From n a, lift1From n b)
+
+instance LiftBound a => LiftBound [a] where
+  lift1From n = fmap (lift1From n)
+
+instance LiftBound b => LiftBound (Unbound.Bind a b) where
+  lift1From n (Unbound.B p t) = Unbound.B p (lift1From (n+1) t)
+
+instance LiftBound (Unbound.Ignore a) where
+  lift1From n i = i
+
+instance LiftBound Term where
+  lift1From n x = case x of
+  --match all constructors
+    Var m -> Var $ bump1VarFrom n m
+    Lam ep bod -> Lam ep (lift1From n bod)
+    App t arg -> App (lift1From n t) (lift1From n arg)
+    Pi ep typ bod -> Pi ep (lift1From n typ) (lift1From n bod)
+    Ann term typ -> Ann (lift1From n term) (lift1From n typ)
+    Pos p term -> Pos p (lift1From n term)
+    Let term bod -> Let (lift1From n term) (lift1From n bod)
+    If cond thent elset -> If (lift1From n cond) (lift1From n thent) (lift1From n elset)
+    Sigma term bod -> Sigma (lift1From n term) (lift1From n bod)
+    Prod term1 term2 -> Prod (lift1From n term1) (lift1From n term2)
+    LetPair term bod -> LetPair (lift1From n term) (lift1From n bod)
+    TyEq term1 term2 -> TyEq (lift1From n term1) (lift1From n term2)
+    Subst term1 term2 -> Subst (lift1From n term1) (lift1From n term2)
+    Contra term -> Contra (lift1From n term)
+    TCon tn args -> TCon tn (lift1From n args)
+    DCon dn args -> DCon dn (lift1From n args)
+    Case term ms -> Case (lift1From n term) (lift1From n ms)
+    MetaVar (MetaVarClosure mid cl) -> MetaVar (MetaVarClosure mid (lift1From n cl))
+    -- everything else doesn't need traversal
+    t -> t
+
+instance LiftBound Arg where
+  lift1From n (Arg ep t) = Arg ep (lift1From n t)
