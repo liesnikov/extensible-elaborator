@@ -38,8 +38,11 @@ orb = \b1 b2.
 boolPlus : Bool -> Bool -> Bool
 boolPlus = orb
 
-boolPlusInstance : InstanceT (PlusOperation') (Bool)
+boolPlusInstance : InstanceT PlusOperation' Bool
 boolPlusInstance = InstanceC (TypeClassC (Plus boolPlus))
 
+twoManual : Bool
+twoManual = plus Bool boolPlusInstance True False
+
 two : Bool
-two = plus Bool boolPlusInstance True False
+two = plus _ _ True False
