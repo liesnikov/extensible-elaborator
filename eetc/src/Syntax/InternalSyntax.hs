@@ -3,6 +3,7 @@
 -- See comment at the top of 'Parser' for the concrete syntax of this language
 module Syntax.InternalSyntax where
 
+import           Control.Monad (guard)
 import           Data.Function (on)
 import           Data.Maybe (fromMaybe)
 import           Data.List (find)
@@ -497,9 +498,13 @@ substsClosure c ss =
       trancss = Map.compose (Map.mapKeys (\(Unbound.I m) -> Var m) mss) mc
   in Closure $ Map.toList $ Map.union trancss mc
 
-invertSubst :: Substitution -> Maybe Substitution
-invertSubst c = do
+-- invert a substution
+-- only if it is linear in free variables `vars`
+-- and all the "to" values are variables
+invertSubstOn :: Substitution -> [TName] -> Maybe Substitution
+invertSubstOn c vars = do
   mc <- traverse (\(f,s) -> case s of {Var i -> Just (f, i); _ -> Nothing}) c
+  guard $ all (== 1) $ map (\v -> length [() | (_,i) <- mc, i == v]) vars
   rmap <- go mc Map.empty
   return $ Map.toList $ Var <$> rmap
   where
@@ -507,21 +512,8 @@ invertSubst c = do
     go [] acc = Just acc
     go ((k,v):kvs) acc =
       if Map.member v acc
-      then Nothing
+      then go kvs acc
       else go kvs (Map.insert v k acc)
-
--- invert only on the variables that occur in vars
-invertSubstOn :: Substitution -> [TName] -> Maybe Substitution
-invertSubstOn c vars = do
-  let cfl = filter (\(_,s) -> case s of {Var i -> i `elem` vars; _ -> False}) c
-  is <- invertSubst cfl
-  let checkMap = Map.fromList is
-  if all (`Map.member` checkMap) vars
-  then return is
-  else Nothing
-
-invertClosure :: Closure -> Maybe Closure
-invertClosure = fmap subst2Closure . invertSubst . closure2Subst
 
 invertClosure2SubstOn :: Closure -> [TName] -> Maybe Substitution
 invertClosure2SubstOn cl vars =
