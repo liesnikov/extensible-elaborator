@@ -66,7 +66,12 @@ solveAndReport (h : t) cs = do
   let tailcall = solveAndReport t cs
   ifM (handler h cs)
       (do sb <- getTc
-          ifM (solver h cs)
+          ifM (Env.extendErrList (solver h cs)
+                                 [ Env.DS "solver"
+                                 , Env.DS $ symbol h
+                                 , Env.DS "threw an exception on constraint"
+                                 , Env.DD $ getConstraintId cs
+                                 ])
               (let cid = getConstraintId cs
                in return . Just $ (cid, symbol h))
               (putTc sb >> tailcall))

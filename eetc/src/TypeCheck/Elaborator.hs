@@ -424,8 +424,14 @@ checkType S.Refl typ@(I.TyEq a b) = do
 --           , DS "of", DD unknownType]
   CA.constrainEquality a b unknownType
   return I.Refl
-checkType S.Refl typ =
-  Env.err [DS "Refl annotated with ", DD typ]
+checkType S.Refl typ = do
+  unknownType <- SA.createMetaTerm I.Type
+
+  a <- SA.createMetaTerm unknownType
+  b <- SA.createMetaTerm unknownType
+  CA.constrainEquality typ (I.TyEq a b) I.Type
+
+  return I.Refl
 
 -- | equality type elimination  `subst a by b`
 checkType (S.Subst a b) typ = do
