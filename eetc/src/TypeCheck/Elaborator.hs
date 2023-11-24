@@ -292,10 +292,8 @@ checkType (S.Lam ep1 lam) ty = do
 
   CA.constrainEquality ty metaPi I.Type
 
-  (y', tyB') <- Unbound.unbind mbnd
-  let tyB = Unbound.subst y' (I.Var tx) tyB'
   let tep1 = transEpsilon ep1
-  tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body tyB)
+  tbody <- Env.extendCtx (I.TypeSig (I.Sig tx tep1 mtyA)) (checkType body mtyB)
   let tlam = Unbound.bind tx tbody
   return $ I.Lam tep1 tlam
 
