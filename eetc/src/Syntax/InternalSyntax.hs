@@ -512,13 +512,13 @@ invertSubst c = do
 
 -- invert only on the variables that occur in vars
 invertSubstOn :: Substitution -> [TName] -> Maybe Substitution
-invertSubstOn c vars =
+invertSubstOn c vars = do
   let cfl = filter (\(_,s) -> case s of {Var i -> i `elem` vars; _ -> False}) c
-      (Just is) = invertSubst cfl
-      checkMap = Map.fromList is
-  in if all (`Map.member` checkMap) vars
-     then Just is
-     else Nothing
+  is <- invertSubst cfl
+  let checkMap = Map.fromList is
+  if all (`Map.member` checkMap) vars
+  then return is
+  else Nothing
 
 invertClosure :: Closure -> Maybe Closure
 invertClosure = fmap subst2Closure . invertSubst . closure2Subst

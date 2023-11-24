@@ -9,6 +9,7 @@ module TypeCheck.StateActions ( lookupTy
                               , lookupDCon
                               , lookupDConAll
                               , getDecls
+                              , getLocalFreeVars
                               , extendGlobal
                               , extendCtxMods
                               , createMetaTerm
@@ -44,6 +45,7 @@ import           Syntax.Internal   ( Type,
                                    , ctx2Clos
                                    , MetaVarId(..)
                                    , MetaTag(..)
+                                   , freeVarList
                                    )
 import           PrettyPrint ( D(..) )
 
@@ -111,14 +113,17 @@ lookupTy ::
 lookupTy v =
   do
     x <- lookupTyMaybe v
-    gamma <- Env.getLocalCtx
     case x of
       Just res -> return res
-      Nothing ->
+      Nothing -> do
+        gamma <- Env.getLocalCtx
+        globals <- askDecls
         Env.err
-          [ DS ("The variable " ++ show v ++ " was not found."),
+          [ DS ("The variable " ++ show v ++ " was not found in t"),
             DS "in context",
-            DD gamma
+            DD gamma,
+            DS "and previous definitions",
+            DD globals
           ]
 
 -- | Find a name's def in the context.
@@ -243,6 +248,17 @@ lookupDCon c tname = do
 
 getDecls :: (MonadTcReader m) => m [Decl]
 getDecls = asksTc decls
+
+getLocalFreeVars :: (MonadTcReader m) => Term -> m [TName]
+getLocalFreeVars t = do
+  let lfvs = freeVarList t
+  globals <- names <$> askDecls
+  return $ filter (`notElem` globals) lfvs
+  where
+    names :: [Decl] -> [TName]
+    names [] = []
+    names (TypeSig sig : ctx) = sigName sig : names ctx
+    names (_ : ctx) = names ctx
 
 -- FIXME
 -- should we really pass the continuation?

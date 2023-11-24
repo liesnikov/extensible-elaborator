@@ -6,18 +6,20 @@ import qualified Unbound.Generics.LocallyNameless as Unbound
 
 import           Syntax.Internal ( Term(MetaVar)
                                  , MetaClosure(MetaVarClosure)
+                                 , closure2Subst
                                  , invertClosure2SubstOn
                                  , freeVarList
                                  )
 import           Control.Monad.Except (MonadError(..))
 
 import           PrettyPrint (D(..))
-
 import           TypeCheck.Environment as Env (warnErr, warn)
+
 import           TypeCheck.StateActions
 import           TypeCheck.Constraints ( (:<:)
                                        , EqualityConstraint(..)
                                        , match
+                                       , getConstraintId
                                        )
 import           TypeCheck.OccursCheck
 
@@ -34,6 +36,10 @@ leftMetaHandler constr = do
         MetaVar (MetaVarClosure m1 c1)-> do
           -- check if the meta is already solved
           solved <- isMetaSolved m1
+--          Env.warn [ DS "left meta handler looking at constraint"
+--                   , DD $ getConstraintId constr
+--                   , DS "with result"
+--                   , DD $ not solved]
           return $ not solved
         _ -> return False
     Nothing -> return False
@@ -49,18 +55,24 @@ leftMetaSolver constr = do
 --      Env.warn [ DS "occurs-check failed"
 --               , DD t2
 --               , DS "for"
---               , DD constr]
+--               , DD $ getConstraintId constr]
       return False
-    Right t2 ->
-      let t2fvs = freeVarList t2
-          ms = invertClosure2SubstOn c1 t2fvs
-      in case ms of
+    Right t2 -> do
+      t2fvs <- getLocalFreeVars t2
+      case invertClosure2SubstOn c1 t2fvs of
         Just s -> do
           let st2 = Unbound.substs s t2
           solveMeta m1 st2
           solveMeta m st2
           return True
-        Nothing -> return False
+        Nothing -> do
+--          Env.warn [ DS "left meta solver couldn't invert substitution"
+--                   , DD c1
+--                   , DS "on free variables"
+--                   , DD t2fvs
+--                   , DS "for"
+--                   , DD constr]
+          return False
 
 leftMetaSymbol :: PluginId
 leftMetaSymbol = "solver for equalities where left side is an unsolved meta"
@@ -101,10 +113,9 @@ rightMetaSolver constr = do
 --               , DS "for"
 --               , DD constr]
       return False
-    Right rt1 ->
-      let t1fvs = freeVarList rt1
-          ms = invertClosure2SubstOn c2 t1fvs
-      in case ms of
+    Right rt1 -> do
+      t1fvs <- getLocalFreeVars rt1
+      case invertClosure2SubstOn c2 t1fvs of
         Just s -> do
           let st1 = Unbound.substs s rt1
           solveMeta m2 st1
