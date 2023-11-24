@@ -852,8 +852,15 @@ elabEntry (S.Def n term) = do
                     DD sig
                   ]
            in do
-                elabterm <- Env.extendCtx (I.TypeSig sig) $
-                  checkType term (I.sigType sig) `catchError` handler
+                -- FIXME
+                -- should do Env.extendCtx (I.TypeSig sig) here for recursive defs
+                -- but this needs a fix in the state
+                -- and it really only matters for whether we produce Def or RecDef?
+                elabterm <- checkType term (I.sigType sig) `catchError` handler
+                --Env.warn [ DS "elaborated term before substitution"
+                --         , DD elabterm
+                --         , DS $ show elabterm
+                --         ]
                 solveAllConstraints
                 selabterm <- SA.substAllMetas elabterm
                 --Env.warn [ DS "elaborated term after substitution"
