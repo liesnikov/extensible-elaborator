@@ -39,8 +39,10 @@ piEqInjectivitySolver constr = do
 --                Env.DD a1,
 --                Env.DS "and",
 --                Env.DD a2]
-      (x, tyB1, _, tyB2) <- Unbound.unbind2Plus b1 b2
-      let mat = I.identityClosure ma
+      (x, tyB1) <- Unbound.unbind b1
+      (y, tyB2') <- Unbound.unbind b2
+      let tyB2 = Unbound.subst y (I.Var x) tyB2'
+          mat = I.identityClosure ma
       mb <- Env.extendCtx (I.TypeSig (I.Sig x e1 mat)) $ do
 --        Env.warn [Env.DS "constrainting equality in pi-injectivity rule of",
 --                  Env.DD (I.Pi e1 a1 b1),
