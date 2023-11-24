@@ -83,6 +83,7 @@ goFilename pathToMainFile = do
   let elabState = emptyElabState allsolver
   e <- runTcMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
   elabs <- e `exitWith` putElabError
+--  putStrLn $ render $ disp (last elabs)
   putStrLn "type checking..."
   d <- runTcMonad emptyCoreState emptyCoreEnv (tcModules elabs)
   defs <- d `exitWith` putTypeError
