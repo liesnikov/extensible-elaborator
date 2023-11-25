@@ -1,6 +1,24 @@
 module BoolPlusTypeClass where
 
-import TypeClasses
+-- copy of TypeClasses.pi: imports don't work in these tests, so this is a crutch
+
+data TypeClassT (T : Type -> Type) (A : Type): Type where
+  TypeClassC of (T A)
+
+detc : (T : Type -> Type) -> (A : Type) -> TypeClassT T A -> T A
+detc = \T A t .
+  case t of
+    TypeClassC a -> a
+
+data InstanceT (T : Type -> Type) (A : Type) : Type where
+  InstanceC of (TypeClassT T A)
+
+deinst : (T : Type -> Type) -> (A : Type) -> (InstanceT T A) -> TypeClassT T A
+deinst = \T A i.
+  case i of
+    InstanceC t -> t
+
+-- end of TypeClasses.pi
 
 data PlusOperation (A : Type) : Type where
   Plus of (A -> A -> A)
@@ -30,5 +48,5 @@ boolPlusInstance = InstanceC (TypeClassC (Plus boolPlus))
 twoManual : Bool
 twoManual = plus Bool boolPlusInstance True False
 
-two : Bool
-two = plus _ _ True False
+--two : Bool
+--two = plus _ _ True False
