@@ -35,12 +35,12 @@ insert plug s = reverse $ insert' plug s []
         if (psym `elem` pre h || hsym `elem` suc p) &&
            (psym `elem` suc h || hsym `elem` pre p)
         then error $ "inconsistent order given for symbols" ++
-             (show p) ++ " and " ++ (show h)
+             show p ++ " and " ++ show h
         else -- does p have to be before h?
-          if (psym `elem` pre h || hsym `elem` suc p)
+          if psym `elem` pre h || hsym `elem` suc p
           then acc ++ reverse t ++ [h] ++ [p]
           else -- does p have to be after h?
-            if (psym `elem` suc h || hsym `elem` pre p)
+            if psym `elem` suc h || hsym `elem` pre p
             then acc ++ [p] ++ [h] ++ reverse t
             else -- this means head symbol isn't related
                  -- to the first symbol in the linear order
@@ -77,7 +77,7 @@ solveAndReport (h : t) cs = do
               (putTc sb >> tailcall))
     tailcall
 
-solveAndUnfreeze :: (MonadSolver c m) => Allsolver c -> (ConstraintF c) -> m (Maybe PluginId)
+solveAndUnfreeze :: (MonadSolver c m) => Allsolver c -> ConstraintF c -> m (Maybe PluginId)
 solveAndUnfreeze as c = do
   mid <- solveAndReport as c
   case mid of
@@ -134,14 +134,14 @@ solveAllPossible' n a = do
     solutions <- getsTc (State.metaSolutions . State.meta)
     -- try solving it
     res <- Env.extendErrList (solve a constr)
-                             [ Env.DS $ "Solver errored out"
-                             , Env.DS $ "With current active constraints being being"
-                             , Env.DD $ Map.map fst $ sconstr
-                             , Env.DS $ "And current solutions to metas being"
-                             , Env.DD $ solutions
-                             , Env.DS $ "Solved constraints are"
+                             [ Env.DS "Solver errored out"
+                             , Env.DS "With current active constraints being being"
+                             , Env.DD $ Map.map fst sconstr
+                             , Env.DS "And current solutions to metas being"
+                             , Env.DD solutions
+                             , Env.DS "Solved constraints are"
                              , Env.DD $ Map.map fst $ State.solved allconstrs
-                             , Env.DS $ "Blocked constraints are"
+                             , Env.DS "Blocked constraints are"
                              , Env.DD $ Map.map fst $ State.asleep allconstrs
                              ]
 
