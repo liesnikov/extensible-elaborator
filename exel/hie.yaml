@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:exel"
+
+    - path: "./app/Main.hs"
+      component: "exel:exe:exel"
+
+    - path: "./test"
+      component: "exel:test:test-exel"

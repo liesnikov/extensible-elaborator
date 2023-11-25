@@ -27,7 +27,7 @@ UNKNOWN=
 # A symlink to the local pi-forall, installed by top level make.
 PI=pi-forall
 # typecheck *quietly*
-TYPECHECK=cabal exec eetc 1>/dev/null # 2>&1
+TYPECHECK=cabal exec exel 1>/dev/null # 2>&1
 
 .PHONY: pass fail todo_pass todo_fail todo
 

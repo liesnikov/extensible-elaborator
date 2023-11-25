@@ -1,4 +1,4 @@
-packages: ./eetc.cabal
+packages: ./exel.cabal
 
 source-repository-package
   type: git

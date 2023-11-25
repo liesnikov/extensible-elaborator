@@ -98,7 +98,7 @@ goFilename pathToMainFile = do
 
 
 
--- | 'eetc <filename>' invokes the type checker on the given
+-- | 'exel <filename>' invokes the type checker on the given
 -- file and either prints the types of all definitions in the module
 -- or prints an error message.
 main :: IO ()

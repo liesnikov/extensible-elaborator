@@ -5,7 +5,7 @@ id = \[x] y. (y : x)
 
 -- as of 5591738 doesn't work because we assume relevance when checking App we assume
 -- that arguments to the id here are relevant
--- ./extended-elab/eetc/src/TypeCheck/Elaborator.hs:95-97
+-- ./extended-elab/exel/src/TypeCheck/Elaborator.hs:95-97
 t0 = id [Bool] True
 
 -- same issue here

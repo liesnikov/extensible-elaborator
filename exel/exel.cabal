@@ -1,6 +1,6 @@
 cabal-Version: 2.2
-name: eetc
-version: 0.2
+name: exel
+version: 0.5
 license: BSD-3-Clause
 license-file: LICENSE
 copyright: (c) 2022 Bohdan Liesnikov
@@ -124,15 +124,15 @@ library
     transformers,
     extra > 1 && < 2
 
-executable eetc
+executable exel
   import: shared-properties
-  build-depends: eetc
+  build-depends: exel
   hs-source-dirs: app
   main-is: Main.hs
 
-test-suite test-eetc
+test-suite test-exel
   import: shared-properties
-  build-depends: eetc
+  build-depends: exel
                , tasty
                , tasty-hunit
                , tasty-quickcheck

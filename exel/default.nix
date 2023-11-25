@@ -8,7 +8,7 @@ let
     then pkgs.haskellPackages.callCabal2nixWithOptions
     else pkgs.haskell.packages."${compiler}".callCabal2nixWithOptions;
 in
-  callCabal2nixWithOptions "eetc" ./. "" {}
+  callCabal2nixWithOptions "exel" ./. "" {}
 
 # to disable tests run
-# callCabal2nixWithOptions "eetc" ./. "--no-check" {}
+# callCabal2nixWithOptions "exel" ./. "--no-check" {}
