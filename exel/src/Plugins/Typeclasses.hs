@@ -6,16 +6,17 @@ module Plugins.Typeclasses ( InstanceSearch
                            , instanceSearchPlugin
                            ) where
 
+import           Text.PrettyPrint ( (<+>) )
+import qualified Text.PrettyPrint as PP
+import PrettyPrint (Disp1(..), disp)
+
 import           Syntax.Internal as I
 import           TypeCheck.Constraints ( (:<:)
                                        , FillInImplicit(..)
                                        , match
                                        )
-
-import           Text.PrettyPrint ( (<+>) )
-import qualified Text.PrettyPrint as PP
-import PrettyPrint (Disp1(..), disp)
-
+import           TypeCheck.StateActions as SA
+import           Reduction (whnf)
 
 import           TypeCheck.Solver.Base
 import           TypeCheck.Solver.Implicit (fillInImplicitSymbol)
@@ -34,9 +35,15 @@ instance Disp1 InstanceSearch where
                                          PP.text "and head symbol"
 
 
-typeClassInitHandler :: (FillInImplicit :<: cs, InstanceSearch :<: cs)
+typeClassInitHandler :: (FillInImplicit :<: cs)
                      => HandlerType cs
-typeClassInitHandler constr = return False
+typeClassInitHandler constr = do
+  case match @FillInImplicit constr of
+    Just (FillInImplicit term (Just ty)) -> do
+      (cty,_) <- whnf =<< SA.substAllMetas ty
+      case cty of
+        _ -> return False
+    _ -> return False
 
 typeClassInitSolver :: (FillInImplicit :<: cs, InstanceSearch :<: cs)
                     => SolverType cs
