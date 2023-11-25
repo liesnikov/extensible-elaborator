@@ -4,8 +4,9 @@ module TypeCheck.Monad.TcMonad ( TcMonad, runTcStateMonad, runTcMonad
 
 import           Data.Either
 import qualified Data.Map.Strict as Map
-import           Control.Applicative (Alternative(..))
-import           Control.Monad (join, MonadPlus(..))
+import           Control.Applicative  (Alternative(..))
+import           Control.Monad        ( join
+                                      , MonadPlus(..))
 import           Control.Monad.Except ( MonadError(..)
                                       , ExceptT
                                       , runExceptT )
@@ -159,23 +160,24 @@ solveAllConstraintsTc = do
       solutions <- getsTc (State.metaSolutions . State.meta)
       blocks <- getsTc State.blocks
       let
-        separated = Map.map (partitionEithers) blocks
+        separated = Map.map partitionEithers blocks
         blockedActions = Map.filter (not . null) $ Map.map snd separated
         blockedConstraints = Map.filter (not . null) $ Map.map fst separated
-      warn [ DS "After checking an entry there are unsolved constraints"
-           , DS $ "With current active constraints being"
-           , DD $ Map.map fst $ unsolved
-           , DS $ "And current solutions to metas being"
-           , DD $ solutions
-           , DS $ "Solved constraints are"
-           , DD $ Map.map fst $ State.solved allconstrs
-           , DS $ "Blocked constraints are"
-           , DD $ Map.map fst $ State.asleep allconstrs
-           , DS $ "Which are blocked on"
-           , DD $ blockedConstraints
-           , DS $ "And blocked actions are"
-           , DD $ Map.map (length) blockedActions
-           ]
+      warn
+        [ DS "After checking an entry there are unsolved constraints"
+        , DS $ "With current active constraints being"
+        , DD $ Map.map fst $ unsolved
+        , DS $ "And current solutions to metas being"
+        , DD $ solutions
+        , DS $ "Solved constraints are"
+        , DD $ Map.map fst $ State.solved allconstrs
+        , DS $ "Blocked constraints are"
+        , DD $ Map.map fst $ State.asleep allconstrs
+        , DS $ "Which are blocked on"
+        , DD $ blockedConstraints
+        , DS $ "And blocked actions are"
+        , DD $ Map.map (length) blockedActions
+        ]
     else return ()
 
 instance MonadConstraints (TcMonad c) where
@@ -191,9 +193,9 @@ instance MonadConstraints (TcMonad c) where
 runTcStateMonad :: TcState c -> Env -> TcMonad c a -> IO (Either Err (a, TcState c))
 runTcStateMonad state env m =
   runExceptT $
-  (flip runStateT) state $
-  (flip runReaderT) env $
-  (Unbound.runFreshMT $ unTcM $ m)
+  flip runStateT state $
+  flip runReaderT env $
+  Unbound.runFreshMT $ unTcM m
 
 -- | Entry point for the type checking monad, given an
 -- initial environment, returns either an error message

@@ -48,7 +48,7 @@ import           Syntax.Internal   ( Type,
                                    , MetaTag(..)
                                    , freeVarList
                                    )
-import           PrettyPrint ( D(..) )
+import           PrettyPrint ( D(..), Disp1 )
 
 import           TypeCheck.Blockers
 import           TypeCheck.Constraints (ConstraintId, getConstraintId)
@@ -68,6 +68,7 @@ import           TypeCheck.Monad.TcReaderEnv ( MonadTcReaderEnv(..)
 
 import           TypeCheck.Monad.Constraints (MonadConstraints(createMetaVar))
 import qualified Unbound.Generics.LocallyNameless as Unbound
+import Data.Either (partitionEithers)
 
 type Decls = [Decl]
 
@@ -408,5 +409,31 @@ addBlockedAction :: (MonadTcState m)
 addBlockedAction b a = modifyTc (blockAction b a)
 
 
-resetSolverState :: (MonadTcState m) => m ()
-resetSolverState = modifyTc clearSolverState
+resetSolverState :: ( MonadTcReaderEnv m, MonadError Err m
+                    , MonadTcState m, Disp1 (SConstr m)) => m ()
+resetSolverState = do
+  cs <- asksTc constraints
+  bs <- asksTc blocks
+  if null (active cs) && null (asleep cs) && null bs
+    then modifyTc clearSolverState
+    else do
+      solutions <- asksTc (metaSolutions . meta)
+      let
+        separated = Map.map partitionEithers bs
+        blockedActions = Map.filter (not . null) $ Map.map snd separated
+        blockedConstraints = Map.filter (not . null) $ Map.map fst separated
+      Env.err
+        [ DS "After checking an entry there are unsolved constraints"
+        , DS $ "With current active constraints being"
+        , DD $ Map.map fst $ active cs
+        , DS $ "And current solutions to metas being"
+        , DD $ solutions
+        , DS $ "Solved constraints are"
+        , DD $ Map.map fst $ solved cs
+        , DS $ "Blocked constraints are"
+        , DD $ Map.map fst $ asleep cs
+        , DS $ "Which are blocked on"
+        , DD $ blockedConstraints
+        , DS $ "And blocked actions are"
+        , DD $ Map.map (length) blockedActions
+        ]
