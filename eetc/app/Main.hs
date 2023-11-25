@@ -20,10 +20,17 @@ import Modules (getModules)
 import TypeCheck.State ( emptyElabEnv, emptyElabState,
                          emptyCoreEnv, emptyCoreState)
 import TypeCheck.Monad (runTcMonad)
-import TypeCheck.Constraints (BasicConstraintsF)
-import TypeCheck.Solver (allsolver)
+import TypeCheck.Constraints (BasicConstraintsF, (:+:))
+import TypeCheck.Solver (Allsolver, compileSolver, basicSolvers)
 import TypeCheck.Elaborator ( elabModules, elabTerm )
 import TypeCheck.TypeCheck ( tcModules, inferType )
+
+import Plugins (PluginConstraints, pluginSolvers)
+
+type AllConstraints = (PluginConstraints :+: BasicConstraintsF)
+
+allsolver :: Allsolver AllConstraints
+allsolver = compileSolver (basicSolvers ++ pluginSolvers)
 
 exitWith :: Either a b -> (a -> IO ()) -> IO b
 exitWith res f =
@@ -41,7 +48,7 @@ go str = do
       putStrLn "parsed as"
       putStrLn $ render $ disp term
       let elabState = emptyElabState allsolver
-      elabterm <- runTcMonad elabState emptyElabEnv (elabTerm @BasicConstraintsF term)
+      elabterm <- runTcMonad elabState emptyElabEnv (elabTerm @AllConstraints term)
       case elabterm of
         Left elaberror -> putElabError elaberror
         Right elabt -> do
@@ -81,7 +88,7 @@ goFilename pathToMainFile = do
   val <- v `exitWith` putParseError
   putStrLn "elaborating..."
   let elabState = emptyElabState allsolver
-  e <- runTcMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  e <- runTcMonad elabState emptyElabEnv (elabModules @AllConstraints val)
   elabs <- e `exitWith` putElabError
 --  putStrLn $ render $ disp (last elabs)
   putStrLn "type checking..."

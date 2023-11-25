@@ -9,10 +9,17 @@ import TypeCheck.Elaborator ( elabModules)
 import TypeCheck.State ( emptyElabEnv, emptyElabState,
                          emptyCoreEnv, emptyCoreState)
 import TypeCheck.TypeCheck ( tcModules)
-import TypeCheck.Constraints (BasicConstraintsF)
-import TypeCheck.Solver (allsolver)
+import TypeCheck.Constraints (BasicConstraintsF, (:+:))
+import TypeCheck.Solver (Allsolver, compileSolver, basicSolvers)
 import Control.Monad.Except
 import Modules
+
+import Plugins (PluginConstraints, pluginSolvers)
+
+type AllConstraints = (PluginConstraints :+: BasicConstraintsF)
+
+allsolver :: Allsolver AllConstraints
+allsolver = compileSolver (basicSolvers ++ pluginSolvers)
 
 exitWith :: Either a b -> (a -> IO b) -> IO b
 exitWith (Left a) f = f a
@@ -26,7 +33,7 @@ testFile name = testCase name $ do
   val <- v `exitWith` (\b -> assertFailure $ "Parse error: " ++ render (disp b))
   putStrLn $ "elaborating " ++ name ++ "..."
   let elabState = emptyElabState allsolver
-  ev <- runTcStateMonad elabState emptyElabEnv (elabModules @BasicConstraintsF val)
+  ev <- runTcStateMonad elabState emptyElabEnv (elabModules @AllConstraints val)
   (elab, constraints) <- ev `exitWith` (\b -> assertFailure $ "Elaboration error: " ++ render (disp b))
   putStrLn $ render $ disp (last elab)
   putStrLn $ "type-checking " ++ name ++ "..."

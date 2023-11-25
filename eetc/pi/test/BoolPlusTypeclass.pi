@@ -1,0 +1,34 @@
+module BoolPlusTypeClass where
+
+import TypeClasses
+
+data PlusOperation (A : Type) : Type where
+  Plus of (A -> A -> A)
+
+deplus : (A : Type) -> PlusOperation A -> A -> A -> A
+deplus = \A P. case P of
+  Plus p -> p
+
+PlusOperation' : Type -> Type
+PlusOperation' = \A. PlusOperation A
+
+plus : (A : Type) -> InstanceT PlusOperation' A -> A -> A -> A
+plus = \A i a b. deplus A (detc PlusOperation' A (deinst PlusOperation' A i)) a b
+
+orb : Bool -> Bool -> Bool
+orb = \b1 b2.
+  case b1 of
+    True -> True
+    False -> b1
+
+boolPlus : Bool -> Bool -> Bool
+boolPlus = orb
+
+boolPlusInstance : InstanceT PlusOperation' Bool
+boolPlusInstance = InstanceC (TypeClassC (Plus boolPlus))
+
+twoManual : Bool
+twoManual = plus Bool boolPlusInstance True False
+
+two : Bool
+two = plus _ _ True False

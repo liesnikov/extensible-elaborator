@@ -88,6 +88,9 @@ library
     TypeCheck.ConstraintsActions
 
     Arbitrary
+
+    TypeCheck.Solver.Base
+    Plugins
   other-modules:
     Reduction
 
@@ -100,7 +103,6 @@ library
     TypeCheck.Monad.Typeclasses
     TypeCheck.Monad.TcMonad
 
-    TypeCheck.Solver.Base
     TypeCheck.Solver.Identity
     TypeCheck.Solver.PropagateSolutionsEq
     TypeCheck.Solver.PiInjectivity
@@ -111,6 +113,8 @@ library
     TypeCheck.Solver.Reduce
     TypeCheck.Solver.Implicit
     TypeCheck.Solver.Allsolver
+
+    Plugins.Typeclasses
   build-depends:
     array >= 0.3.0.2 && < 0.6,
     containers,

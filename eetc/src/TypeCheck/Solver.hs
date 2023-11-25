@@ -1,6 +1,8 @@
-module TypeCheck.Solver (Allsolver, allsolver, solveAllPossible) where
+module TypeCheck.Solver ( Allsolver, solveAllPossible
+                        , compileSolver, basicSolvers
+                        ) where
 
-import TypeCheck.Constraints (BasicConstraintsF)
+import TypeCheck.Constraints
 
 import TypeCheck.Solver.Base
 import TypeCheck.Solver.Identity
@@ -16,23 +18,28 @@ import TypeCheck.Solver.Implicit
 
 import TypeCheck.Solver.Allsolver
 
-allSolvers:: [Plugin BasicConstraintsF]
-allSolvers = [ identityPlugin
-             , propagateMetasEqPlugin
-             , reduceLeftPlugin
-             , reduceRightPlugin
-             , leftMetaPlugin
-             , rightMetaPlugin
-             , typeConstructorPlugin
-             , typeConstructorWithMetasPlugin
-             , piEqInjectivityPlugin
-             , tyEqInjectivityPlugin
-             , consInjectivityPlugin
-             , typeInjectivityPlugin
-             , unificationStartMarker
-             , unificationEndMarker
-             , fillInImplicitPlugin
-             ]
+basicSolvers :: ( EqualityConstraint :<: c
+                , ConjunctionConstraint :<: c
+                , TypeConstructorConstraint :<: c
+                , FillInImplicit :<: c)
+             => [Plugin c]
+basicSolvers =
+  [ identityPlugin
+  , propagateMetasEqPlugin
+  , reduceLeftPlugin
+  , reduceRightPlugin
+  , leftMetaPlugin
+  , rightMetaPlugin
+  , typeConstructorPlugin
+  , typeConstructorWithMetasPlugin
+  , piEqInjectivityPlugin
+  , tyEqInjectivityPlugin
+  , consInjectivityPlugin
+  , typeInjectivityPlugin
+  , unificationStartMarker
+  , unificationEndMarker
+  , fillInImplicitPlugin
+  ]
 
-allsolver :: Allsolver BasicConstraintsF
-allsolver = compile allSolvers
+compileSolver :: [Plugin c] -> Allsolver c
+compileSolver = compile
