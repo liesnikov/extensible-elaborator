@@ -121,7 +121,7 @@ newtype MetaVarId = MetaVarId {unMapVarId :: Unbound.Name Term}
 instance Show MetaVarId where
   show (MetaVarId m) =
     let n = Unbound.name2Integer m
-    in "?_" ++ show n
+    in "?" ++ show n
 
 -- metas themselves
 data Meta c where
