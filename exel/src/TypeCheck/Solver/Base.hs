@@ -71,7 +71,6 @@ constrainEqualityMeta :: (MonadTcReaderEnv m,
                       => Syntax.Term -> Syntax.Term -> Syntax.Type -> Syntax.MetaVarId
                       -> m ()
 constrainEqualityMeta t1 t2 ty m = do
-  t <- Env.getCtx
   raiseConstraint $ inj @_ @EqualityConstraint
                   $ EqualityConstraint t1 t2 ty m
 
