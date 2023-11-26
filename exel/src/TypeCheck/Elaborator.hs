@@ -526,32 +526,42 @@ checkType (S.Contra p) typ = do
 --           ]
 -- | term constructors (fully applied)
 checkType t@(S.DCon c args) ty = do
-  elabpromise <- SA.createMetaTerm ty
-  CA.constrainTConAndFreeze ty $ do
-    (mty,_) <- whnf =<< SA.substMetas ty
-    case mty of
-      (I.TCon tname params) -> do
-        (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
-        let isTypeSig :: I.Decl -> Bool
-            isTypeSig (I.TypeSig _) = True
-            isTypeSig _ = False
-        let numArgs = length (filter isTypeSig deltai)
-        unless (length args == numArgs) $
-          Env.err
-            [ DS "Constructor",
-              DS c,
-              DS "should have",
-              DD numArgs,
-              DS "data arguments, but was given",
-              DD (length args),
-              DS "arguments."
-            ]
-        newTele <- substTele delta params deltai
-        eargs <- elabArgTele args newTele
-        CA.constrainEquality elabpromise (I.DCon c eargs) ty
-      _ ->
-        Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
-  return elabpromise
+  --Env.warn [ DS "DCon-check rule fired"
+  --         , DD $ S.DCon c args]
+  tyl <- SA.lookupDConAll c
+  let untl (I.Telescope l) = l
+  if (length tyl == 1 && null (untl . fst . snd . head $ tyl) && null args)
+  then do
+    let (tyn, (I.Telescope [], _)) = head tyl
+    CA.constrainEquality (I.TCon tyn []) ty I.Type
+    return (I.DCon c [])
+  else do
+    elabpromise <- SA.createMetaTerm ty
+    CA.constrainTConAndFreeze ty $ do
+      (mty,_) <- whnf =<< SA.substMetas ty
+      case mty of
+        (I.TCon tname params) -> do
+          (I.Telescope delta, I.Telescope deltai) <- SA.lookupDCon c tname
+          let isTypeSig :: I.Decl -> Bool
+              isTypeSig (I.TypeSig _) = True
+              isTypeSig _ = False
+          let numArgs = length (filter isTypeSig deltai)
+          unless (length args == numArgs) $
+            Env.err
+              [ DS "Constructor",
+                DS c,
+                DS "should have",
+                DD numArgs,
+                DS "data arguments, but was given",
+                DD (length args),
+                DS "arguments."
+              ]
+          newTele <- substTele delta params deltai
+          eargs <- elabArgTele args newTele
+          CA.constrainEquality elabpromise (I.DCon c eargs) ty
+        _ ->
+          Env.err [DS "Unexpected type", DD ty, DS "for data constructor", DD t]
+    return elabpromise
 
 -- | case analysis  `case a of matches`
 checkType (S.Case scrut alts) ty = do
