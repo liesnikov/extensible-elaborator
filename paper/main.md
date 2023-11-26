@@ -41,7 +41,7 @@ Techniques here include implicit arguments in Agda, implicit coercions in Coq, a
 The inference or "solving" can be not only automatic but also interactive or partially automatic.
 For example, holes in Agda, proof obligations and canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq, and holes in Haskell [@koppelSearchingEntangledProgram2022].
 All these mechanisms use different solvers and have various degrees of extensibility.
-They are usually not isolated from each other and can therefore interact in the way the user expects them to (for example, in this case between implicits and instances [@agdausersPerformanceRegressionIssue2018]).
+They are usually not isolated from each other and can therefore interact in the way the user expects them to, for example in case between implicits and instances [@agdausersPerformanceRegressionIssue2018].
 
 In all of these examples, the solvers evolved organically over time together with the language.
 Coq historically struggled with similar issues in the elaborator: for example, Canonical Structures wasn't properly documented for 15 years
@@ -63,9 +63,9 @@ Practically, this means that adding a new feature for the most part is contained
 
 Contributions:
 
-* We propose a new design blueprint for a language that is extensible with new constraints and their solvers. It supports type classes, implicit arguments, implicit coercions, context arguments (as implemented in Scala) and tactic arguments.
-* We suggest a view on metavariables as communication channels for the solvers, drawing parallels with asynchronous programming primitives.
-* We render the usual components of a type-checker, like the unifier in Agda, as a suite of solvers which can be extended and interleaved with user-provided ones.
+* We propose a new design blueprint for a language that is extensible with new constraints and their solvers. It supports type classes (Section @sec:case-typeclasses), implicit arguments (Section @sec:case-implicits), implicit coercions, context arguments (as implemented in Scala) and tactic arguments (Section @sec:coercion-tactics).
+* We suggest a view on metavariables as communication channels for the solvers, drawing parallels with asynchronous programming primitives (Section @sec:solvers-implementation).
+* We render the usual components of a type-checker, like the unifier in Agda, as a suite of solvers which can be extended and interleaved with user-provided ones (Section @sec:constraints_and_unification).
 * We present a prototype implementation of a dependently-typed language with an extendable unifier, implicit arguments, type classes as a practical validation of the design.
 
 # Unification, constraint-based elaboration and design challenges # {#sec:unification_constraint_based_elaboration_and_design_challanges}
@@ -388,7 +388,7 @@ For the purposes of the base language it suffices to have the following.
 
 The type-checker raises them supplying the information necessary, but agnostic of how they will be solved.
 
-## Interface of the solvers ##
+## Interface of the solvers ## {#sec:solvers-interface}
 
 On the solver side we provide a suite of unification solvers that handle different cases of the problem:
 
@@ -444,7 +444,7 @@ complex2 = Plugin { ...
 Where `pre` and `suc` fields of the plugin interface point out before or after, respectively, which other plugin currently defined one is supposed to run.
 At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
 
-## Implementation of the solvers and unification details ##
+## Implementation of the solvers and unification details ## {#sec:solvers-implementation}
 
 We implement a system close to the one described by @abelHigherOrderDynamicPattern2011 with the exception that every function call in the simplification procedure is now a raised constraint and every simplification rule is a separate solver.
 For example, the "decomposition of functions" [@abelHigherOrderDynamicPattern2011, fig. 2] rule is translated to the following implementation.
@@ -855,12 +855,13 @@ Regarding twin types as implemented in $\text{Tog}^{+}$ -- we don't see a reason
 # Future work #
 
 There are a few experiments we would still like to conduct, such as:
+
 * implementation of erasure [@tejiscakDependentlyTypedCalculus2020] or irrelevance inference with metavaribles for relevance annotations;
 * rendering occurs-check as a constraint;
 * rendering reduction as a constraint;
 * caching the constraints and their solutions, in case the same constraint is posed again;
 * exploration of possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015];
-* introducing data constructor disambiguation through metavariables for names
+* introducing data constructor disambiguation through metavariables for names.
 
 
 # References #
