@@ -1,6 +1,6 @@
 module Plugins (PluginConstraints, pluginSolvers)where
 
-import           TypeCheck.Constraints (FillInImplicit, (:<:))
+import           TypeCheck.Constraints (EqualityConstraint, FillInImplicit, (:<:))
 import           TypeCheck.Solver.Base
 
 import Plugins.Typeclasses ( InstanceSearch
@@ -9,7 +9,8 @@ import Plugins.Typeclasses ( InstanceSearch
 
 type PluginConstraints = InstanceSearch
 
-pluginSolvers :: ( InstanceSearch :<: c
+pluginSolvers :: ( EqualityConstraint :<: c
+                 , InstanceSearch :<: c
                  , FillInImplicit :<: c)
               => [Plugin c]
 pluginSolvers = [typeClassInitPlugin, instanceSearchPlugin]

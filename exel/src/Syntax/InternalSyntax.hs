@@ -266,6 +266,14 @@ isPatVar _ = False
 freeVarList :: (Unbound.Alpha a, Typeable b) => a -> [Unbound.Name b]
 freeVarList  = Unbound.toListOf Unbound.fv
 
+stripNApps :: (Maybe Integer) -> Term -> Either TCName Term
+stripNApps Nothing (App term arg) = stripNApps Nothing term
+stripNApps Nothing (TCon n _) = Left n
+stripNApps Nothing (DCon n _) = Left n
+stripNApps (Just 0) t = Right t
+stripNApps (Just n) (App term arg) = stripNApps (Just $ n - 1) term
+stripNApps _ t = Right t
+
 -------------------------------------------------------------------
 -- Prelude declarations for datatypes
 

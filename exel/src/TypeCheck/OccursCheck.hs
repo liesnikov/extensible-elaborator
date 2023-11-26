@@ -5,7 +5,7 @@ module TypeCheck.OccursCheck (occursCheck) where
 import qualified Syntax.InternalSyntax as I
 
 import           PrettyPrint (D(..))
-import           Reduction (whnf)
+import           Reduction (whnfd)
 import qualified TypeCheck.Environment as Env
 import           TypeCheck.Monad.Typeclasses ( MonadSolver
                                              , MonadTcReader
@@ -76,7 +76,7 @@ instance Occurs a => Occurs [a] where
 
 instance Occurs I.Term where
   occurs env t = do
-    (wt, mb) <- whnf t
+    (wt, mb) <- whnfd t
     case mb of
       Nothing -> case wt of
         I.Type -> return I.Type
@@ -168,7 +168,7 @@ instance Occurs I.Term where
             return $ I.Case t' alts'
 
         (I.MetaVar mc) -> I.MetaVar <$> occurs env mc
-        _ -> Env.err [ DS "whnf returned something that doesn't have constructor as a head"
+        _ -> Env.err [ DS "whnfd returned something that doesn't have constructor as a head"
                      , DD wt]
       Just b ->
         -- we're in a flexible position, so no pruning, only checking
@@ -236,7 +236,7 @@ instance Occurs I.Term where
           -- using env and not env' here because we still
           -- want to prune things inside the meta
           (I.MetaVar mc) -> I.MetaVar <$> occurs env mc
-          _ -> Env.err [DS "whnf got blocked and returned something unexected", DD wt]
+          _ -> Env.err [DS "whnfd got blocked and returned something unexected", DD wt]
 
 instance Occurs I.MetaClosure where
   occurs env mc@(I.MetaVarClosure nid nc) = if nid == current env
@@ -453,7 +453,7 @@ instance CheckForRigid I.Epsilon where
 
 instance CheckForRigid I.Term where
   collectAllRigid t = do
-    (rt, mblock) <- whnf t
+    (rt, mblock) <- whnfd t
     case mblock of
       Nothing ->
         case rt of
@@ -552,7 +552,7 @@ instance CheckForRigid a => CheckForRigid [a] where
 
 instance CheckForFlexible I.Term where
   collectAllFlexible' p t = do
-    (rt, mblock) <- whnf t
+    (rt, mblock) <- whnfd t
     case mblock of
       Nothing ->
         case rt of
