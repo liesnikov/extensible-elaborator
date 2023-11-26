@@ -648,67 +648,103 @@ In the latter case, which we opt for, one has to be cautious of the order in whi
 
 ## Type classes ## {#sec:case-typeclasses}
 
-Let us go through an example of the elaboration process for a simple term:
+Same as for the implicit arguments in general, we rely here on a pre-processor to transform user-friendly syntax to simple declarations.
+In the example below this can be seen on the declaration `instance BoolPlus`, which becomes a constructor of `InstanceC`.
+We do not focus on this part, since such a pre-processor does a simple local transformation.
+
+Let us now go through an example of the elaboration process for a simple term.
+For typeclasses we need a few declarations, listed below:
 
 ```
 plus  :  {A : Type} -> {{PlusOperation A}}
      -> (a : A) -> (b : A) -> A
 
-instance PlusNat : PlusOperation Nat where
-  plus = plusNat
+-- a semigroup on booleans, addition is OR
+boolPlus = orb
 
-two = plus 1 1
+instance BoolPlus : PlusOperation Bool where
+  plus = boolPlus
 ```
 
-We will step through the elaboration of the term `two`.
+And the exemplary term itself is:
+
+```
+m = plus True False
+```
+
 
 1. First, the pre-processor eliminates the implicits and type-class arguments.
    We end with the following declarations:
    ```
    plus : (impA : Implicit Type)
-       -> TypeClass PlusOperation (deImp impA)
+       -> Instance PlusOperation (deImp impA)
        -> (a : deImp impA) -> (b :  deImp impA)
-       ->  deImp impA
+       -> deImp impA
    
-   PlusNat = Instance {
-       class = PlusOperation Nat,
-       body = {plus = plusNat}}
+   boolPlus = orb
    
-   two = plus _ _ 1 1
+   instanceBoolPlus : InstanceT PlusOperation Bool
+   instanceBoolPlus =
+     InstanceC (TypeClassC (Plus boolPlus))
+   
+   m = plus _ _ True False
    ```
 2. We go into the elaboration of `two` now.
    The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders.
    The output of the elaborator is
    ```
-   two = plus ?_1 ?_2 1 1
+   m = plus ?_1 ?_2 True False
    ```
    And the state of the elaborator contains four more constraints:
    ```
    C1: FillInTheTerm ?_1 (Implicit Type)
-   C2: FillInTheTerm ?_2 (TypeClass
-                          PlusOperation (deImp ?_1))
-   C3: EqualityConstraint ?_1 Nat Type
-   C4: EqualityConstraint ?_1 Nat Type
+   C2: FillInTheTerm ?_2 (InstanceT PlusOperation
+                                    (deImp ?_1))
+   C3: EqualityConstraint (deImp ?_1) Bool Type
+   C4: EqualityConstraint (deImp ?_1) Bool Type
    ```
-   
+
    The first two correspond to implicit arguments.
    The latter two are unification problems rendered into constraints.
 
 3. Now we step into the constraint-solving world.
-   First, the unifier solves the latter two, instantiating `?_1` to `Nat`.
-   Next, the typeclass resolution launches a search for the instance, resolving `?_2` to the `PlusNat` instance.
-   Finally, `C1` is discarded as solved since `?_1` is already instantiated to `Nat`.
+   First, the unifier solves the latter two, instantiating `?_1` to `Implicit Bool`.
+   `C1` is then discarded as solved since `?_1` is already instantiated to `Implicit Bool`.
+   Next, the typeclass resolution launches a search for the instance of type `Instance PlusOperation Bool`.
 
-**Plan**:
+4. This is where the typeclass plugin can take over.
+   It transforms `C2: FillInTheTerm ?_2 (InstanceT PlusOperation Bool)` to `C5: InstanceSearch PlusOperation Bool ?_2`.
+   `C5` then gets matched by the search plugin for concrete instrances, simply weeding through previous declarations, looking for something of the shape `InstanceT PlusOperation Bool`.
+   Such a declaration exists indeed and we can instantiate `?_2` to `instanceBoolPlus`.
 
-* show what we have to desugar instance and type-class declarations to similar to section 1, but more general
-* show the implementation of the solvers
-* showcase two alternative definitions of the type-class resolution?
-* can we extend this to canonical structures here?
+Now let's take a look at the plugin for the constrain system.
+It is contained to a single file [`exel/src/Plugins/Typeclasses.hs`](https://github.com/liesnikov/extensible-elaborator/blob/elaborator-experiments/exel/src/Plugins/Typeclasses.hs) in the artifact.
+In it we define a new constraint type `InstanceSearch`, a solver that transforms constraints of the shape `FillInTheType ? (InstanceT _)` to the new constraint, and finally, a solver for instance search problems.
+The reason to transform the original constraint to the new type is to ensure that no other solver will make an attempt at this problem.
 
-## Coercion and tactics ## {#sec:coercion-tactics}
+Finally, the implementation of search concrete instances such a solver is quite simple:
+```haskell
+instanceConcreteSolver constr = do
+  let (Just (InstanceSearch tcn ty m)) =
+        match @InstanceSearch constr
+  alldecls <- collecInstancesOf tcn <$> SA.getDecls
+  sty <- SA.substAllMetas ty
+  case Map.lookup sty alldecls of
+    Just i -> do
+      SA.solveMeta m (I.Var i)
+      return True
+    Nothing -> return False
+```
 
 
+We conjecture that implementation of Canonical Structure[@mahboubiCanonicalStructuresWorking2013] would be relatively simple in such a system due to openness of both unification procedure and instance search.
+
+## Coercion and tactic arguments ## {#sec:coercion-tactics}
+
+In a similar fashion to the transformation of `FillInImplicit` constraints to `InstanceSearch`, we could implement coercive subtyping and tactic arguments.
+The former would rely on pre-processor the heaviest out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application, around the head of an application, and around type of an abstraction[@tassiBiDirectionalRefinementAlgorithm2012].
+
+Tactic arguments are somewhat simpler, since they essentially constitute a special search procedure.
 
 # Limitations # {#sec:limitations}
 
@@ -745,22 +781,32 @@ Here Agda steps away from the bidirectional discipline and infers a (lambda) fun
 If in our design the developer chooses to go only with a pure bidirectional style of type-checking inferred lambda functions would be impossible to emulate.
 That is unless one essentially renders macros and writes their own type-checking case for an inferrable lambda.
 
+One way wound this would be to (also) implement each type-checking rule in inference mode, essentially factoring out `dontuseTargetType` in Agda's code snippet above.
+
 [^agda-lambda-tc-source]: [./src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518)
 
-## Eager reduction and reliance on the pre-processor ##
-\todo{talk more about the actual pre-processing, the goal of this subsection is unclear}
+## Lack of back-tracking ##
+
+We do not implement any backtracking in the solver dispatcher as it is now.
+This means that every step taken is committing, which can be a limitation in cases where one would like to have it -- for example, Agda's instance arguments (with `--overlapping-instances` flag) [@theagdateamAgdaUserManual2023a, chap. 3.18], as well as in Lean [@selsamTabledTypeclassResolution2020].
+
+This in principle could be achieved by tracking changes to the state of the elaborator and the production graph for constraints, but such a system would be rather awkward.
+
+## Reliance on the pre-processor ##
 
 This work crucially relies on a pre-processor of some kind, be it macro expansion or some other way to extend the parser with custom desugaring rules.
-In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity.
-For coercions, we need to substitute every term `t` in the coercible position for `coerce _ t`.
-This can impact performance.
+In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita[@tassiBiDirectionalRefinementAlgorithm2012, chap. 5].
 
-Alternatively, one can imagine a system where constraint solvers are latching onto non-reduced types and terms in constraints.
-In that case, we can get around with a trick borrowed from Coq, where `coerce f t` computes to `f t`, but since we type-checked an unreduced application the search will still be launched on the right form.
+## Eager reduction and performance ##
 
-This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`
+As in the pre-processing step we would have to insert a fair number of wrappers and un-wrappers for all implicits and even more for coercions, a performance regression would be expected due a lot of spurious computation steps.
 
-\todo{say something about what features can be rendered as modular and which can't}
+As one way to mitigate we suggest a discipline with constraint solvers latching onto non-reduced types and terms in constraints.
+In that case, we can get around with a trick borrowed from Coq, where the wrappers and unwrappers are identity functions and `coerce f t` computes to `f t`.
+This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`.
+In fact, we already do this to an extent for a different reason -- since the calculus allows only fully applied type constructors, we have to wrap each type class constructor in a lambda-abstraction for it to appear as an argument to `TypeClassT typeClassName argType`.
+Or, concretely, we have to define and use `PlusOperation' = \A . PlusOperation A` in place of `PlusOperation` in the elaboration example in Section @sec:case-typeclasses.
+
 
 # Related work # {#sec:related_work}
 
@@ -808,17 +854,14 @@ Regarding twin types as implemented in $\text{Tog}^{+}$ -- we don't see a reason
 
 # Future work #
 
-There are some things we leave for future work.
+There are a few experiments we would still like to conduct, such as:
+* implementation of erasure [@tejiscakDependentlyTypedCalculus2020] or irrelevance inference with metavaribles for relevance annotations;
+* rendering occurs-check as a constraint;
+* rendering reduction as a constraint;
+* caching the constraints and their solutions, in case the same constraint is posed again;
+* exploration of possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015];
+* introducing data constructor disambiguation through metavariables for names
 
-* Implement erasure inference [@tejiscakDependentlyTypedCalculus2020]?
-* Implement Canonical Structures [@mahboubiCanonicalStructuresWorking2013]?
-* Make occurs-check a constraint
-* Make reduction a constraint?
-* Cache constraints and soluitions
-* Rendering of macros as constraints?
-  Map a macro to an implicit term with the right kind of annotation in the type, to get the right expander as an elaboration procedure?
-* Mapping constraint solving onto a concurrent execution model.
-  Use LVars here [@kuperLatticebasedDataStructures2015] here, similar to what TypOS [@allaisTypOSOperatingSystem2022a] is doing?
 
 # References #
 
