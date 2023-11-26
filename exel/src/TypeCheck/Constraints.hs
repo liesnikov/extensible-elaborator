@@ -64,7 +64,7 @@ newtype TypeConstructorConstraint e = TConConstraint Syntax.Term
   deriving Functor
 
 instance Disp1 TypeConstructorConstraint where
-  liftdisp _ (TConConstraint t) = PP.text "TCon" <+> disp t <+> PP.text "?"
+  liftdisp _ (TConConstraint t) = disp t <+> PP.text "should be a TCon"
 
 
 -- both constraints must be satisfied
