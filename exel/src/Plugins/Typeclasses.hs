@@ -2,9 +2,11 @@
 module Plugins.Typeclasses ( InstanceSearch
                            , typeClassInitSymbol
                            , typeClassInitPlugin
-                           , instanceSearchSymbol
-                           , instanceSearchPlugin
+                           , instanceConcreteSymbol
+                           , instanceConcretePlugin
                            ) where
+
+import Data.Map.Strict as Map
 
 import           Text.PrettyPrint ( (<+>) )
 import qualified Text.PrettyPrint as PP
@@ -17,6 +19,7 @@ import           TypeCheck.Constraints ( (:<:)(..)
                                        , EqualityConstraint
                                        , match
                                        )
+import           TypeCheck.Environment as Env
 import           TypeCheck.StateActions as SA
 import           Reduction ( whnf )
 
@@ -33,7 +36,7 @@ data InstanceSearch e = InstanceSearch
 instance Disp1 InstanceSearch where
   liftdisp _ (InstanceSearch tn ty th) = PP.text "Instance search for typeclass" <+>
                                          disp tn <+>
-                                         PP.text "with concrete instance for" <+>
+                                         PP.text "for" <+>
                                          disp ty
 
 
@@ -60,7 +63,12 @@ typeClassInitSolver constr = do
   n@(I.MetaVar (I.MetaVarClosure nid _)) <- SA.createMetaTerm ty
   raiseConstraint $ inj @_ @InstanceSearch
                   $ InstanceSearch tcn (I.unArg arg) nid
-  constrainEquality m n ty
+  mi <- SA.substAllMetas m
+  case mi of
+    I.MetaVar (I.MetaVarClosure mid _) ->
+      SA.solveMeta mid n
+    _ ->
+      constrainEquality m n ty >> return ()
   return True
 
 
@@ -80,20 +88,37 @@ typeClassInitPlugin = Plugin {
   }
 
 
-instanceSearchHandler :: (InstanceSearch :<: cs) => HandlerType cs
-instanceSearchHandler constr = return False
+instanceConcreteHandler :: (InstanceSearch :<: cs) => HandlerType cs
+instanceConcreteHandler constr =
+  case match @InstanceSearch constr of
+    Just _ -> return True
+    Nothing -> return False
 
-instanceSearchSolver :: (InstanceSearch :<: cs) => SolverType cs
-instanceSearchSolver constr = return False
+instanceConcreteSolver :: (InstanceSearch :<: cs) => SolverType cs
+instanceConcreteSolver constr = do
+  let (Just (InstanceSearch tcn ty m)) = match @InstanceSearch constr
+  alldecls <- Map.fromList <$>
+              (=<<) (\x -> case x of
+                     I.TypeSig (I.Sig n _ (I.TCon "InstanceT"
+                                                  [I.Arg _ (I.Var tcm), ity])) ->
+                       if tcm == tcn then [(I.unArg ity, n)] else []
+                     _ -> []) <$>
+             SA.getDecls
+  sty <- SA.substAllMetas ty
+  case Map.lookup sty alldecls of
+    Just i -> do
+      SA.solveMeta m (I.Var i)
+      return True
+    Nothing -> return False
 
-instanceSearchSymbol :: PluginId
-instanceSearchSymbol = "instance search"
+instanceConcreteSymbol :: PluginId
+instanceConcreteSymbol = "looks for concrete instances"
 
-instanceSearchPlugin :: (InstanceSearch :<: cs) => Plugin cs
-instanceSearchPlugin = Plugin {
-  solver = instanceSearchSolver,
-  handler = instanceSearchHandler,
-  symbol = instanceSearchSymbol,
+instanceConcretePlugin :: (InstanceSearch :<: cs) => Plugin cs
+instanceConcretePlugin = Plugin {
+  solver = instanceConcreteSolver,
+  handler = instanceConcreteHandler,
+  symbol = instanceConcreteSymbol,
   suc = [typeClassInitSymbol],
   pre = []
 }
