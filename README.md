@@ -1,6 +1,6 @@
 # ExEl #
 
-This is a study on the design of *ex*tensible *el*aborators for dependently-typed languages.
+This is a study on the design of **ex**tensible **el**aborators for dependently-typed languages.
 The gist of the idea is to allow extensiblity in the constraints datatypes and solvers.
 
 # Repository structure #
