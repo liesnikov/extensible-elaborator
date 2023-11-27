@@ -53,7 +53,10 @@ testtypecheckfiles = testGroup "test files typechecked" [
   testFile "test/PiInjectivityTest.pi",
   testFile "test/RelevanceTest.pi",
   testFile "test/TypeofType.pi",
-  testFile "test/TypeParams.pi"]
+  testFile "test/TypeParams.pi",
+  testFile "test/TypeClasses.pi",
+  testFile "test/BoolPlusTypeclass.pi"
+  ]
 
 
 exampletypecheckfiles :: TestTree
