@@ -9,6 +9,7 @@ module TypeCheck.StateActions ( lookupTy
                               , lookupDCon
                               , lookupDConAll
                               , getDecls
+                              , getGlobalVars
                               , getLocalFreeVars
                               , extendGlobal
                               , extendCtxMods
@@ -252,6 +253,12 @@ lookupDCon c tname = do
 
 getDecls :: (MonadTcReader m) => m [Decl]
 getDecls = asksTc decls
+
+getGlobalVars :: (MonadTcReader m) => m [TName]
+getGlobalVars = do
+  decls <- getDecls
+  let vars = decls >>= (\x -> case x of (TypeSig (Sig n _ _)) -> [n]; _ -> [])
+  return vars
 
 getLocalFreeVars :: (MonadTcReader m) => Term -> m [TName]
 getLocalFreeVars t = do

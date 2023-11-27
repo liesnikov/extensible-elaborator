@@ -509,9 +509,12 @@ substsClosure c ss =
 -- invert a substution
 -- only if it is linear in free variables `vars`
 -- and all the "to" values are variables
-invertSubstOn :: Substitution -> [TName] -> Maybe Substitution
-invertSubstOn c vars = do
-  mc <- traverse (\(f,s) -> case s of {Var i -> Just (f, i); _ -> Nothing}) c
+invertSubstOn :: Substitution -- to be inverted
+              -> [TName] -- global, forbidden variables
+              -> [TName] -- local free variables
+              -> Maybe Substitution
+invertSubstOn c gl vars = do
+  mc <- traverse (\(f,s) -> case s of {Var i | i `notElem` gl -> Just (f, i); _ -> Nothing}) c
   guard $ all (== 1) $ map (\v -> length [() | (_,i) <- mc, i == v]) vars
   rmap <- go mc Map.empty
   return $ Map.toList $ Var <$> rmap
@@ -523,10 +526,10 @@ invertSubstOn c vars = do
       then go kvs acc
       else go kvs (Map.insert v k acc)
 
-invertClosure2SubstOn :: Closure -> [TName] -> Maybe Substitution
-invertClosure2SubstOn cl vars =
+invertClosure2SubstOn :: Closure -> [TName] -> [TName] -> Maybe Substitution
+invertClosure2SubstOn cl gl vars =
   let s = closure2Subst cl
-  in invertSubstOn s vars
+  in invertSubstOn s gl vars
 
 
 -------------------

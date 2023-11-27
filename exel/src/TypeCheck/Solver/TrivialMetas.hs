@@ -59,7 +59,8 @@ leftMetaSolver constr = do
       return False
     Right t2 -> do
       t2fvs <- getLocalFreeVars t2
-      case invertClosure2SubstOn c1 t2fvs of
+      gl <- getGlobalVars
+      case invertClosure2SubstOn c1 gl t2fvs of
         Just s -> do
           --Env.warn [ DS "closure inversion succeeded in right-hand-meta solver"
           --         , DD c1
@@ -122,7 +123,8 @@ rightMetaSolver constr = do
       return False
     Right rt1 -> do
       t1fvs <- getLocalFreeVars rt1
-      case invertClosure2SubstOn c2 t1fvs of
+      gl <- getGlobalVars
+      case invertClosure2SubstOn c2 gl t1fvs of
         Just s -> do
           --Env.warn [ DS "closure inversion succeeded in right-hand-meta solver"
           --         , DD c2
