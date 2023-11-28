@@ -558,6 +558,23 @@
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Koppel et al/2022/Koppel et al_2022_Searching entangled program spaces.pdf}
 }
 
+@article{kovacsElaborationFirstclassImplicit2020,
+  title = {Elaboration with First-Class Implicit Function Types},
+  author = {Kovács, András},
+  date = {2020-08-03},
+  journaltitle = {Proceedings of the ACM on Programming Languages},
+  shortjournal = {Proc. ACM Program. Lang.},
+  volume = {4},
+  pages = {101:1--101:29},
+  doi = {10.1145/3408983},
+  url = {https://dl.acm.org/doi/10.1145/3408983},
+  urldate = {2023-11-28},
+  abstract = {Implicit functions are dependently typed functions, such that arguments are provided (by default) by inference machinery instead of programmers of the surface language. Implicit functions in Agda are an archetypal example. In the Haskell language as implemented by the Glasgow Haskell Compiler (GHC), polymorphic types are another example. Implicit function types are first-class if they are treated as any other type in the surface language. This holds in Agda and partially holds in GHC. Inference and elaboration in the presence of first-class implicit functions poses a challenge; in the context of Haskell and ML-like languages, this has been dubbed “impredicative instantiation” or “impredicative inference”. We propose a new solution for elaborating first-class implicit functions, which is applicable to full dependent type theories and compares favorably to prior solutions in terms of power, generality and simplicity. We build atop Norell’s bidirectional elaboration algorithm for Agda, and we note that the key issue is incomplete information about insertions of implicit abstractions and applications. We make it possible to track and refine information related to such insertions, by adding a function type to a core Martin-L'of type theory, which supports strict (definitional) currying. This allows us to represent undetermined domain arities of implicit function types, and we can decide at any point during elaboration whether implicit abstractions should be inserted.},
+  issue = {ICFP},
+  keywords = {elaboration,impredicative polymorphism,type inference,type theory},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/Kovács/2020/Kovács_2020_Elaboration with first-class implicit function types.pdf}
+}
+
 @thesis{kuperLatticebasedDataStructures2015,
   type = {phdthesis},
   title = {Lattice-Based Data Structures for Deterministic Parallel and Distributed Programming},
@@ -648,6 +665,26 @@
   isbn = {978-3-540-28540-3 978-3-540-31872-9},
   langid = {english},
   file = {/home/bohdan/Downloads/Dropbox/stuff/papers/McBride/2005/McBride_2005_Epigram.pdf}
+}
+
+@inproceedings{mcdonellTypesafeRuntimeCode2015,
+  title = {Type-Safe Runtime Code Generation: Accelerate to {{LLVM}}},
+  shorttitle = {Type-Safe Runtime Code Generation},
+  booktitle = {Proceedings of the 2015 {{ACM SIGPLAN Symposium}} on {{Haskell}}},
+  author = {McDonell, Trevor L. and Chakravarty, Manuel M. T. and Grover, Vinod and Newton, Ryan R.},
+  date = {2015-08-30},
+  series = {Haskell '15},
+  pages = {201--212},
+  publisher = {{Association for Computing Machinery}},
+  location = {{New York, NY, USA}},
+  doi = {10.1145/2804302.2804313},
+  url = {https://dl.acm.org/doi/10.1145/2804302.2804313},
+  urldate = {2023-11-28},
+  abstract = {Embedded languages are often compiled at application runtime; thus, embedded compile-time errors become application runtime errors. We argue that advanced type system features, such as GADTs and type families, play a crucial role in minimising such runtime errors. Specifically, a rigorous type discipline reduces runtime errors due to bugs in both embedded language applications and the implementation of the embedded language compiler itself. In this paper, we focus on the safety guarantees achieved by type preserving compilation. We discuss the compilation pipeline of Accelerate, a high-performance array language targeting both multicore CPUs and GPUs, where we are able to preserve types from the source language down to a low-level register language in SSA form. Specifically, we demonstrate the practicability of our approach by creating a new type-safe interface to the industrial-strength LLVM compiler infrastructure, which we used to build two new Accelerate backends that show competitive runtimes on a set of benchmarks across both CPUs and GPUs.},
+  isbn = {978-1-4503-3808-0},
+  keywords = {archived,Arrays,Code Generation,Data Parallelism,Dynamic Compilation,Embedded Language,GPGPU,Haskell,LLVM},
+  annotation = {https://web.archive.org/web/20231128144312/https://dl.acm.org/doi/10.1145/2804302.2804313},
+  file = {/home/bohdan/Downloads/Dropbox/stuff/papers/McDonell et al/2015/McDonell et al_2015_Type-safe runtime code generation.pdf}
 }
 
 @article{millerLogicProgrammingLanguage1991,
