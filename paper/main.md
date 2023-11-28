@@ -653,7 +653,7 @@ In the example below this can be seen on the declaration `instance BoolPlus`, wh
 We do not focus on this part, since such a pre-processor does a simple local transformation.
 
 Let us now go through an example of the elaboration process for a simple term.
-For typeclasses we need a few declarations, listed below:
+For typeclasses we need a few declarations, listed below in Agda-like syntax:
 
 ```
 plus  :  {A : Type} -> {{PlusOperation A}}
@@ -739,12 +739,42 @@ instanceConcreteSolver constr = do
 
 We conjecture that implementation of Canonical Structure[@mahboubiCanonicalStructuresWorking2013] would be relatively simple in such a system due to openness of both unification procedure and instance search.
 
-## Coercion and tactic arguments ## {#sec:coercion-tactics}
+## Tactic arguments and coercions  ## {#sec:coercion-tactics}
 
-In a similar fashion to the transformation of `FillInImplicit` constraints to `InstanceSearch`, we could implement coercive subtyping and tactic arguments.
-The former would rely on pre-processor the heaviest out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application, around the head of an application, and around type of an abstraction[@tassiBiDirectionalRefinementAlgorithm2012].
+In a similar fashion to the transformation of `FillInImplicit` constraints to `InstanceSearch`, we could implement tactic arguments and coercive subtyping.
 
-Tactic arguments are somewhat simpler, since they essentially constitute a special search procedure.
+The former would be quite similar to what we saw in the previous section  @sec:case-typeclasses, except we would have to resolve `FillInImplicit` to `RunTactic` constraint or fill in directly.
+
+Coercive subtyping is of a slightly different nature.
+First, it would rely on a pre-processor the heaviest out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application and potentially around heads of applications and types of abstractions[@tassiBiDirectionalRefinementAlgorithm2012].
+This incurs not only syntactic noise, but also potential performance penalty, which we describe in Section @sec:limitations.
+The second challenge comes from the fact that unlike the above this feature would be anti-modular in a sense that we need to access several constraints at once, at least read-only.
+
+Consider the following example:
+
+```
+f : (A : Type) -> A -> A
+arg : ArgTy
+
+t : ExpTy
+t = f _ arg
+```
+
+This declaration would desugar to something like
+
+```
+t = coerce _ (f _ (coerce _ arg))
+```
+
+which gives raise to two constraints, where `Coercion A B` stands for the evidence of A < B:
+
+```
+C1 : Coercion ArgTy ?1
+C3 : Coercion ?1 ExpTy
+```
+
+Clearly, we can't solve the first constraint in isolation and need to consider all coercion constraints related to a particular type at the same time.
+While we can accommodate such solvers, due to solvers having write-access to the state, it becomes much harder to modulate interactions between different plugins.
 
 # Limitations # {#sec:limitations}
 
@@ -807,6 +837,13 @@ This also means that constraints can/have to match on unreduced types in the e.g
 In fact, we already do this to an extent for a different reason -- since the calculus allows only fully applied type constructors, we have to wrap each type class constructor in a lambda-abstraction for it to appear as an argument to `TypeClassT typeClassName argType`.
 Or, concretely, we have to define and use `PlusOperation' = \A . PlusOperation A` in place of `PlusOperation` in the elaboration example in Section @sec:case-typeclasses.
 
+## Proving correctness ##
+
+As soon as we allow the users to implement their own solvers, there's very little we can say about correctness of the system as a whole without imposing proof obligations on the plugin writers.
+However, if one is willing to do that we can conjecture that if every solver in the system "reduces the weight" of the unification problem, in terms of Theorem 1 by @abelHigherOrderDynamicPattern2011, we can hope for termination guarantees.
+
+This is simply a consequence of the fact that we do not invent a new unification algorithm, but rather provide means of easier implementation for it.
+Similar conjectures can be made regarding solution and type preservation -- Theorems 2 and 3, respectively [@abelHigherOrderDynamicPattern2011].
 
 # Related work # {#sec:related_work}
 
@@ -854,14 +891,16 @@ Regarding twin types as implemented in $\text{Tog}^{+}$ -- we don't see a reason
 
 # Future work #
 
-There are a few experiments we would still like to conduct, such as:
+We see three main prospects for future work:
 
-* implementation of erasure [@tejiscakDependentlyTypedCalculus2020] or irrelevance inference with metavaribles for relevance annotations;
-* rendering occurs-check as a constraint;
-* rendering reduction as a constraint;
-* caching the constraints and their solutions, in case the same constraint is posed again;
-* exploration of possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015];
-* introducing data constructor disambiguation through metavariables for names.
+* exploration of different kinds of metavariables.
+  First option would be to implement metavariables for relevance or erasure annotations and subsequent implementation of erasure [@tejiscakDependentlyTypedCalculus2020] or irrelevance inference.
+  Alternatively, we can introducing metavarialbes for names and hopefully implement data constructor disambiguation in a simpler manner, since as of now we simply block on expected type to disambiguate;
+* rendering more elements of the system as constraints -- this includes occurs-checker and reduction, allowing for extensions in that part of the system too;
+* finally, we consider some potential optimisations.
+  The first step would be to allow handlers to pass some information to their solvers, effectively introducing an existential type in the plugin, as well as some expandable store for the solvers to not recompute, for example, type class instances every time.
+  Somewhat more challenging, one can imagine a caching system for constraints, allowing to avoid solving the same constraint twice. This would be very beneficial for reduction, since as of now we do a lot of redundant computations.
+  We would also like to explore of possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015].
 
 
 # References #
