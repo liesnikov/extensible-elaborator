@@ -503,6 +503,7 @@ As it will fire after a handler returns `True`, we can assume the pattern-matche
 First we constrain the equality of the domain of the Pi-type: `a1` and `a2`.
 The seemingly spurious metavariable `ma` returned from this call serves as an anti-unification [@pfenningUnificationAntiunificationCalculus1991] communication channel.
 Every time an equality constraint is created we return a metavariable that stands for the unified term.
+\todo{move things in a footnote here from the tog's related work entry}
 This metavariable is used for unification problems that are created in the extended contexts -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
 We do this to tackle the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- as we operate according to the "well-typed modulo constraints" principle, essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context.
 Finally `ma` has to be applied to a closure which will keep track of the delayed substitution.
