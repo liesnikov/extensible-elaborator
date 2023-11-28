@@ -1,6 +1,5 @@
 ---
-title: 'Draft: Building an elaborator using extensible constraints'
-author: Bohdan Liesnikov, Jesper Cockx
+title: 'ExEl: Building an Elaborator Using Extensible Constraints'
 date: \today
 
 output: pdf_document
@@ -16,13 +15,26 @@ link-citations: true
 
 header-includes: |
     \usepackage[]{todonotes}
+    \author{Bohdan Liesnikov}
+    \orcid{0009-0000-2216-8830}
+    \affiliation{
+      \institution{TU Delft}
+      \country{the Netherlands}}
+    \email{B.Liesnikov@tudelft.nl}
+    \author{Jesper Cockx}
+    \orcid{0000-0003-3862-4073}
+    \affiliation{
+      \institution{TU Delft}
+      \country{the Netherlands}}
+    \email{J.G.H.Cockx@tudelf.nl}
     \newcommand\ru[2]{\dfrac{\begin{array}{@{}c@{}}#1\end{array}}{#2}}
     \begin{abstract}
-    Dependently-typed languages are used for statically enforcing properties of programs and for enabling type-driven development.
-    While there's been a lot of work to find the right theoretical foundations for the core type theory, the implementations have been studied to a smaller extent.
-    In particular, theoretical works rarely consider the plethora of features that exist in bigger languages like Agda, so the developers have to make a lot of adaptations in the implementations, making them rather ad hoc, in particular in the elaborator.
-    And when these features appear organically over time they can lead to codebases that are hard to maintain.
-    We present a new design for the elaboration of dependently-typed languages based on the idea of an open datatype for constraints and plugin system for solvers to tackle these issues.
+    Dependently typed languages such as Agda, Coq, Lean, and Idris are used for statically enforcing properties of programs and for enabling type-driven development.
+    While there has been a lot of work to find the right theoretical foundations for the core type theory underlying these languages, their implementations have been studied to a smaller extent.
+    In particular, theoretical works rarely consider the plethora of features that exist in big languages like Agda.
+    As a consequence the developers have to make a lot of adaptations in the implementations, which leads to codebases that are hard to maintain.
+    In this work we focus on a part of the type-checker called the elaborator that transforms user-friendly surface syntax to a small well-behaved core theory.
+    Our core idea is to use an open datatype for constraints and plugin system for solvers.
     This allows for a more compact base elaborator implementation while enabling extensions to the type system.
     \end{abstract}
 ---
