@@ -909,7 +909,7 @@ Macros allow them to modularly implement individual features, however, exactly a
 TypOS [@allaisTypOSOperatingSystem2022a; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
 First, they are building a domain-specific language for building type-checkers, while our design is language-agnostic, as long as it can model extensible datatypes in some capacity.
 Second, their approach settles features of the language as they are decided by the main developer and doesn't concern future changes and evolution.
-Finally, we try to stay close to the designs of existing dependently typed languages, while TypOS doesn't showcase support for them.
+Finally, we try to stay close to the designs of existing dependently typed languages and offer flexibility in terms of choices, while TypOS requires the developer to start from scratch and restricts certain capabilities like overlapping rules for unification.
 
 
 [^ghc-note]: [gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes](https://gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes)

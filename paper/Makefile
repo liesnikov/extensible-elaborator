@@ -9,18 +9,18 @@ reset: clean pdf
 open: main.pdf
 	xdg-open main.pdf &
 
-nix-build: main.tex Makefile bib.bib
+nix-build: main.md Makefile bib.bib
 	nix-build . ""
 
 main.pdf: main.tex Makefile
 	latexmk -pdf main.tex
 
-#main.tex: main.md bib.bib Makefile
-#	pandoc --standalone main.md \
-#  --filter pandoc-secnos \
-#  --bibliography bib.bib \
-#  --natbib \
-#  -o main.tex
+main.tex: main.md bib.bib Makefile
+	pandoc --standalone main.md \
+  --filter pandoc-secnos \
+  --bibliography bib.bib \
+  --natbib \
+  -o main.tex
 
 allclean: clean
 	rm -f main.pdf main.tex
