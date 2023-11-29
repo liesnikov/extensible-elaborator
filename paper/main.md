@@ -14,7 +14,6 @@ colorlinks: true
 link-citations: true
 
 header-includes: |
-    \usepackage[]{todonotes}
     \widowpenalty10000
     \clubpenalty10000
     \author{Bohdan Liesnikov}
@@ -506,9 +505,8 @@ As it will fire after a handler returns `True`, we can assume the pattern-matche
 First we constrain the equality of the domain of the Pi-type: `a1` and `a2`.
 The seemingly spurious metavariable `ma` returned from this call serves as an anti-unification [@pfenningUnificationAntiunificationCalculus1991] communication channel.
 Every time an equality constraint is created we return a metavariable that stands for the unified term.
-\todo{move things in a footnote here from the tog's related work entry}
 This metavariable is used for unification problems that are created in the extended contexts -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
-We do this to tackle the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- as we operate according to the "well-typed modulo constraints" principle, essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context.
+We do this to tackle the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- as we operate according to the "well-typed modulo constraints" principle, essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context. [^anti-unification-note]
 Finally `ma` has to be applied to a closure which will keep track of the delayed substitution.
 
 Then we can constrain the co-domains of Pi-types in an extended context.
@@ -548,6 +546,8 @@ This does not deteriorate the properties of the system, but does not help to gua
 We talk more about the challenge of proving correctness in Section @sec:limitations.
 
 [^unbound-link]: [hackage.haskell.org/package/unbound-generics-0.4.3](https://hackage.haskell.org/package/unbound-generics-0.4.3)
+
+[^anti-unification-note]: $\text{Tog}^{+}$ [@victorlopezjuanTog2020; @victorlopezjuanPracticalHeterogeneousUnification2021] focuses on extending unification algorithm for the case where two sides of equality might not be of the same type, which is also a problem relevant for us. Their main argument against the usage of anti-unification in Agda provided there is that it is bug-prone. We think that in Agda the problems were stemming from the fact that anti-unification were implemented separately from unification, in which case it is indeed hard to keep the two in sync. There is no such duplication in our case since unification and anti-unification are one.
 
 ## Extending unification ##
 
@@ -893,9 +893,8 @@ However, the implementation is quite hard to extend.
 One either has to modify the source code, which is mostly limited to the core development team, as seen from the [graph](https://github.com/coq/coq/graphs/contributors).
 Or one has to use Coq plugins system, which is rather challenging, and in the end the complexity of it gave rise to TemplateCoq [@malechaExtensibleProofEngineering2014].
 
-Agda has historically experimented a lot with different extensions for both type system and the elaborator, even though the design doesn't accomodate these changes it naturally.
-Instead, each of these extensions is spread throughout many different parts of the code-base.
-\todo{pr links, e.g. dominik's typeclasses}
+Agda has historically experimented a lot with different extensions for both type system and the elaborator, even though the design doesn't accomodate these changes naturally.
+Instead, each of these extensions is spread throughout many different parts of the code-base[^agda-features-link].
 
 Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020].
 They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
@@ -904,16 +903,19 @@ In a way, this is an imperative view on extensibility.
 Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second and does not provide either a plugin or hook system at all, except for reflection.
 Idris also focuses on tactics as the main mechanism for elaboration.
 
-<!---
-Finally, we would like to make a note on the unification -- $\text{Tog}^{+}$ [@victorlopezjuanTog2020; @victorlopezjuanPracticalHeterogeneousUnification2021] focuses on extending it to the case where two sides of equality might not be of the same type, which is also a problem relevant for us.
-Their main argument against the usage of anti-unification in Agda provided there is that it is bug-prone.
-On closer inspection, we think that in Agda, which served as an example of the system where said bugs occur, the problems were stemming from the fact that anti-unification had to be implemented separately from unification, therefore duplicating the code-base.
-In which case it is indeed hard to keep the two in sync.
-In contrast, there is no such duplication in our case since unification and anti-unification always move in sync.
-It would still be interesting to consider twin types in our framework, but we do not see a reason why it could not be done in our setting.
--->
+Turstile+ by @changDependentTypeSystems2019 uses macros to elaborate surface syntax to a smaller core.
+Macros allow them to modularly implement individual features, however, exactly as for Lean, combining different features which happens a lot in practise requires the user to re-define all macros from scratch.
+
+TypOS [@allaisTypOSOperatingSystem2022a; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
+First, they are building a domain-specific language for building type-checkers, while our design is language-agnostic, as long as it can model extensible datatypes in some capacity.
+Second, their approach settles features of the language as they are decided by the main developer and doesn't concern future changes and evolution.
+Finally, we try to stay close to the designs of existing dependently typed languages, while TypOS doesn't showcase support for them.
+
 
 [^ghc-note]: [gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes](https://gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes)
+
+[^agda-features-link]: some recent examples: [github.com/agda/agda/pull/6385](https://github.com/agda/agda/pull/6385),
+[github.com/agda/agda/pull/6354](https://github.com/agda/agda/pull/6354).
 
 # Future work #
 
@@ -926,14 +928,15 @@ We see three main prospects for future work:
   Including them into the constraint machinery would make the implementation more uniform and allow users to extend them.
 * **Potential optimisations**.
   Currently our system has a lot of room for potential optimisations.
-  The first step would be to allow handlers to pass some information to their solvers which require introduction an existential type in the plugin, as well as some expandable store for the solvers to not recompute, for example, type class instances every time.
+  The first step would be to allow handlers to pass some information to their respective solvers, which require introduction an existential type in the plugin.
+  Additionally some expandable per-plugin store for the solvers would be handy, for example to not recompute type class instances on every invocation.
   Somewhat more challenging, one can imagine a caching system for constraints, allowing to avoid solving the same constraint twice.
   This might be beneficial for reduction, since as of now we do a lot of redundant computations.
   However, the memory usage might be prohibitive.
-  Finally, we would also like to explore of possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015].
 
 
 # References #
+  Finally, we would also like to explore possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015].
 
 ::: {#refs}
 :::
