@@ -15,19 +15,22 @@ link-citations: true
 
 header-includes: |
     \usepackage[]{todonotes}
+    \widowpenalty10000
+    \clubpenalty10000
     \author{Bohdan Liesnikov}
     \orcid{0009-0000-2216-8830}
     \affiliation{
-      \institution{TU Delft}
-      \country{the Netherlands}}
+      \institution{Delft University of Technology}
+      \city{Delft}
+      \country{The Netherlands}}
     \email{B.Liesnikov@tudelft.nl}
     \author{Jesper Cockx}
     \orcid{0000-0003-3862-4073}
     \affiliation{
-      \institution{TU Delft}
-      \country{the Netherlands}}
-    \email{J.G.H.Cockx@tudelf.nl}
-    \newcommand\ru[2]{\dfrac{\begin{array}{@{}c@{}}#1\end{array}}{#2}}
+      \institution{Delft University of Technology}
+      \city{Delft}
+      \country{The Netherlands}}
+    \email{J.G.H.Cockx@tudelft.nl}
     \begin{abstract}
     Dependently typed languages such as Agda, Coq, Lean, and Idris are used for statically enforcing properties of programs and for enabling type-driven development.
     While there has been a lot of work to find the right theoretical foundations for the core type theory underlying these languages, their implementations have been studied to a smaller extent.
