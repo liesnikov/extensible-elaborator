@@ -933,9 +933,6 @@ We see three main prospects for future work:
   Somewhat more challenging, one can imagine a caching system for constraints, allowing to avoid solving the same constraint twice.
   This might be beneficial for reduction, since as of now we do a lot of redundant computations.
   However, the memory usage might be prohibitive.
-
-
-# References #
   Finally, we would also like to explore possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015].
 
 ::: {#refs}

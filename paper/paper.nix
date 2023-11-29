@@ -8,7 +8,7 @@ let texlive-combined = texlive.combine { inherit (texlive)
       fontspec koma-script  # ??
       unicode-math # ??
       todonotes # for todo-pop-ups
-      biblatex
+      # biblatex
       fancyvrb # fancy verbatim text
 #      breakurl # to allow line breaks in hyperlinks
       acmart
