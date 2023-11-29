@@ -932,7 +932,7 @@ We see three main prospects for future work:
   Additionally some expandable per-plugin store for the solvers would be handy, for example to not recompute type class instances on every invocation.
   Somewhat more challenging, one can imagine a caching system for constraints, allowing to avoid solving the same constraint twice.
   This might be beneficial for reduction, since as of now we do a lot of redundant computations.
-  However, the memory usage might be prohibitive.
+  However, memory usage might be prohibitive.
   Finally, we would also like to explore possibilities for concurrent solving, similar to the future plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015].
 
 ::: {#refs}
