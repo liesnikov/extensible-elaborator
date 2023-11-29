@@ -48,7 +48,7 @@ Strongly-typed languages allow us to catch certain classes of bugs at compile-ti
 When the types are provided by the user they can be viewed as a form of specification, constraining the behaviour of the programs.
 This comes with the benefit of more static guarantees but with an increased toll on the user to supply more precise information about the program.
 Many languages choose to infer types, but another option is to use the information in the types to infer parts of the program.
-This idea was aptly worded by Conor McBride as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005 chap. 2.1]
+This idea was aptly worded by Conor McBride as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005, chap. 2.1]
 Some examples of this include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
 
 In dependently typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2023a], Coq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
@@ -113,7 +113,7 @@ Finally, we summarize the issues in Section
 
 [^lean-constraints-datatype]: [./src/Lean/Meta/Match/Basic.lean#L161](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) at [github.com/leanprover/lean4/blob/0a031f](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/)
 
-## Unification in the presence of a meta-variables ## {#sec:conversion_checking}
+## Unification in presence of meta-variables ## {#sec:conversion_checking}
 
 As mentioned in the introduction, in the process of type-checking we use unification to compare terms, which is notoriously hard to implement.
 The complexity stems from the desire of compiler writers to implement the most powerful unifier, while being limited by the fact that higher-order unification is undecidable in general.
@@ -168,7 +168,7 @@ For Haskell, which is not a dependently typed language yet, but does have a cons
 [^ghc-unifier]:
 [./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs) at [gitlab.haskell.org/ghc/ghc/-/blob/b81cd709d](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840)
 
-## Type-checking function application in the presence of implicit arguments ## {#sec:implicit-arguments}
+## Type-checking function application in presence of implicit arguments ## {#sec:implicit-arguments}
 
 During the type-checking of function application there may be different kinds of implicit arguments to infer, for example, instance arguments, or tactic arguments.
 If we start from a simple case of type-checking an application of a function symbol to regular arguments, every next extension needs to be handled as a special case.
@@ -222,7 +222,7 @@ This is not dissimilar to the idea of mapping object-language unification variab
 
 In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
-From a birds-eye view the architecture looks as depicted in [Figure 1](#architecture-figure).
+From a birds-eye view the architecture looks as depicted in Figure \ref{architecture-figure}.
 The type-checking begins by initializing state and doing the syntax traversal.
 The traversal raises the constraints, and for the moment, the constraints are simply stored.
 As soon as we finish the traversal of some block (one declaration in our case), the solver dispatcher is called.
