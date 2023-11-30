@@ -577,7 +577,7 @@ checkType (S.Case scrut alts) ty = do
         ensureTCon term = Env.err [DS "can't verify that",
                                      DD term,
                                      DS "has TCon as head-symbol"]
-    (c, args) <- ensureTCon =<< SA.substMetas sty
+    (c, args) <- ensureTCon =<< fmap fst . whnf =<< SA.substMetas sty
     let checkAlt :: (MonadElab c m) => S.Match -> m I.Match
         checkAlt (S.Match bnd) = do
           (pat, body) <- Unbound.unbind bnd
@@ -868,8 +868,7 @@ elabEntry (S.Def n term) = do
                     DD sig
                   ]
            in do
-                elabterm <- Env.extendCtx (I.TypeSig sig) $
-                              checkType term (I.sigType sig) `catchError` handler
+                elabterm <- Env.extendCtx (I.TypeSig sig) $ checkType term (I.sigType sig) `catchError` handler
                 --Env.warn [ DS "elaborated term before substitution"
                 --         , DD elabterm
                 --         , DS $ show elabterm

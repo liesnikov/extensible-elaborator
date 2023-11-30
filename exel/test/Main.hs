@@ -11,5 +11,5 @@ main = do
    defaultMain $ testGroup "All tests" [
        printparse
      , testtypecheckfiles
---     , exampletypecheckfiles
+     , exampletypecheckfiles
      ]

@@ -61,28 +61,29 @@ testtypecheckfiles = testGroup "test files typechecked" [
 
 exampletypecheckfiles :: TestTree
 exampletypecheckfiles = testGroup "example files typechecked" [
-  testFile "BoolLib.pi",
-  testFile "Equality.pi",
-  testFile "Equal.pi",
-  testFile "FinHw.pi",
-  testFile "Fin.pi",
-  testFile "Fix.pi",
-  testFile "Hurkens.pi",
-  testFile "Hw1.pi",
-  testFile "Hw2.pi",
-  testFile "Lambda0.pi",
-  testFile "Lambda1.pi",
-  testFile "Lambda2.pi",
-  testFile "Lambda.pi",
-  testFile "Lec1.pi",
-  testFile "Lec2.pi",
-  testFile "Lec3.pi",
-  testFile "Lec4.pi",
-  testFile "Lennart.pi",
-  testFile "List.pi",
-  testFile "Logic.pi",
-  testFile "NatChurch.pi",
-  testFile "Nat.pi",
-  testFile "Product1.pi",
-  testFile "Product.pi",
-  testFile "Vec.pi"]
+--  , testFile "BoolLib.pi"
+--  , testFile "Equality.pi"
+--  , testFile "Equal.pi"
+--  , testFile "FinHw.pi"
+--  , testFile "Fin.pi"
+--  , testFile "Fix.pi"
+--  , testFile "Hurkens.pi"
+    testFile "Hw1.pi"
+--  , testFile "Hw2.pi"
+--  , testFile "Lambda0.pi"
+--  , testFile "Lambda1.pi"
+--  , testFile "Lambda2.pi"
+--  , testFile "Lambda.pi"
+--  , testFile "Lec1.pi"
+--  , testFile "Lec2.pi"
+--  , testFile "Lec3.pi"
+--  , testFile "Lec4.pi"
+--  , testFile "Lennart.pi"
+--  , testFile "List.pi"
+  , testFile "Logic.pi"
+--  , testFile "NatChurch.pi"
+--  , testFile "Nat.pi"
+--  , testFile "Product1.pi"
+--  , testFile "Product.pi"
+--  , testFile "Vec.pi"
+  ]

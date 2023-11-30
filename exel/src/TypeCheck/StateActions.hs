@@ -260,11 +260,12 @@ getGlobalVars = do
   let vars = decls >>= (\x -> case x of (TypeSig (Sig n _ _)) -> [n]; _ -> [])
   return vars
 
-getLocalFreeVars :: (MonadTcReader m) => Term -> m [TName]
+getLocalFreeVars :: (MonadTcReader m, MonadTcReaderEnv m) => Term -> m [TName]
 getLocalFreeVars t = do
   let lfvs = freeVarList t
-  globals <- names <$> askDecls
-  return . filter ((/= "?") . Unbound.name2String) . filter (`notElem` globals) $ lfvs
+--  globals <- names <$> askDecls
+  locals <- names <$> Env.getLocalCtx
+  return . filter ((/= "?") . Unbound.name2String) . filter (`elem` locals) $ lfvs
   where
     names :: [Decl] -> [TName]
     names [] = []
