@@ -1,5 +1,5 @@
 module Equality where
-import Logic
+--import Logic
 
 -- Some of this file is inspired by:
 -- https://cs.stackexchange.com/questions/53081/elimination-rule-for-the-equality-type-aka-j-axiom
@@ -42,7 +42,7 @@ g5 = \ [A][x][y][z][w] p q r . subst (subst (subst Refl by p) by q) by r
 -- subst is functorial
 
 subst_refl : [A:Type] -> [a:A] -> ((subst a by (Refl : A = A) : A) = a)
-subst_refl = \[A][x]. Refl
+subst_refl = \[A][x]. (Refl : x = x)
 
 subst_trans : [x:Type] -> [y:Type] -> [z:Type] -> (p: x = y) -> (q : y = z) -> (a : x) ->
   (subst a by (trans [Type][x][y][z] p q) : z) = subst (subst a by p) by q
@@ -63,23 +63,37 @@ f_equal2 :  [A:Type] -> [B : Type] -> [C:Type] -> [f : A -> B -> C] -> [x1:A] ->
 f_equal2 = \[A][B][C][f][x1][y1][x2][y2] pf1 pf2.
   subst (subst Refl by pf1) by pf2
 
+{-
 -- dependent form of congruence with respect to function applications
 resp : [A:Type]->[B: A -> Type] -> (u : (x:A) -> B x)
      -> (a1 : A) -> (a2 : A) -> (s : a1 = a2)
      -> (subst (u a1) by s : B a2) = u a2
 resp = \[A][B] u a1 a2 s . subst Refl by s
+-}
 
+{-
 -- even for sigma types
 sig_equal : [A : Type] -> [B : A -> Type]
           -> (x : A) -> (y : A) -> (p : x = y) -> (b : B x)
           -> ( ( x , b ) : { x : A | B x } ) = (y , subst b by p )
 sig_equal = \[A][B] x y p b . subst Refl by p
+-}
 
+{-
 -- not equal is symmetric
+
+data Void : Type where {}   -- no constructors
+
+-- Negation
+-----------
+
+neg : Type -> Type
+neg = \ x . (x -> Void)
 
 neg_eq_sym :  [A:Type] -> [x:A] -> [y:A] -> neg (x = y) -> neg (y = x)
 neg_eq_sym = \[A][x][y] neg.
   \ pf . (subst neg by pf : (y = x) -> Void) pf
+-}
 
 -- uniqueness of identity proofs
 
@@ -89,23 +103,28 @@ uip = \ [A][x][y] p q .
 
 -- "axiom" K
 
+
 k : [A:Type] -> [x:A] -> (p : x = x) -> (p = Refl)
 k = \ [A][x] p .
   subst Refl by p
 
+{-
 -- another version of the above
 -- From: https://ncatlab.org/nlab/show/axiom+K+%28type+theory%29
 k2 : [A:Type] -> [x:A] -> [P : (x = x) -> Type] -> P Refl -> (h:x = x) -> P h
 k2 = \ [A][x][P] d h . subst d by h
+-}
 
 -- here's j
 -- https://ncatlab.org/nlab/show/identity+type#ExplicitDefinition
 
+{-
 j : [A:Type]
   -> [C : (x:A) -> (y:A) -> (x = y) -> Type]
   -> ((x:A) -> C x x Refl)
   -> (x:A) -> (y:A) -> (p : x = y) -> C x y p
 j = \[A][C] t x y p . subst (t x) by p
+-}
 
 -- Can't derive k from j
 

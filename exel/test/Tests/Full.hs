@@ -62,13 +62,13 @@ testtypecheckfiles = testGroup "test files typechecked" [
 exampletypecheckfiles :: TestTree
 exampletypecheckfiles = testGroup "example files typechecked" [
 --  , testFile "BoolLib.pi"
---  , testFile "Equality.pi"
+      testFile "Equality.pi"
 --  , testFile "Equal.pi"
 --  , testFile "FinHw.pi"
 --  , testFile "Fin.pi"
 --  , testFile "Fix.pi"
 --  , testFile "Hurkens.pi"
-    testFile "Hw1.pi"
+    , testFile "Hw1.pi"
 --  , testFile "Hw2.pi"
 --  , testFile "Lambda0.pi"
 --  , testFile "Lambda1.pi"
