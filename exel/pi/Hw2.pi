@@ -30,14 +30,14 @@ f_cong = \ A B f g x y pf1 pf2 .
 
 -- Homework: what does congruence for dependent application look like?
 -- In other words, what if f and g above have a dependent type?
-
+{-
 f_cong_dep : (A:Type) -> (B : A -> Type)
        -> (f : (x:A) -> B x) -> (g : (x:A) -> B x)
        -> (x:A) -> (y:A)
        -> (f = g) -> (p : x = y) -> (f x = subst g y by p)
 f_cong_dep =  \ A B f g x y pf1 pf2 .
    subst (subst Refl by pf1) by pf2
-
+-}
 
 
 -- properties of booleans
@@ -55,6 +55,7 @@ not = \ x . if x then False else True
 
 -- show that true is not false
 
+{-
 not_not_equal : (b : Bool) -> (b = not b) -> void
 not_not_equal = \b pf.
   if b then (contra pf) else (contra pf)
@@ -63,20 +64,25 @@ not_not_equal = \b pf.
 not_false_then_true : (b : Bool) -> neg (b = False) -> b = True
 not_false_then_true = \b nb.
   if b then Refl else nb Refl (b = True)
+-}
 
 -- show that decidable equality for booleans is correct.
+
 
 eq_bool : Bool -> Bool -> Bool
 eq_bool = \x y. if x then y else not y
 
+{-
 eq_true : (b1 : Bool) -> (b2 : Bool) -> eq_bool b1 b2 = True -> (b1 = b2)
 eq_true = \b1 b2 pf.   if b1 then if b2 then Refl else contra pf
         else if b2 then contra pf else Refl
 
-eq_false :	(b1 : Bool) -> (b2 : Bool) -> eq_bool b1 b2 = False -> (b1 = b2) -> void
+
+eq_false : (b1 : Bool) -> (b2 : Bool) -> eq_bool b1 b2 = False -> (b1 = b2) -> void
 eq_false = \ b1 b2 pf1 pf2 .
   if b1 then if b2 then contra pf1 else contra pf2
         else if b2 then contra pf2 else contra pf1
+
 
 false_eq_bool : (n : Bool) -> (m : Bool) ->
      neg (n = m) ->
@@ -85,8 +91,4 @@ false_eq_bool = \n m nnm.    if n then if m then nnm Refl (eq_bool n m = False)
                   else Refl
         else if m then Refl
                   else nnm Refl (eq_bool n m = False)
-
-
-
-
-
+-}

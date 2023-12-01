@@ -496,8 +496,8 @@ checkType (S.Contra p) typ = do
           _ -> return Nothing
   ret <- SA.createMetaTerm typ
   blockAndReblockUntil blockboth detector $ do
-    (a', ba) <- whnf a
-    (b', bb) <- whnf b
+    (a', ba) <- whnf =<< SA.substAllMetas a
+    (b', bb) <- whnf =<< SA.substAllMetas b
     case (a, b) of
       (I.DCon da _, I.DCon db _)
         | da /= db ->
@@ -508,9 +508,9 @@ checkType (S.Contra p) typ = do
       (_, _) ->
         Env.err
           [ DS "I can't tell that",
-            DD a,
+            DD a',
             DS "and",
-            DD b,
+            DD b',
             DS "are contradictory",
             DS "the reduction is blocked on",
             DD ba,
