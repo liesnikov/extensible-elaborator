@@ -80,13 +80,13 @@ whnfc ustr (LetPair a bnd) = do
 
 
 whnfc ustr (Subst tm pf) = do
-  (tm', mb) <- whnfc ustr tm
+  (pf', mb) <- whnfc ustr pf
   case mb of
-    Just b -> return (Subst tm' pf, Just b)
+    Just b -> return (Subst tm pf', Just b)
     Nothing -> do
-      case tm' of
-        Refl -> whnfc ustr pf
-        _ -> return (Subst tm' pf, Nothing)
+      case pf' of
+        Refl -> whnfc ustr tm
+        _ -> return (Subst tm pf', Nothing)
 
 
 whnfc ustr (Case scrut mtchs) = do
