@@ -71,12 +71,13 @@ lemma_minus_zero_id =   \n . case n of
     Zero -> Refl
     Succ n' -> Refl
 
-
+{-
 lemma_minus_plus_id : (m : Nat) -> (n : Nat) -> ((minus (plus m n) m) = n)
 lemma_minus_plus_id = \m n .
   case m of
      Zero -> lemma_minus_zero_id n
      Succ m' -> lemma_minus_plus_id m' n
+
 
 plus_associates : (i:Nat) -> (j:Nat) -> (k:Nat) -> plus (plus i j) k = plus i (plus j k)
 plus_associates = \ i j k .
@@ -87,5 +88,5 @@ plus_associates = \ i j k .
     -- S ((i'+j)+k) = S (i'+(j+k))
     Succ i' ->
       let ih = (plus_associates i' j k) in
-    m_eq_n_Sm_eq_Sn (plus (plus i' j) k) (plus i' (plus j k)) ih
-
+      m_eq_n_Sm_eq_Sn (plus (plus i' j) k) (plus i' (plus j k)) ih
+-}
