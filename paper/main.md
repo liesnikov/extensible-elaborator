@@ -14,8 +14,9 @@ colorlinks: true
 link-citations: true
 
 header-includes: |
-    \widowpenalty10000
-    \clubpenalty10000
+    \widowpenalty=10000
+    \clubpenalty=10000
+    \displaywidowpenalty=10000
     \author{Bohdan Liesnikov}
     \orcid{0009-0000-2216-8830}
     \affiliation{
