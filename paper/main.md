@@ -44,7 +44,7 @@ header-includes: |
 
 # Introduction #  {#sec:introduction}
 
-Strongly typed languages allow us to catch certain classes of bugs at compile-time by checking the implementation against the type signature.
+Statically typed languages allow us to catch certain classes of bugs at compile-time by checking the implementation against the type signature.
 When the types are provided by the user they can be viewed as a form of specification, constraining the behaviour of the programs.
 This comes with the benefit of more static guarantees but with an increased toll on the user to supply more precise information about the program.
 Many languages choose to infer types, but another option is to use the information in the types to infer parts of the program.
@@ -64,7 +64,7 @@ In all of these examples, solvers evolved organically over time together with th
 Coq historically struggled with similar issues in the elaborator: for example, Canonical Structures was not properly documented for 15 years
 [@mahboubiCanonicalStructuresWorking2013].
 Agda experimented with features baked into the core of the type system -- like sized types -- which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
-Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015a].
+Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
 
 One common piece of infrastructure needed by these inference algorithms is metavariables, also known as "existential variables" [@thecoqdevelopmentteamCoqProofAssistant2022, chap. 2.2.1], which represents as-of-yet unknown parts of the program.
 Another one is the need to constrain two terms to be equal, known as unification.
@@ -74,7 +74,7 @@ Because of the complexity unification, breaking changes are often discovered onl
 In this paper, we propose a new architecture for an extensible elaborator for dependently typed languages.
 The idea is to provide an API for developers to tap into the elaboration procedure with custom solvers that can manipulate metavariables and constraints placed on them.
 This design separates the 'what' the solvers are doing from the 'when', making the interaction points between different parts of the type-checker explicit.
-As a result, this allows the developer to reason more easily about exceptions and asynchronicity in the type-checker and add new features in a more contained fashion.
+As a result, this allows the developer to reason more easily about exceptions and asynchronicity in the type-checker and add new features in a more isolated fashion.
 Practically, this means that each feature is contained within one module, as opposed to being spread around the codebase.
 
 Contributions:
@@ -88,7 +88,7 @@ Contributions:
 
 Constraints have been an integral part of compilers for strongly typed languages for a while [@oderskyTypeInferenceConstrained1999].
 For example, both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
-In the former case, they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a; @ghcdevelopmentteamGHCUserGuide2022, chap. 6.10.3].
+In the former case, they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a, chap. 6.10.3; @ghcdevelopmentteamGHCUserGuide2022].
 This has proved to be a good design decision for GHC, as is reflected, for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
 
 In the land of dependently typed languages constraints are much less principled.
@@ -253,7 +253,7 @@ For the moment we need to recompile the project to include new plugins, but this
 # Dependently typed calculus and bidirectional typing # {#sec:bidirectional}
 
 In this section, we describe the core of the type system we implement.
-We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and extend it with metavariables in core syntax and implicit arguments in the surface syntax.
+We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and extend it with metavariables in the core syntax and implicit arguments in the surface syntax.
 However, for all other purposes, we leave the core rules intact and therefore, the core calculus too.
 
 ## Basic language and rules ##
@@ -766,7 +766,7 @@ The former would be quite similar to what we saw in the previous section  @sec:c
 The question of actually running the tactics is independent of constraints since it is essentially another type-checking action that we accomodate already for blockers.
 
 Coercive subtyping is of a slightly different nature.
-First, it would rely on a pre-processor the heaviest out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application and potentially around heads of applications and types of abstractions [@tassiBiDirectionalRefinementAlgorithm2012].
+First, it would be the most reliant on a pre-processor out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application and potentially around heads of applications and types of abstractions [@tassiBiDirectionalRefinementAlgorithm2012].
 This incurs not only syntactic noise but also potential performance penalty, which we describe further in Section @sec:limitations.
 The second challenge comes from the fact that unlike the above this feature would be anti-modular in the sense that we need to access several constraints at once, at least read-only.
 Consider the following example:
@@ -846,7 +846,7 @@ Alternatively, such a solver can be implemented within one solver, removing the 
 ## Reliance on a pre-processor ##
 
 This work crucially relies on a pre-processor of some kind, be it macro expansion or some other way to extend the parser with custom desugaring rules.
-In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita[@tassiBiDirectionalRefinementAlgorithm2012, chap. 5] and others [@serranoQuickLookImpredicativity2020; @kovacsElaborationFirstclassImplicit2020].
+In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita[@tassiBiDirectionalRefinementAlgorithm2012, chap. 5] and others [@serranoQuickLookImpredicativity2020a; @kovacsElaborationFirstclassImplicit2020].
 
 ## Eager reduction and performance ##
 
@@ -891,8 +891,9 @@ GHC has a plugin system that allows users to dynamically add custom constraint s
 
 Coq [@thecoqdevelopmentteamCoqProofAssistant2022], being one of the most popular proof assistants, invested a lot effort into user-facing features: work on tactics like a new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), the introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
 However, the implementation is quite hard to extend.
-One either has to modify the source code, which is mostly limited to the core development team, as seen from the [graph](https://github.com/coq/coq/graphs/contributors).
-Or one has to use Coq plugin system, which is rather challenging, and in the end, the complexity of it gave rise to TemplateCoq [@malechaExtensibleProofEngineering2014].
+One either has to modify the source code, which is mostly limited to the core development team, as seen from the [contributors graph](https://github.com/coq/coq/graphs/contributors).
+Or one has to use Coq plugin system, which is rather challenging, and in the end, the complexity of it gave rise to TemplateCoq/MetaCoq [@malechaExtensibleProofEngineering2014  ; @sozeauMetaCoqProject2020].
+And while MetaCoq did open the possibility for some plugins [@nielsenFormalisingDecentralisedExchanges2023; @liesnikovGeneratingInductionPrinciples2020; @forsterCertifyingExtractionTime2019] to be written in a simpler way, their capabilities are still limited.
 
 Agda has historically experimented a lot with different extensions for both the type system and the elaborator, even though the design doesn't accommodate these changes naturally.
 Instead, each of these extensions is spread throughout many different parts of the code base[^agda-features-link].
@@ -904,7 +905,7 @@ In a way, this is an imperative view on extensibility.
 Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflectionExtending2016] appeared as a programming language first and proof-assistant second and does not provide either a plugin or hook system at all, except for reflection.
 Idris also focuses on tactics as the main mechanism for elaboration.
 
-Turstile+ by @changDependentTypeSystems2019 uses macros to elaborate surface syntax to a smaller core.
+Turnstile+ by @changDependentTypeSystems2019 uses macros to elaborate surface syntax to a smaller core.
 Macros allow them to modularly implement individual features, however, exactly as for Lean, combining different features which happens a lot in practice requires the user to re-define all macros from scratch.
 
 TypOS [@allaisTypOSOperatingSystem2022a; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
