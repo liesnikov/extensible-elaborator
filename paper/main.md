@@ -273,7 +273,7 @@ data Term =
   -- application a b
   | App Term Arg
   -- function type (x : A) -> B
-  | Pi Epsilon Type (Bind TName Type)
+  | Pi Type (Bind TName Type)
   -- Sigma-type { x : A | B }
   | Sigma Term (Bind TName Term)
   | Prod Term Term
@@ -389,6 +389,7 @@ For the base language, it suffices to have the following.
                           Syntax.Type
                           Syntax.MetaVarId
   ```
+  Where `MetaVarId` refers to the anti-unification variable (Section @sec:solvers-implementation).
 * A constraint that ensures that a metavariable is resolved eventually:
   ```haskell
   -- this terms has to be filled in
@@ -477,7 +478,7 @@ piEqInjectivityHandler constr = do
 ```
 
 The handler is simply checking that both sides of the equality are indeed Pi-types, and in case either of the matches fails, it will be reported and the solver will not be fired.
-The `match` function above comes from the open datatype of constraints, checking if `constr` can be projected from `cs` to `EqualityConstraint`.
+The `match` function above comes from the open datatype of constraints [@swierstraDataTypesCarte2008, sec. 5], checking if `constr` can be projected from `cs` to `EqualityConstraint`.
 
 Now let us take a look at the solver.
 
