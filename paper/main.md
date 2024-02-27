@@ -216,11 +216,12 @@ Agda's constraint solver[^agda-constraint-solver-source] relies on the type-chec
 Our idea for a new design is to shift focus more towards the constraints themselves:
 
 1. We give a stable API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
-This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or communication between actors [@allaisTypOSOperatingSystem2022a].
+This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, the view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or the communication between actors [@allaisTypOSOperatingSystem2022a].
 
 2. To make the language more modular, we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
 
-In the examples in this paper, we follow the bidirectional style of type-checking, but in practice, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
+In the examples in this paper, we follow the bidirectional style of type-checking.
+In practice, however, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
 From a birds-eye view, the architecture looks as depicted in Figure \ref{architecture-figure}.
 The type-checking begins by initializing the state and doing the syntax traversal.
@@ -228,7 +229,7 @@ The traversal raises the constraints, and for the moment, the constraints are si
 As soon as we finish the traversal of some block (one declaration in our case), the solver dispatcher is called.
 It goes over the set of constraints, and for each active constraint calls different plugins for them to try to solve it.
 Each plugin, whether user-supplied (`Plugin A`) or provided by us (`unification`) consists of a handler and a solver.
-The handler determines if the plugin can potentially solve a constraint, if so the dispatcher runs the corresponding solver.
+The handler determines if the plugin can potentially solve a constraint, if so, the dispatcher runs the corresponding solver.
 All components have some read access to the state, including handlers which might for example verify that there are no extra constraints on the metavariable.
 For the write access: syntax traversal writes new metavariables to the state and elaborated definitions; the solver dispatcher writes updated meta-information; solvers write solutions to the metavariables and can raise new constraints.
 
@@ -241,7 +242,8 @@ For the write access: syntax traversal writes new metavariables to the state and
   \label{architecture-figure}
 \end{figure*}
 
-For the moment we need to recompile the project to include new plugins, but this is not necessary and a system that dynamically loads plugins is possible to implement in a way that is similar to GHC Plugins[^plugins-link] or Accelerate [^acclerate-link] [@mcdonellTypesafeRuntimeCode2015].
+For the moment we need to recompile the project to include new plugins.
+This is not necessity and a system that dynamically loads plugins is possible to implement in a way that is similar to GHC Plugins[^plugins-link] or Accelerate [^acclerate-link] [@mcdonellTypesafeRuntimeCode2015].
 
 [^agda-constraint-solver-source]:
 [src/full/Agda/TypeChecking/Constraints.hs#L247-L298](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Constraints.hs#L247-L298)
@@ -254,7 +256,7 @@ For the moment we need to recompile the project to include new plugins, but this
 
 In this section, we describe the core of the type system we implement.
 We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and extend it with metavariables in the core syntax and implicit arguments in the surface syntax.
-However, for all other purposes, we leave the core rules intact and therefore, the core calculus too.
+However, for all other purposes, we leave the core rules intact and, therefore, the core calculus too.
 
 ## Basic language and rules ##
 
@@ -292,7 +294,7 @@ data Term =
 ```
 
 Equality is not defined as a regular inductive type but is instead built-in.
-The user has access to the type and term constructor, but not the ability to pattern-matching on it.
+The user has access to the type and term constructor, but not the ability to pattern-match on it.
 Instead, the language provides a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different inductive type constructors and produces an element of any type.
 
 On top of the above, the language includes indexed inductive datatypes and case-constructs for their elimination.
@@ -306,7 +308,7 @@ In this paper we implement metavariables in the contextual style, as described b
 
 We implement the core of the elaborator as a bidirectional syntax traversal, raising a constraint every time we need to assert something about the type.
 
-This includes the expected use of unification constraints, like in case we enter checking mode while the term should be inferred:
+This includes the expected use of unification constraints, for example the case when we enter checking mode while the term should be inferred:
 
 ```haskell
 checkType tm ty = do
@@ -332,7 +334,7 @@ checkType (S.Lam lam) ty = do
 ```
 
 At certain points, we have to raise a constraint which has an associated continuation.
-Like for checking the type of a data constructor -- the part of the program that comes as an argument to `constrainTConAndFreeze` will be suspended (or "blocked") until the meta is solved with something of the shape `TCon _ _`.
+Like for checking the type of a data constructor: the part of the program that comes as an argument to `constrainTConAndFreeze` will be suspended (or "blocked") until the meta is solved with something of the shape `TCon _ _`.
 
 ```haskell
 checkType t@(S.DCon c args) ty = do
@@ -345,7 +347,7 @@ checkType t@(S.DCon c args) ty = do
       _ -> error "impossible"
 ```
 
-We add one more case to the elaborator for implicit arguments.
+We add one more case to the elaborator for implicit arguments, as will be described in more detail in Section @sec:case-implicits.
 
 ```haskell
 checkType (Implicit) ty = do
@@ -354,10 +356,9 @@ checkType (Implicit) ty = do
   return m
 ```
 
-This is used for implicit arguments as will be described in more detail in Section @sec:case-implicits.
-The syntax traversal does not need to know anything at all about the implicits.
+As we see, the syntax traversal does not need to know anything at all about the implicits.
 The only thing we require is that the elaboration of the argument is called with the type information available.
-This corresponds to how in bidirectional typing function application is done in the inference mode but the arguments are processed in checking mode.
+This corresponds to how, in bidirectional typing, function application is done in the inference mode but the arguments are processed in checking mode.
 
 ``` haskell
 inferType (App t1 t2) = do
@@ -376,7 +377,7 @@ In this section, we will go over the constraint datatype needed for the base lan
 
 ## Base constraints
 
-The datatype of constraints is open which means the user can write a plugin to extend it.
+The datatype of constraints is open, which means the user can write a plugin to extend it.
 However, we offer a few constraints out of the box to be able to type-check the base language.
 
 For the base language, it suffices to have the following.
@@ -405,7 +406,7 @@ For the base language, it suffices to have the following.
        TypeConstructorConstraint Syntax.Type
   ```
 
-The type-checker raises them supplying the information necessary, but agnostic of how they will be solved.
+The type-checker raises them supplying the information necessary, but it is agnostic of how they will be solved.
 
 ## Interface of the solvers ## {#sec:solvers-interface}
 
@@ -428,16 +429,19 @@ syntactic  = Plugin { solver  = syntacticSolver
 
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- a function that decides whether a given solver has to fire.[^code-note]
 In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
-Then we define the solver itself, which in this case does not have to do anything except `return True` to indicate that the constraint is solved, as it only fires once it has been cleared to do so by the handler and the equality has already been checked.
+Then we define the solver itself.
+In this case does not have to do anything except `return True` to indicate that the constraint is solved.
+This is because it shall only fire once it has been cleared to do so by the handler and the equality has already been checked.
 Finally, we register the solver by declaring it using a plugin interface.
 
 The reason for this separation between a decision procedure and the execution of the solver is to ensure separation between potentially slow, effectful solving and fast read-only decision-making in the handler.
-We opt for this division since handlers will be run on many constraints that do not fit, therefore any write effects would have to be rolled back, while solvers should be fired only in cases when we can reasonably hope that the constraint will be solved and the effects will not have to be rolled back.
+We opt for this division since handlers will be run on many constraints that do not fit them, therefore any write effects would have to be rolled back.
+Solvers, on the other hand, should only fire in cases when we can reasonably hope that the constraint will be solved and the effects will not have to be rolled back.
 
-Similarly, we can define `leftMetaSolver` and `rightMetaSolver` which only work on problems where only one of the sides is a metavariable.
+Similarly, we can define `leftMetaSolver` and `rightMetaSolver`, which only work on problems where only one of the sides is a metavariable.
 Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
 
-Since the constraints they match on overlap we can provide priority preferences, using the `pre` and `suc` fields of the plugin interface.
+Since the constraints they match on overlap, we can provide priority preferences, using the `pre` and `suc` fields of the plugin interface.
 They are used to indicate whether the currently defined plugin should run before or after, respectively, which other plugins.
 At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
 
@@ -509,7 +513,7 @@ The seemingly spurious metavariable `ma` returned from this call serves as an an
 Every time an equality constraint is created we return a metavariable that stands for the unified term.
 This metavariable is used for unification problems that are created in the extended contexts -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
 We do this to tackle the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- as we operate according to the "well-typed modulo constraints" principle, essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context. [^anti-unification-note]
-Finally, `ma` has to be applied to a closure which will keep track of the delayed substitution.
+Finally, `ma` has to be applied to a closure, which will keep track of the delayed substitution.
 
 Then we can constrain the co-domains of Pi-types in an extended context.
 In case one of the solvers the constraints created in the extended context might need to know the exact shape of `ma`, we can block on the metavariable later, freezing the rest of the problem until it is instantiated.
@@ -603,9 +607,9 @@ This is where we make use of the fact that the constraints datatype is open.
 We saw before in Section @sec:implicit-arguments that conventional designs require separate handling of different kinds of implicit variables.
 To simplify the design we would like to uniformly dispatch a search for the solution, which would be handled by a fitting solver.
 We can achieve this by communicating the kind of the meta through its type in the second argument of `FillInTheMeta m ty`.
-The solvers then match on the shape of the type of the metavariable and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument, waiting for regular unification to solve the metavariable for regular implicit arguments.
+The solvers then match on the shape of the type of the metavariable and handle it in a case-specific manner: instance-search for type classes, tactic execution for a tactic argument, or waiting for regular unification to solve the metavariable for regular implicit arguments.
 
-In this section, we will describe the implementation details of regular implicit arguments (Section @sec:case-implicits), the implementation of type classes added on top of the implicit arguments (Section @sec:case-typeclasses).
+In this section, we will describe the implementation details of regular implicit arguments (Section @sec:case-implicits) and the implementation of type classes added on top of the implicit arguments (Section @sec:case-typeclasses).
 And finally (Section @sec:coercion-tactics) we sketch the implementation of coercive subtyping and tactic arguments.
 
 ## Implicit arguments ## {#sec:case-implicits}
@@ -615,7 +619,7 @@ In fact, we require not one but two modifications that lie outside of the solver
 The first one is, indeed, the addition of a separate case in the syntax traversal, however contained.
 The second one lies in the purely syntactical part of the compiler.
 We need the pre-processor to insert the placeholder terms in the surface syntax.
-Particularly, we need to desugar declarations of functions in the following way:
+Particularly, we need to desugar declarations of functions in the following way.
 
 For any declaration of a function `f` with some implicit argument `a`:
 ```
@@ -664,7 +668,7 @@ fillInImplicitPlugin = Plugin {
 
 
 Additionally, there is a design choice to be made in the implementation of `Implicit A` and `deImp`.
-One option is to turn them into a constructor and a projection of a record type, the other is to make them computationally equivalent to `id`.
+One option is to turn them into a constructor and a projection of a record type, and the other is to make them computationally equivalent to `id`.
 In the former case, we need to manually unwrap them both in the pre-processor and during the constraint-solving, but since the head symbol is distinct we can guarantee that other solvers will not match on it, unless explicitly instructed to.
 In the latter case, one has to be cautious of the order in which the solvers are activated, particularly in the case of different search procedures, should they be implemented.
 However, in the example above it does not make a difference.
