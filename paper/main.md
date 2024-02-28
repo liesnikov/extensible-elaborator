@@ -78,9 +78,11 @@ Finally, we summarize the issues in Section
 [./src/full/Agda/TypeChecking/Monad/Base.hs#L1157-L1191](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Monad/Base.hs#L1157-L1191). Here and henceforth we shorten the links in footnotes to paths in the repository, the source code can be found at [github.com/agda/agda/blob/v2.6.4/](https://github.com/agda/agda/blob/v2.6.4/).
 
 
-[^idris-constraints-datatype]: [./src/Core/UnifyState.idr](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) at [github.com/idris-lang/Idris2/blob/e673d0](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85)
+[^idris-constraints-datatype]: [./src/Core/UnifyState.idr](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85/src/Core/UnifyState.idr) at  
+[github.com/idris-lang/Idris2/blob/e673d0](https://github.com/idris-lang/Idris2/blob/e673d05a67b82591131e35ccd50fc234fb9aed85)
 
-[^lean-constraints-datatype]: [./src/Lean/Meta/Match/Basic.lean#L161](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) at [github.com/leanprover/lean4/blob/0a031f](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/)
+[^lean-constraints-datatype]: [./src/Lean/Meta/Match/Basic.lean#L161](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/src/Lean/Meta/Match/Basic.lean#L161) at  
+[github.com/leanprover/lean4/blob/0a031f](https://github.com/leanprover/lean4/blob/0a031fc9bbb43c274bb400f121b13711e803f56c/)
 
 ## Unification in the presence of meta-variables ## {#sec:conversion_checking}
 
@@ -89,7 +91,7 @@ The complexity stems from the desire of compiler writers to implement the most p
 Some of this complexity is unavoidable, but we can manage it better by splitting up the unifier into smaller modular parts.
 In practice, this means that one does not have to fit together an always-growing unifier but can instead write different cases separately.
 
-An example from Agda's elaborator is type-driven unification, which is spread between about a hundred functions and 2200 lines of code[^conversion-check-agda].
+An example from Agda's elaborator is the unifier, which is spread between about a hundred functions and 2200 lines of code[^conversion-check-agda].
 Each of the functions implements part of the "business logic" of the unifier.
 But all of them contain a lot of code that deals with bookkeeping related to metavariables and constraints:
 
@@ -135,14 +137,15 @@ For Haskell, which is not a dependently typed language yet, but does have a cons
 [^lean-unifier]: [./src/Lean/Meta/ExprDefEq.lean](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)
 [^coq-unifier]: [./pretyping/evarconv.mli](https://github.com/coq/coq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/pretyping/evarconv.mli) at [github.com/coq/coq/blob/b35c06](github.com/coq/coq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/)
 [^ghc-unifier]:
-[./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs) at [gitlab.haskell.org/ghc/ghc/-/blob/b81cd709d](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840)
+[./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs) at  
+[gitlab.haskell.org/ghc/ghc/-/blob/b81cd709d](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840)
 
 ## Type-checking function application in the presence of implicit arguments ## {#sec:implicit-arguments}
 
 During the type-checking of function application, there may be different kinds of implicit arguments to infer, for example, instance arguments, or tactic arguments.
 If we start from a simple case of type-checking an application of a function symbol to regular arguments, every next extension needs to be handled as a special case.
 
-Take Agda -- when checking an application of implicit arguments[^agda-insertion-of-implicit-arguments] we already have to carry the information on how the argument will be resolved and then create a specific kind of metavariable[^agda-specific-kinds-of-metavariables] [@norellPracticalProgrammingLanguage2007, chap. 3] for each of those cases.
+Take Agda -- when checking an application of a function with implicit arguments[^agda-insertion-of-implicit-arguments] we already have to carry the information on how the arguments will be resolved (e.g. through instance search) and then create a specific kind of metavariable[^agda-specific-kinds-of-metavariables] [@norellPracticalProgrammingLanguage2007, chap. 3] for each of those cases.
 
 For handling `auto` variables, Idris 2 [@theidristeamIdrisTutorial2021, chap. 13.1] has to essentially inline the search procedure through a chain of elaboration function calls (`checkApp` to `checkAppWith` to `checkAppWith'`) to `makeAutoImplicit`[^idris2-makeautoimplicit-source].
 This can accommodate interfaces (or type classes), but one can imagine that if a different kind of implicit was added, like tactic arguments or Canonical Structures, we would have to inline the search again, requiring a non-trivial modification to the elaboration mechanism.
@@ -292,10 +295,11 @@ Any time we want to decompose the type provided in checking mode we pose a const
 checkType (S.Lam lam) ty = do
   mtyA <- createMetaTerm
   mtx <- createUnknownVar
+  -- extend the context with a new variable signature
   mtyB <- extendCtx (I.TypeSig (I.Sig mtx mtyA))
                     (createMetaTerm)
-  let mbnd = bind mtx mtyB
-  let metaPi = I.Pi mtyA mbnd
+  -- metaPi is the shape we want ty to be in
+  let metaPi = I.Pi mtyA (bind mtx mtyB)
 
   constrainEquality ty metaPi I.Type
   -- rest of the traversal can now use mtyA and mbnd
@@ -316,7 +320,7 @@ checkType t@(S.DCon c args) ty = do
       _ -> error "impossible"
 ```
 
-We add one more case to the elaborator for implicit arguments, as will be described in more detail in Section @sec:case-implicits.
+We add one more case to the elaborator for implicit arguments of any kind, as will be described in more detail in Section @sec:case-implicits.
 
 ```haskell
 checkType (Implicit) ty = do
@@ -355,37 +359,41 @@ For the base language, it suffices to have the following.
   ``` haskell
   -- two terms given should be equal
   data EqualityConstraint e =
-       EqualityConstraint Syntax.Term Syntax.Term
-                          Syntax.Type
-                          Syntax.MetaVarId
+       EqualityConstraint Term Term Type MetaVarId
   ```
   Where `MetaVarId` refers to the anti-unification variable (Section @sec:solvers-implementation).
 * A constraint that ensures that a metavariable is resolved eventually:
   ```haskell
   -- this terms has to be filled in
   data FillInTheTerm e =
-       FillInTheTerm Syntax.Term
-                     (Maybe Syntax.Type)
+       FillInTheTerm Term (Maybe Type)
   ```
 * Lastly, a constraint which ensures that a term is a type constructor:
   ```haskell
   -- the term passed to the constraint
   -- should be a type constructor
   data TypeConstructorConstraint e =
-       TypeConstructorConstraint Syntax.Type
+       TypeConstructorConstraint Type
   ```
 
 The type-checker raises them supplying the information necessary, but it is agnostic of how they will be solved.
+In all of the examples above parameter `e` is spurious and comes from the technique used to encode open datatypes.
+In principle it can be used to encode recursive occurrences of the constraints.
 
 ## Interface of the solvers ## {#sec:solvers-interface}
 
 On the solver side, we provide a suite[^list-solvers] of solvers for unification that handle different cases of the problem.
 
-
 ``` haskell
 -- solves syntactically equal terms
 syntacticHandler :: (EqualityConstraint :<: c)
                  => HandlerType c
+syntacticHandler constr = do
+  let eqcm = match @EqualityConstraint constr
+  case eqcm of
+    -- check for alpha-equality
+    Just (EqualityConstraint t1 t2 ty _) -> return $ aeq t1 t2
+    Nothing -> return False
 syntacticSolver :: (EqualityConstraint :<: c)
                 => SolverType Bool
 syntactic :: Plugin
@@ -403,7 +411,7 @@ In this case does not have to do anything except `return True` to indicate that 
 This is because it shall only fire once it has been cleared to do so by the handler and the equality has already been checked.
 Finally, we register the solver by declaring it using a plugin interface.
 
-The reason for this separation between a decision procedure and the execution of the solver is to ensure separation between potentially slow, effectful solving and fast read-only decision-making in the handler.
+The reason for this separation between a decision procedure and the execution of the solver is to ensure separation between a potentially slow, effectful solving and fast read-only decision-making in the handler.
 We opt for this division since handlers will be run on many constraints that do not fit them, therefore any write effects would have to be rolled back.
 Solvers, on the other hand, should only fire in cases when we can reasonably hope that the constraint will be solved and the effects will not have to be rolled back.
 
@@ -428,7 +436,7 @@ rightMetaPlugin =
 
 [^list-solvers]: In the prototype we implement a subset of all unification rules, here are they listed: identityPlugin, propagateMetasEqPlugin, reduceLeftPlugin, reduceRightPlugin, leftMetaPlugin, rightMetaPlugin, typeConstructorPlugin, typeConstructorWithMetasPlugin, piEqInjectivityPlugin, tyEqInjectivityPlugin, consInjectivityPlugin, typeInjectivityPlugin, unificationStartMarker, unificationEndMarker
 
-[^code-note]: The code shown above and in the rest of the paper is close to the actual implementation, but has been simplified for presentation purposes.
+[^code-note]: The code shown above and in the rest of the paper is close to the actual implementation, but has been simplified for presentation purposes. `HandlerType a` and `SolverType a` both morally correspond to `(ConstraintF cs) -> SolverMonad Bool`.
 
 
 ## Implementation of the solvers and unification details ## {#sec:solvers-implementation}
@@ -454,6 +462,7 @@ The handler is simply checking that both sides of the equality are indeed Pi-typ
 The `match` function above comes from the open datatype of constraints [@swierstraDataTypesCarte2008, sec. 5], checking if `constr` can be projected from `cs` to `EqualityConstraint`.
 
 Now let us take a look at the solver.
+The rule we are implementing here states that two $\Pi$-types can only be equal if both the types of the domains (`a1`, `a2`) and the co-domains (`b1`, `b2`) are equal.
 
 ```haskell
 piEqInjectivitySolver :: (EqualityConstraint :<: cs)
@@ -463,10 +472,10 @@ piEqInjectivitySolver constr = do
                                 (I.Pi a2 b2) _ m)) =
         match @EqualityConstraint constr
   ma <- constrainEquality a1 a2 I.Type
-  (x, tyB1) <- Unbound.unbind b1
-  (y, tyB2') <- Unbound.unbind b2
-  let tyB2 = Unbound.subst y (I.Var x) tyB2'
-      mat = I.identityClosure ma
+  (x, tyB1) <- unbind b1
+  (y, tyB2') <- unbind b2
+  let tyB2 = subst y (I.Var x) tyB2'
+      mat  = I.identityClosure ma
   mb <- extendCtx (I.TypeSig (I.Sig x e1 mat)) $
                   constrainEquality tyB1 tyB2 I.Type
   let mbt = bind x $ I.identityClosure mb
@@ -474,7 +483,7 @@ piEqInjectivitySolver constr = do
   return True
 ```
 
-Following pi-forall, we use the unbound-generics[^unbound-link] library to deal with the names and binders.
+Following pi-forall, we use the unbound-generics[^unbound-link] library to deal with the names and binders (`unbind`, `subst` functions).
 As it will fire after a handler returns `True`, we can assume the pattern-matches will not fail.
 
 First, we constrain the equality of the domain of the Pi-type: `a1` and `a2`.
@@ -505,7 +514,7 @@ leftMetaSolver constr = do
     Right t2 ->
       case (invertClosureOn c1 (freeVarList t2)) of
         Just s -> do
-          let st2 = Unbound.substs s t2
+          let st2 = substs s t2
           -- apply the subsitution
           solveMeta m1 st2
           -- instantiate the anti-unification variable
