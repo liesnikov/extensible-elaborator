@@ -59,12 +59,6 @@ in stdenv.mkDerivation ({
   nativeBuildInputs =
     [ pandoc pandoc-secnos texlive-combined ] ++  extraBuildInputs;
 
-  patches = [./tex.diff];
-
-  prePatch = ''
-    make main.tex
-  '';
-
   buildPhase = ''
     make main.pdf
   '';
