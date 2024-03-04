@@ -173,7 +173,7 @@ Another example of this can be adding rules of associativity and commutativity t
 It required 2000 lines of code[^holten-source].
 We would like to make changes such as this more feasible.
 
-[^holten-source]: [github.com/LHolten/agda-commassoc/tree/defenitional-commutativity](https://github.com/LHolten/agda-commassoc/tree/defenitional-commutativity)
+[^holten-source]: [github.com/LHolten/agda-commassoc/tree/defenitional-commutativity](https://github.com/LHolten/agda-commassoc/tree/defenitional-commutativity) (sic)
 
 ## Summary of the issues ## {#sec:summary-of-the-issues}
 
@@ -195,16 +195,6 @@ This is not dissimilar to the idea of mapping object-language unification variab
 In the examples in this paper, we follow the bidirectional style of type-checking.
 In practice, however, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
-From a birds-eye view, the architecture looks as depicted in Figure \ref{architecture-figure}.
-The type-checking begins by initializing the state and doing the syntax traversal.
-The traversal raises the constraints, and for the moment, the constraints are simply stored.
-As soon as we finish the traversal of some block (one declaration in our case), the solver dispatcher is called.
-It goes over the set of constraints, and for each active constraint calls different plugins for them to try to solve it.
-Each plugin, whether user-supplied (`Plugin A`) or provided by us (`unification`) consists of a handler and a solver.
-The handler determines if the plugin can potentially solve a constraint, if so, the dispatcher runs the corresponding solver.
-All components have some read access to the state, including handlers which might for example verify that there are no extra constraints on the metavariable.
-For the write access: syntax traversal writes new metavariables to the state and elaborated definitions; the solver dispatcher writes updated meta-information; solvers write solutions to the metavariables and can raise new constraints.
-
 \begin{figure*}
   \center
 
@@ -213,6 +203,21 @@ For the write access: syntax traversal writes new metavariables to the state and
   \caption{Architecture diagram}
   \label{architecture-figure}
 \end{figure*}
+
+
+From a birds-eye view, the architecture looks as depicted in Figure \ref{architecture-figure}.
+What we would like to stress here is the separation of plugins/unification into independent pieces and a clear boundary between solver dispatcher and the rest of the system.
+
+Now let us walk through the diagram.
+The type-checking begins by initializing the state and doing the syntax traversal.
+The traversal raises the constraints, and for the moment, the constraints are simply stored.
+As soon as we finish the traversal of a block (one declaration in our case), the solver dispatcher is called.
+It goes over the set of constraints, and for each active constraint calls different plugins for them to try to solve it.
+Each plugin, whether user-supplied (`Plugin A`) or provided by us (`unification`) consists of a handler and a solver.
+The handler determines if the plugin can potentially solve a constraint, if so, the dispatcher runs the corresponding solver.
+
+All components have some read access to the state, including handlers which might for example verify that there are no extra constraints on the metavariable.
+For the write access: syntax traversal writes new metavariables to the state and elaborated definitions; the solver dispatcher writes updated meta-information; solvers write solutions to the metavariables and can raise new constraints.
 
 For the moment we need to recompile the project to include new plugins.
 This is not necessity and a system that dynamically loads plugins is possible to implement in a way that is similar to GHC Plugins[^plugins-link] or Accelerate [^acclerate-link] [@mcdonellTypesafeRuntimeCode2015].
@@ -392,8 +397,10 @@ syntacticHandler constr = do
   let eqcm = match @EqualityConstraint constr
   case eqcm of
     -- check for alpha-equality
-    Just (EqualityConstraint t1 t2 ty _) -> return $ aeq t1 t2
-    Nothing -> return False
+    Just (EqualityConstraint t1 t2 ty _) ->
+      return $ aeq t1 t2
+    Nothing ->
+      return False
 syntacticSolver :: (EqualityConstraint :<: c)
                 => SolverType Bool
 syntactic :: Plugin
@@ -415,7 +422,7 @@ The reason for this separation between a decision procedure and the execution of
 We opt for this division since handlers will be run on many constraints that do not fit them, therefore any write effects would have to be rolled back.
 Solvers, on the other hand, should only fire in cases when we can reasonably hope that the constraint will be solved and the effects will not have to be rolled back.
 
-Similarly, we can define `leftMetaSolver` and `rightMetaSolver`, which only work on problems where only one of the sides is a metavariable.
+In a similar fashion, we can define `leftMetaSolver` and `rightMetaSolver`, which only work on problems where only one of the sides is a metavariable.
 Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
 
 Since the constraints they match on overlap, we can provide priority preferences, using the `pre` and `suc` fields of the plugin interface.
@@ -636,11 +643,11 @@ fillInImplicitHandler constr = do
 fillInImplicitPlugin :: (FillInImplicit :<: cs)
                      => Plugin cs
 fillInImplicitPlugin = Plugin {
-  solver = fillInImplicitSolver,
-  handler = fillInImplicitHandler,
-  symbol = fillInImplicitSymbol,
-  suc = [],
-  pre = []
+    solver = fillInImplicitSolver,
+  , handler = fillInImplicitHandler
+  , symbol = fillInImplicitSymbol
+  , suc = []
+  , pre = []
   }
 ```
 
@@ -650,6 +657,11 @@ One option is to turn them into a constructor and a projection of a record type,
 In the former case, we need to manually unwrap them both in the pre-processor and during the constraint-solving, but since the head symbol is distinct we can guarantee that other solvers will not match on it, unless explicitly instructed to.
 In the latter case, one has to be cautious of the order in which the solvers are activated, particularly in the case of different search procedures, should they be implemented.
 However, in the example above it does not make a difference.
+
+Lastly, such a system can only support functions with "obvious" implicit arguments -- i.e. those that appear in syntactically.
+This is due to the fact that insertion of metavariables happens before any type information is available.
+For this reason Haskell-like impredicativity [@serranoQuickLookImpredicativity2020a] in type inference cannot be supported.
+If one wishes to support it a system like the one implemented by @kovacsElaborationFirstclassImplicit2020 seems more natural in our setting.
 
 ## Type classes ## {#sec:case-typeclasses}
 
@@ -751,7 +763,7 @@ The question of actually running the tactics is independent of constraints since
 Coercive subtyping is of a slightly different nature.
 First, it would be the most reliant on a pre-processor out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application and potentially around heads of applications and types of abstractions [@tassiBiDirectionalRefinementAlgorithm2012].
 This incurs not only syntactic noise but also potential performance penalty, which we describe further in Section @sec:limitations.
-The second challenge comes from the fact that unlike the above this feature would be anti-modular in the sense that we need to access several constraints at once, at least read-only.
+The second challenge comes from the fact that unlike the above this feature would be anti-modular in the sense that in order to side-step the conflict between inference and coercions the solver would need to look at the whole graph of subytping constraints at the same time.
 Consider the following example:
 
 ```
@@ -896,7 +908,6 @@ First, they are building a domain-specific language for building type-checkers, 
 Second, their approach settles features of the language as they are decided by the main developer and does not concern future changes and evolution.
 Finally, we try to stay close to the designs of existing dependently typed languages and offer flexibility in terms of choices, while TypOS requires the developer to start from scratch and restricts certain capabilities like overlapping rules for unification.
 
-
 [^ghc-note]: [gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes](https://gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes)
 
 [^agda-features-link]: some recent examples: [github.com/agda/agda/pull/6385](https://github.com/agda/agda/pull/6385),
@@ -911,6 +922,7 @@ We see three main prospects for future work:
   Alternatively, we can introduce metavariables for names and implement data constructor disambiguation more simply, since as of now we simply block on expected type to disambiguate.
 * **Rendering more elements of the elaborator as constraints** -- currently, components such as occurs-checker and reduction are simple functions.
   Including them in the constraint machinery would make the implementation more uniform and allow users to extend them.
+* **Error messages** weren't the focus of present work, but it'd be interesting to see if we can incorporate ideas by @heerenScriptingTypeInference2003 into our system.
 * **Potential optimisations**.
   Currently, our system has a lot of room for potential optimisations.
   The first step would be to allow handlers to pass some information to their respective solvers, which requires introduction of an existential type in the plugin.
