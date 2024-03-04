@@ -13,46 +13,48 @@ numbersections: true
 
 # Introduction #  {#sec:introduction}
 
-Statically typed languages allow us to catch certain classes of bugs at compile-time by checking the implementation against the type signature.
+Statically typed languages allow us to catch large classes of bugs at compile-time by checking the implementation against its type signature.
 When the types are provided by the user they can be viewed as a form of specification, constraining the behaviour of the programs.
 This comes with the benefit of more static guarantees but with an increased toll on the user to supply more precise information about the program.
-Many languages choose to infer types, but another option is to use the information in the types to infer parts of the program.
+Many languages choose to infer types as a result, but another option is to use the information in the types to infer parts of the program.
 This idea was aptly worded by Conor McBride as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005, chap. 2.1]
 Some examples of this include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
 
 In dependently typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2023a], Coq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
-This allows us to infer even larger parts of the program from the type in the process of elaboration.
+This allows us to infer even larger parts of the program from the type.
 Examples include implicit arguments in Agda, implicit coercions in Coq, and tactic arguments in Idris.
-The inference or "solving" can be not only automatic but also interactive or partially automatic.
-Holes in Agda and proof obligations in Coq are examples of interactive, while Canonical Structures [@mahboubiCanonicalStructuresWorking2013] in Coq and program-synthesis for holes in Haskell [@koppelSearchingEntangledProgram2022] are partially automatic.
-All these mechanisms use different algorithms and have various degrees of extensibility.
-These are typically not very well isolated from each other and can therefore interact in unexpected ways, for example in the case between implicits and instance search [@agdausersPerformanceRegressionIssue2018].
-This puts a toll on the language developer to modulate the interactions and for the user to understand these features.
+The inference of parts of the program must not be fully automatic but can also be interactive or partially automatic.
+Examples of interactive inference are holes in Agda and proof obligations in Coq, while canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq and program-synthesis for holes in Haskell [@koppelSearchingEntangledProgram2022] are partially automatic.
 
-In all of these examples, solvers evolved organically over time together with the language.
-Coq historically struggled with similar issues in the elaborator: for example, Canonical Structures was not properly documented for 15 years
+Each of these different inference features has its own algoritms and extension points, 
+which often evolved organically over time together with the language, 
+and are often not well isolated from each other.
+For example, implicit arguments and instance search in Agda can interact in unexpected ways 
+[@agdausersPerformanceRegressionIssue2018].
+Sized types in Agda [@abelExtensionMartinLofType2016] also come with their own solver that often interacts poorly with the regular solver for implicit arguments.
+In Coq, Canonical Structures are notorious for producing unpredictable results yet they were not properly documented for 15 years
 [@mahboubiCanonicalStructuresWorking2013].
-Agda experimented with features baked into the core of the type system -- like sized types -- which brought their own solver infrastructure [@abelExtensionMartinLofType2016].
 Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
+All these bespoke algorithms and their interactions put a toll on the language developer to specify and implement them and on the user to understand them.
 
-One common piece of infrastructure needed by these inference algorithms is metavariables, also known as "existential variables" [@thecoqdevelopmentteamCoqProofAssistant2022, chap. 2.2.1], which represents as-of-yet unknown parts of the program.
-Another one is the need to constrain two terms to be equal, known as unification.
-Metavariables and unification are heavily used throughout the compiler, for inference of implicit arguments and general type-checking, making the compiler sensitive towards changes in unification algorithms.
-Because of the complexity unification, breaking changes are often discovered only when run against a large existing project on CI, like `cubical` or `stdlib` for Agda or `unimath` for Coq.
+The part of the implementation of a dependently typed language that is responsible for type checking user-facing surface syntax and inferring the parts that have been left implicit is known as the *elaborator*.
+One common piece of infrastructure used by elaborators are metavariables, also known as "existential variables" [@thecoqdevelopmentteamCoqProofAssistant2022, chap. 2.2.1], which represent as-of-yet unknown parts of the program.
+Together with metavariables also comes unification, i.e. the ability to constrain two terms to be equal.
+Metavariables and unification are heavily used throughout many elaborators for infering implicit arguments and for general type-checking, making them sensitive towards changes in unification algorithms.
+Because of the complexity unification, breaking changes are often discovered only when run against a large existing project on CI, such as the Standard and Cubical libraries for Agda or the `unimath` library for Coq.
 
-This indicates a need for more modularity and a clearer mental model for control-flow.
-Practically, we would like to make sure that each feature is contained within one module, as opposed to being spread around the codebase.
-In this paper, We propose a new architecture for an extensible elaborator for dependently typed languages towards this end.
-The idea is to provide an API for developers to tap into the elaboration procedure with custom solvers that can manipulate metavariables and constraints placed on them.
-This allows developers to put all solvers related to one feature in one place fulfilling our wish.
-The design also separates the 'what' the solvers are doing from the 'when', making the interaction points between different parts of the type-checker explicit.
-As a result, this allows the developer to reason more easily about exceptions and asynchronicity in the type-checker and add new features in a more isolated fashion.
+To move towards a cleaner and more maintainable model for implementing elaborators, we propose a new architecture for an extensible elaborator for dependently typed languages.
+Practically, our architecture allows each feature to be contained within one module, as opposed to being spread around the codebase.
+The implementations of the individual features interact with the rest of the elaborator through an API for providing new kinds of constraints and new solvers for these new constraints as well as existing ones.
+This allows developers to put all solvers related to one feature in one place, thus fulfilling our goal of modularity.
+The design also separates the 'what' the solvers are doing from the 'when', making the separation between different phases of elaboration explicit.
+As a result, this allows the developer to reason more easily about exceptions and asynchronicity during elaboration and add new features in a more isolated fashion.
 
-Contributions:
+#### Contributions.
 
-* We propose a new design blueprint for implementing a language that is extensible with new constraints and new solvers. It supports type classes (Section @sec:case-typeclasses), implicit arguments (Section @sec:case-implicits), implicit coercions and tactic arguments (Section @sec:coercion-tactics).
-* We propose a view on metavariables as communication channels for the solvers, drawing parallels with asynchronous programming primitives (Section @sec:solvers-implementation).
-* We decompose the usual components of a type-checker, like the unifier in Agda, into a suite of solvers which can be extended and interleaved by user-provided plugins (Section @sec:constraints_and_unification).
+* We propose a new design blueprint for implementing an elaborator for a dependently typed language that is extensible with new constraints and new solvers. It supports type classes (Section @sec:case-typeclasses), implicit arguments (Section @sec:case-implicits), implicit coercions, and tactic arguments (Section @sec:coercion-tactics).
+* We propose a new view on metavariables as communication channels for the solvers, drawing parallels with asynchronous programming primitives (Section @sec:solvers-implementation).
+* We decompose the usual components of an elaborator, like the unifier in Agda, into a suite of solvers which can be extended and interleaved by user-provided plugins (Section @sec:constraints_and_unification).
 * Following the blueprint, we present a prototype implementation of a dependently typed language available at [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator).
 
 # Unification, constraint-based elaboration and design challenges # {#sec:unification_constraint_based_elaboration_and_design_challanges}
