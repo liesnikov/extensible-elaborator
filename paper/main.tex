@@ -104,13 +104,12 @@
   \country{The Netherlands}}
 \email{J.G.H.Cockx@tudelft.nl}
 \begin{abstract}
-  There has been a lot of work to find the right theoretical foundations for the core type theory underlying proof assistants and dependently-typed programming languages like Coq, Agda, Lean or Idris.
-  However, their implementations have been studied to a smaller extent.
-  Together with the additions of features that aren't reflected in theoretical studies, this means that developers have to make a lot of adaptations in the implementations, making the codebases that are hard to maintain.
-  In this work we consider some common problems in the implementations of the type-checkers and propose a new architecture that allows for a more modular development and containment of features to one module each.
-  We focus focus on a part of the type-checker called the elaborator that transforms user-friendly surface syntax with a lot of features into a small well-behaved core theory.
-  Our core idea is to use an open datatype for constraints and a plugin system for solvers.
-  We showcase the design on a proof-of-concept implementation.
+  Proof assistants and dependently typed languages such as Coq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
+  While much research has been done on their theoretical foundations, their actual implementations have been studied to a much lesser extent.
+  As a result, features that are not considered part of the theoretical foundations - such as implicit arguments and type classes - have their own bespoke implementation for each language, making for code bases that are hard to understand and maintain.
+  To address some of the common problems in the implementations of dependently typed languages, we present a modular architecture for implementing the transformation from user-friendly surface syntax into a small and well-behaved core language, also known as elaboration.
+  Our architecture is made modular through the use of an open type of constraints and a plugin system for solvers that work on these constraints, which means that each new feature is contained in its own module.
+  We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, implicit coercions, and instance arguments.
 \end{abstract}
 \ifLuaTeX
   \usepackage{selnolig}  % disable illegal ligatures
