@@ -40,11 +40,13 @@ Another one is the need to constrain two terms to be equal, known as unification
 Metavariables and unification are heavily used throughout the compiler, for inference of implicit arguments and general type-checking, making the compiler sensitive towards changes in unification algorithms.
 Because of the complexity unification, breaking changes are often discovered only when run against a large existing project on CI, like `cubical` or `stdlib` for Agda or `unimath` for Coq.
 
-In this paper, we propose a new architecture for an extensible elaborator for dependently typed languages.
+This indicates a need for more modularity and a clearer mental model for control-flow.
+Practically, we would like to make sure that each feature is contained within one module, as opposed to being spread around the codebase.
+In this paper, We propose a new architecture for an extensible elaborator for dependently typed languages towards this end.
 The idea is to provide an API for developers to tap into the elaboration procedure with custom solvers that can manipulate metavariables and constraints placed on them.
-This design separates the 'what' the solvers are doing from the 'when', making the interaction points between different parts of the type-checker explicit.
+This allows developers to put all solvers related to one feature in one place fulfilling our wish.
+The design also separates the 'what' the solvers are doing from the 'when', making the interaction points between different parts of the type-checker explicit.
 As a result, this allows the developer to reason more easily about exceptions and asynchronicity in the type-checker and add new features in a more isolated fashion.
-Practically, this means that each feature is contained within one module, as opposed to being spread around the codebase.
 
 Contributions:
 
