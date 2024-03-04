@@ -59,24 +59,19 @@ As a result, this allows the developer to reason more easily about exceptions an
 
 # Unification, constraint-based elaboration and design challenges # {#sec:unification_constraint_based_elaboration_and_design_challanges}
 
-Constraints have been an integral part of compilers for strongly typed languages for a while [@oderskyTypeInferenceConstrained1999].
-For example, both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
+Constraints have been an integral part of compilers for strongly typed languages for a long time [@oderskyTypeInferenceConstrained1999].
+For example, the implementations of both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
 In the former case, they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a, chap. 6.10.3; @ghcdevelopmentteamGHCUserGuide2022].
-This has proved to be a good design decision for GHC, as is reflected, for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
+This has proven to be a good design decision for GHC, as is reflected for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
 
-In the land of dependently typed languages constraints are much less principled.
-Agda has a family of constraints[^agda-constraints-datatype] that grew organically, currently counting 19 constructors.
-Idris technically has constraints[^idris-constraints-datatype], with the only two constructors being equality constraints for two terms and for two sequences of terms.
-The same[^lean-constraints-datatype] holds for Lean.
+In the land of dependently typed languages constraints are often used in a much less principled manner.
+Agda has a family of constraints that grew organically, currently counting 19 constructors.[^agda-constraints-datatype]
+Idris technically has constraints, with the only two constructors being equality constraints for two terms and for two sequences of terms.[^idris-constraints-datatype]
+The same holds for Lean.[^lean-constraints-datatype]
 These languages either use constraints in a restricted, single-use-case manner -- namely, for unification -- or in an ad-hoc manner.
 
-In this section, we will demonstrate why a more methodical approach to constraints will result in more robust elaborators across the board.
-We go over three typical challenges that come up when building a compiler for a dependently typed language and the way they are usually solved.
-We cover unification of the base language and the complexity of managing the state of the unifier in Section @sec:conversion_checking.
-Then we take a look at different kinds of implicit arguments and their implementation in Section @sec:implicit-arguments.
-We briefly touch on the problem of extending the unifier in Section @sec:extending-unification.
-Finally, we summarize the issues in Section
-@sec:summary-of-the-issues.
+In this section, we demonstrate why a more methodical approach to constraints results in more robust elaborators across the board.
+In particular, we go over three typical challenges that come up when building a compiler for a dependently typed language and the way they are usually solved: the complexity of managing a global state of metavariables for unification (Section @sec:conversion_checking), dealing with different kinds of implicit arguments and their solvers (@sec:implicit-arguments), and user-facing extension points to unification (Section @sec:extending-unification).
 
 [^agda-constraints-datatype]:
 [./src/full/Agda/TypeChecking/Monad/Base.hs#L1157-L1191](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Monad/Base.hs#L1157-L1191). Here and henceforth we shorten the links in footnotes to paths in the repository, the source code can be found at [github.com/agda/agda/blob/v2.6.4/](https://github.com/agda/agda/blob/v2.6.4/).
@@ -90,27 +85,27 @@ Finally, we summarize the issues in Section
 
 ## Unification in the presence of meta-variables ## {#sec:conversion_checking}
 
-As mentioned in the introduction, in the process of type-checking we use unification to compare terms, which is notoriously hard to implement.
-The complexity stems from the desire of compiler writers to implement the most powerful unifier while being limited by the fact that higher-order unification is undecidable in general.
+As mentioned in the introduction, in the process of type-checking we use unification to compare terms.
+The unification algorithms are often one of the most complex parts of a type checker, which stems from the desire of compiler writers to implement the most powerful unifier while being limited by the fact that higher-order unification is undecidable in general.
 Some of this complexity is unavoidable, but we can manage it better by splitting up the unifier into smaller modular parts.
-In practice, this means that one does not have to fit together an always-growing unifier but can instead write different cases separately.
+In practice, this means that one does not have to fit together an always-growing unifier but can instead write different unification rules separately.
 
-An example from Agda's elaborator is the unifier, which is spread between about a hundred functions and 2200 lines of code[^conversion-check-agda].
-Each of the functions implements part of the "business logic" of the unifier.
-But all of them contain a lot of code that deals with bookkeeping related to metavariables and constraints:
+As a real-world example, Agda's unification algorithm for solving implicit arguments is spread between about a hundred functions and 2200 lines of code[^conversion-check-agda].
+Each of the functions implements part of the "business logic" of the unifier,
+but a large part of their implementation is just there to deal with bookkeeping related to metavariables and constraints:
 
-1. They have to throw and catch exceptions, driving the control flow of the unification.
-2. They have to compute blockers that determine when a postponed constraint is retried.
-3. They have to deal with cases where either or both of the sides equation or its type are either metavariables or terms whose evaluation is blocked on some metavariables.
+1. They throw and catch exceptions, driving the control flow of the unification.
+2. They compute blockers that determine when a postponed constraint should be re-tried.
+3. They have special cases for when either or both of the sides equation or its type are metavariables, or for when they are terms whose evaluation is blocked on some metavariables.
 
-Concretely, this code uses functions like `noConstraints` and `dontAssignMetas` which rely on specific behaviour of the constraint solver system.
-Other functions like `abortIfBlocked`, `reduce` and `catchConstraint`/`patternViolation` force the programmer to choose between letting the constraint system handle blockers or doing it manually.
-These things are known to be brittle and pose an increased mental overhead when making changes.
+Concretely, this code uses functions like `noConstraints`, `dontAssignMetas`, `catchConstraint`, and `patternViolation` which rely on specific behaviour of the constraint solver.
+Other functions like `reduceB` and `abortIfBlocked` force the programmer to choose between letting the constraint system handle blockers or doing it manually.
+These things are known to be brittle and pose an increased mental overhead when making changes, with a corresponding risk of introducing new bugs.
 
-The unifier is heavily used throughout the type-checker: either as function calls to `leqType` when type-checking terms and `compareType` when type-checking applications, or as raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions, `ValueCmpOnFace` from `equalTermOnFace` again while checking applications.
+The unifier is called from many places throughout the type-checker: through function calls to `leqType` when type-checking terms and `compareType` when type-checking applications, and through raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions and `ValueCmpOnFace` from `equalTermOnFace` again while checking applications.
 At the same time, it is unintuitive and full of intricacies as indicated by multiple comments[^intricate-comments].
 
-We would like the compiler-writer to separate the concerns of managing constraints and blockers from the actual logic of the comparison function.
+We would like the compiler-writer to be able to separate managing constraints and blockers from the actual logic of the comparison function.
 If we zoom in on the `compareAtom` function, the core can be expressed in about 20 lines[^20lines-compareAtom] of simplified code, stripping out size checks, cumulativity, polarity, and forcing.
 This is precisely what we would like the developer to write.
 
@@ -127,7 +122,7 @@ case (m, n) of
 ```
 
 
-The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large modules that are hard to understand.
+The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large pieces of code that are hard to understand.
 The sizes of modules with unifiers are as follows: Idris (1.5kloc[^idris-unifier]), Lean (1.8kloc[^lean-unifier]), Coq (1.8kloc[^coq-unifier]).
 For Haskell, which is not a dependently typed language yet, but does have a constraints system [@peytonjonesTypeInferenceConstraint2019], this number is at 2kloc[^ghc-unifier].
 
