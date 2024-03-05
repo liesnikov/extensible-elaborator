@@ -227,7 +227,9 @@ This is not necessity and a system that dynamically loads plugins is possible to
 
 # Dependently typed calculus and bidirectional typing # {#sec:bidirectional}
 
-In this section, we describe the core of the type system we implement.
+Now that we have described our architecture, we will demonstrate its design through a practical implementation.
+First, in this section, we describe the core of the type system we implement. 
+The following sections will then describe the constraints and their solvers.
 We take pi-forall [@weirichImplementingDependentTypes2022] as a basis for the system and extend it with metavariables in the core syntax and implicit arguments in the surface syntax.
 However, for all other purposes, we leave the core rules intact and, therefore, the core calculus too.
 
@@ -268,20 +270,20 @@ data Term =
 
 Equality is not defined as a regular inductive type but is instead built-in.
 The user has access to the type and term constructor, but not the ability to pattern-match on it.
-Instead, the language provides a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different inductive type constructors and produces an element of any type.
+Instead, the language provides a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different constructors of an inductive type and produces an element of any type.
 
 On top of the above, the language includes indexed inductive datatypes and case-constructs for their elimination.
 Indexed inductive datatypes are encoded as parameterised datatypes with an equality argument constraining the index.
 
 As for metavariables `MetaVar`: as mentioned in the introduction, they are placeholders in the syntax tree (AST) that are produced in the process of elaboration.
 Metavariables do not appear in the surface syntax as they are not created by the user.
-In this paper we implement metavariables in the contextual style, as described by @abelHigherOrderDynamicPattern2011, therefore they have to carry around a closure of type `MetaClosure`.
+In this paper we implement metavariables in the contextual style, as described by @abelHigherOrderDynamicPattern2011, therefore they are paired with a closure of type `MetaClosure`.
 
 ## Syntax traversal ##
 
 We implement the core of the elaborator as a bidirectional syntax traversal, raising a constraint every time we need to assert something about the type.
 
-This includes the expected use of unification constraints, for example the case when we enter checking mode while the term should be inferred:
+This includes the expected use of unification constraints, for example the case when we enter checking mode with a term whose type can be inferred:
 
 ```haskell
 checkType tm ty = do
@@ -290,7 +292,7 @@ checkType tm ty = do
   return etm
 ```
 
-Any time we want to decompose the type provided in checking mode we pose a constraint that guarantees the type being in a specific shape:
+It also includes any time we want to decompose the type provided in checking mode we pose a constraint that guarantees the type being in a specific shape:
 
 ```haskell
 checkType (S.Lam lam) ty = do
@@ -308,7 +310,7 @@ checkType (S.Lam lam) ty = do
 ```
 
 At certain points, we have to raise a constraint which has an associated continuation.
-Like for checking the type of a data constructor: the part of the program that comes as an argument to `constrainTConAndFreeze` will be suspended (or "blocked") until the meta is solved with something of the shape `TCon _ _`.
+For example, when checking the type of a data constructor, the part of the program that comes as an argument to `constrainTConAndFreeze` will be suspended (or "blocked") until the meta is solved with something of the shape `TCon _ _`.
 
 ```haskell
 checkType t@(S.DCon c args) ty = do
@@ -330,7 +332,7 @@ checkType (Implicit) ty = do
   return m
 ```
 
-As we see, the syntax traversal does not need to know anything at all about the implicits.
+As we see, the syntax traversal does not need to know anything about how implicit arguments are resolved.
 The only thing we require is that the elaboration of the argument is called with the type information available.
 This corresponds to how, in bidirectional typing, function application is done in the inference mode but the arguments are processed in checking mode.
 
