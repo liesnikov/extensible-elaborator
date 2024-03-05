@@ -355,8 +355,7 @@ In this section, we will go over the constraint datatype needed for the base lan
 
 The datatype of constraints is open, which means the user can write a plugin to extend it.
 However, we offer a few constraints out of the box to be able to type-check the base language.
-
-For the base language, it suffices to have the following.
+For the base language, it suffices to have the following:
 
 * A constraint that enforces equality of two terms of a given type
   ``` haskell
@@ -364,7 +363,7 @@ For the base language, it suffices to have the following.
   data EqualityConstraint e =
        EqualityConstraint Term Term Type MetaVarId
   ```
-  Where `MetaVarId` refers to the anti-unification variable (Section @sec:solvers-implementation).
+  Here, `MetaVarId` refers to the anti-unification variable (see Section @sec:solvers-implementation).
 * A constraint that ensures that a metavariable is resolved eventually:
   ```haskell
   -- this terms has to be filled in
@@ -379,13 +378,14 @@ For the base language, it suffices to have the following.
        TypeConstructorConstraint Type
   ```
 
-The type-checker raises them supplying the information necessary, but it is agnostic of how they will be solved.
-In all of the examples above parameter `e` is spurious and comes from the technique used to encode open datatypes.
-In principle it can be used to encode recursive occurrences of the constraints.
+The type-checker raises constraints and supplies the necessary information in the process, but it is agnostic of how they will be solved.
+In all of the examples above, the parameter `e` is spurious.
+The need for this parameter comes from the technique we use to encode open datatypes, and other constraint types can use it to encode recursive occurrences of the constraints.
 
 ## Interface of the solvers ## {#sec:solvers-interface}
 
 On the solver side, we provide a suite[^list-solvers] of solvers for unification that handle different cases of the problem.
+The most basic plugin is the `syntactic` plugin which resolves equality constraints where both sides are syntactically equal.
 
 ``` haskell
 -- solves syntactically equal terms
@@ -412,18 +412,18 @@ syntactic  = Plugin { solver  = syntacticSolver
 We first define the class of constraints that will be handled by the solver via providing a "handler" -- a function that decides whether a given solver has to fire.[^code-note]
 In this case, this amounts to checking that the constraint given is indeed an `EqualityConstraint` and that the two terms given to it are syntactically equal.
 Then we define the solver itself.
-In this case does not have to do anything except `return True` to indicate that the constraint is solved.
+In this case does not have to do anything except return `True` to indicate that the constraint is solved.
 This is because it shall only fire once it has been cleared to do so by the handler and the equality has already been checked.
 Finally, we register the solver by declaring it using a plugin interface.
 
-The reason for this separation between a decision procedure and the execution of the solver is to ensure separation between a potentially slow, effectful solving and fast read-only decision-making in the handler.
+The reason for the separation between a decision procedure and the execution of the solver is to ensure separation between a potentially slow, effectful solving and fast read-only decision-making in the handler.
 We opt for this division since handlers will be run on many constraints that do not fit them, therefore any write effects would have to be rolled back.
 Solvers, on the other hand, should only fire in cases when we can reasonably hope that the constraint will be solved and the effects will not have to be rolled back.
 
-In a similar fashion, we can define `leftMetaSolver` and `rightMetaSolver`, which only work on problems where only one of the sides is a metavariable.
+In a similar fashion, we define `leftMetaSolver` and `rightMetaSolver`, which only work on problems where one of the sides is a metavariable.
 Here the job of the solver is not as trivial -- it has to check that the type of the other side indeed matches the needed one and then register the instantiation of the metavariable in the state.
 
-Since the constraints they match on overlap, we can provide priority preferences, using the `pre` and `suc` fields of the plugin interface.
+Since a single constraint can often be handled by multiple solvers, we can provide priority preferences, using the `pre` and `suc` fields of the plugin interface.
 They are used to indicate whether the currently defined plugin should run before or after, respectively, which other plugins.
 At the time of running the compiler, these preferences are loaded into a big pre-order relation for all the plugins, which is then linearised and used to guide the solving procedure.
 
@@ -439,7 +439,7 @@ rightMetaPlugin =
          }
 ```
 
-[^list-solvers]: In the prototype we implement a subset of all unification rules, here are they listed: identityPlugin, propagateMetasEqPlugin, reduceLeftPlugin, reduceRightPlugin, leftMetaPlugin, rightMetaPlugin, typeConstructorPlugin, typeConstructorWithMetasPlugin, piEqInjectivityPlugin, tyEqInjectivityPlugin, consInjectivityPlugin, typeInjectivityPlugin, unificationStartMarker, unificationEndMarker
+[^list-solvers]: In the prototype we implement a subset of all unification rules, specifically: `identityPlugin`, `propagateMetasEqPlugin`, `reduceLeftPlugin`, `reduceRightPlugin`, `leftMetaPlugin`, `rightMetaPlugin`, `typeConstructorPlugin`, `typeConstructorWithMetasPlugin`, `piEqInjectivityPlugin`, `tyEqInjectivityPlugin`, `consInjectivityPlugin`, `typeInjectivityPlugin`, `unificationStartMarker`, and `unificationEndMarker`.
 
 [^code-note]: The code shown above and in the rest of the paper is close to the actual implementation, but has been simplified for presentation purposes. `HandlerType a` and `SolverType a` both morally correspond to `(ConstraintF cs) -> SolverMonad Bool`.
 
@@ -495,14 +495,14 @@ First, we constrain the equality of the domain of the Pi-type: `a1` and `a2`.
 The seemingly spurious metavariable `ma` returned from this call serves as an anti-unification [@pfenningUnificationAntiunificationCalculus1991] communication channel.
 Every time an equality constraint is created we return a metavariable that stands for the unified term.
 This metavariable is used for unification problems that are created in the extended contexts -- in this case second argument of the Pi-type, but also when solving equalities concerning two data constructors.
-We do this to tackle the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- as we operate according to the "well-typed modulo constraints" principle, essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context. [^anti-unification-note]
+We do this to tackle the "spine problem" [@victorlopezjuanPracticalHeterogeneousUnification2021, sec. 1.4] -- as we operate according to the "well-typed modulo constraints" principle, essentially providing a placeholder that is guaranteed to preserve well-typedness in the extended context.[^anti-unification-note]
 Finally, `ma` has to be applied to a closure, which will keep track of the delayed substitution.
 
 Then we can constrain the co-domains of Pi-types in an extended context.
 In case one of the solvers the constraints created in the extended context might need to know the exact shape of `ma`, we can block on the metavariable later, freezing the rest of the problem until it is instantiated.
 
 As for the actual unification steps, we implement them in a similar fashion to the simplification procedure.
-Take a look at the following example, when only the left-hand side of the constraint is an unsolved meta:
+For example, `leftMetaSolver` below handles the case where the left-hand side of an equality constraint is an unsolved meta:
 
 ```haskell
 leftMetaSolver :: (EqualityConstraint :<: cs)
@@ -531,7 +531,7 @@ leftMetaSolver constr = do
 Once the occurs-check returns and if it was successful, we apply the inverted closure to the right-hand side of the equality.
 
 By splitting up the rules into individual, simple solvers we can compartmentalise the complexity of the unifier, making sure that each rule is as decoupled from the others as possible.
-This does not deteriorate the properties of the system but does not help to guarantee them either.
+This does not deteriorate the properties of the system but does not help to enforce them either.
 We talk more about the challenge of proving correctness in Section @sec:limitations.
 
 [^unbound-link]: [hackage.haskell.org/package/unbound-generics-0.4.3](https://hackage.haskell.org/package/unbound-generics-0.4.3)
