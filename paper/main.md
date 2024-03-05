@@ -183,10 +183,10 @@ For example, Agda's constraint solver[^agda-constraint-solver-source] relies on 
 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 
-1. We give a stable API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
-This is not dissimilar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, the view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or the communication between actors [@allaisTypOSOperatingSystem2022a].
+1. We give an API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
+This is similar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, the view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or the communication between actors [@allaisTypOSOperatingSystem2022a].
 
-2. To make the language more modular, we make constraints an extensible data type in the style of @swierstraDataTypesCarte2008 and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
+2. To make the language more modular, we make constraints an extensible data type in the style of data types à la carte [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
 
 In the examples in this paper, we follow the bidirectional style of type-checking.
 In practice, however, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
@@ -202,13 +202,13 @@ In practice, however, the design decisions are agnostic of the underlying system
 
 
 From a birds-eye view, the architecture looks as depicted in Figure \ref{architecture-figure}.
-What we would like to stress here is the separation of plugins/unification into independent pieces and a clear boundary between solver dispatcher and the rest of the system.
+Its main characteristics are the separation of plugins/unification into independent pieces and a clear boundary between solver dispatcher and the rest of the system.
 
-Now let us walk through the diagram.
-The type-checking begins by initializing the state and doing the syntax traversal.
+Let us walk through each part of the architecture in more detail.
+The type-checking begins by initializing the state and traversing the syntax.
 The traversal raises the constraints, and for the moment, the constraints are simply stored.
 As soon as we finish the traversal of a block (one declaration in our case), the solver dispatcher is called.
-It goes over the set of constraints, and for each active constraint calls different plugins for them to try to solve it.
+It traverses the set of constraints, and tries to solve each active constraint by making calls to different plugins.
 Each plugin, whether user-supplied (`Plugin A`) or provided by us (`unification`) consists of a handler and a solver.
 The handler determines if the plugin can potentially solve a constraint, if so, the dispatcher runs the corresponding solver.
 
@@ -216,7 +216,7 @@ All components have some read access to the state, including handlers which migh
 For the write access: syntax traversal writes new metavariables to the state and elaborated definitions; the solver dispatcher writes updated meta-information; solvers write solutions to the metavariables and can raise new constraints.
 
 For the moment we need to recompile the project to include new plugins.
-This is not necessity and a system that dynamically loads plugins is possible to implement in a way that is similar to GHC Plugins[^plugins-link] or Accelerate [^acclerate-link] [@mcdonellTypesafeRuntimeCode2015].
+This is not necessity and a system that dynamically loads plugins is possible to implement in a way that is similar to GHC Plugins[^plugins-link] or Accelerate[^acclerate-link] [@mcdonellTypesafeRuntimeCode2015].
 
 [^agda-constraint-solver-source]:
 [src/full/Agda/TypeChecking/Constraints.hs#L247-L298](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Constraints.hs#L247-L298)
