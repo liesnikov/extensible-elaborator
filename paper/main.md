@@ -600,28 +600,27 @@ And finally (Section @sec:coercion-tactics) we sketch the implementation of coer
 As we mentioned, the rule for `Implicit` had to be added to the syntax traversal part of the elaborator.
 In fact, we require not one but two modifications that lie outside of the solvers-constraints part of the system.
 The first one is, indeed, the addition of a separate case in the syntax traversal, however contained.
-The second one lies in the purely syntactical part of the compiler.
-We need the pre-processor to insert the placeholder terms in the surface syntax.
-Particularly, we need to desugar declarations of functions in the following way.
+The second one lies in the purely syntactical part of the compiler:
+we need the pre-processor to insert the placeholder terms in the surface syntax.
 
-For any declaration of a function `f` with some implicit argument `a`:
+In particular, we need to desugar declarations of functions in the following way.
+For any declaration of a function with some implicit arguments, we wrap the type of each implicit argument with an `Implicit`:
 ```
 def f : {A : Type} -> {a : A} -> B a -> C
 ```
-
-Which should desugar to the following:
+becomes
 ```
 def f : (A : Implicit Type)
      -> (a : Implicit (deImp A))
      -> (b : B (deImp a)) -> C
 ```
 
-Then, for each function call `f b1` we need to insert the corresponding number of implicit arguments, transforming it to `f _ _ b1`.
+Then, for each function call we insert the corresponding number of implicit arguments, for example transforming `f b1` to `f _ _ b1`.
 
-For simple implicits this suffices -- as soon as we have the placeholders in the surface syntax we create the constraints in the `Implicit` case of the syntax traversal.
-The only solver that is needed in this case is a trivial one that checks that the metavariable has been instantiated indeed.
-This is because a regular implicit should be instantiated by the unifier at some point later.
-This constraint simply serves as a guarantee that all implicits have been instantiated.
+For basic usage of implicit arguments this suffices -- as soon as we have the placeholders in the surface syntax we create the constraints in the `Implicit` case of the syntax traversal.
+The only solver that is needed in this case is a trivial one that checks that the metavariable has been instantiated in the end.
+The actual solving in this case is done by the unifier itself, and
+the constraint simply serves as a way to guarantee that all implicits are eventually instantiated.
 
 ```haskell
 fillInImplicitSymbol :: PluginId
@@ -649,32 +648,29 @@ fillInImplicitPlugin = Plugin {
   }
 ```
 
-
-Additionally, there is a design choice to be made in the implementation of `Implicit A` and `deImp`.
+There is a design choice to be made in the implementation of `Implicit A` and `deImp`.
 One option is to turn them into a constructor and a projection of a record type, and the other is to make them computationally equivalent to `id`.
 In the former case, we need to manually unwrap them both in the pre-processor and during the constraint-solving, but since the head symbol is distinct we can guarantee that other solvers will not match on it, unless explicitly instructed to.
 In the latter case, one has to be cautious of the order in which the solvers are activated, particularly in the case of different search procedures, should they be implemented.
 However, in the example above it does not make a difference.
 
-Lastly, such a system can only support functions with "obvious" implicit arguments -- i.e. those that appear in syntactically.
+A limitation of this scheme is that we can only support functions with "obvious" implicit arguments -- i.e. those that appear syntactically in the declaration of the function.
 This is due to the fact that insertion of metavariables happens before any type information is available.
 For this reason Haskell-like impredicativity [@serranoQuickLookImpredicativity2020a] in type inference cannot be supported.
-If one wishes to support it a system like the one implemented by @kovacsElaborationFirstclassImplicit2020 seems more natural in our setting.
+If a more comprehensive support for implicit arguments is desired, our system could be extended with support for first-class implicits [@kovacsElaborationFirstclassImplicit2020].
 
 ## Type classes ## {#sec:case-typeclasses}
 
-Next, let us implement a plugin for type classes.
-Same as for the implicit arguments in general, we rely here on a pre-processor to transform user-friendly syntax into simple declarations.
-We do not focus on this part, since such a pre-processor does a simple local transformation.
+Next, let us implement a plugin that adds support for type classes by means of instance arguments [@DevrieseP11-1].
+As in the case for implicit arguments in general, we rely again on a pre-processor to insert placeholder arguments of type `Instance a` for each instance argument of type `a`.
 
-Let us now go through an example of the elaboration process for a simple term.
+Let us start by going through an example of the elaboration process for a simple term.
 For type classes we need a few declarations, listed below in Agda-like syntax:
 
 ```
 plus  :  {A : Type} -> {{PlusOperation A}}
      -> (a : A) -> (b : A) -> A
 
--- a semigroup on booleans, addition is OR
 instance BoolPlus : PlusOperation Bool where
   plus = orb
 ```
@@ -687,7 +683,7 @@ m = plus True False
 
 
 1. First, the pre-processor eliminates the implicits and type class arguments.
-   We end with the following declarations:
+   We end up with the following declarations:
    ```
    plus : (impA : Implicit Type)
        -> Instance PlusOperation (deImp impA)
@@ -700,14 +696,14 @@ m = plus True False
    
    m = plus _ _ True False
    ```
-   Declaration `instance BoolPlus` turning into a constructor of `InstanceC` is precisely the part we need the pre-processor to do.
-2. We go into the elaboration of `m` now.
+   Turning the declaration `instance BoolPlus` into a usage of the constructor `InstanceC` is precisely the part we need the pre-processor to do.
+2. Next, we go into the elaboration of `m`.
    The elaborator applies `inferType (App t1 t2)` rule four times and `checkType (Implicit) ty` twice on the two placeholders.
    The output of the elaborator is
    ```
    m = plus ?_1 ?_2 True False
    ```
-   And the state of the elaborator contains four more constraints:
+   The state of the elaborator now contains four constraints:
    ```
    C1: FillInTheTerm ?_1 (Implicit Type)
    C2: FillInTheTerm ?_2 (InstanceT PlusOperation
@@ -716,8 +712,8 @@ m = plus True False
    C4: EqualityConstraint (deImp ?_1) Bool Type
    ```
 
-   The first two correspond to implicit arguments.
-   The latter two are unification problems rendered into constraints.
+   The first two correspond to implicit arguments, while
+   the latter two are unification problems rendered into constraints.
 
 3. Now we step into the constraint-solving world.
    First, the unifier solves the latter two constraints, instantiating `?_1` to `Implicit Bool`.
@@ -749,19 +745,18 @@ instanceConcreteSolver constr = do
 ```
 
 
-We conjecture that implementation of Canonical Structures [@mahboubiCanonicalStructuresWorking2013] would be relatively simple in such a system due to the openness of both unification procedure and instance search.
+We conjecture that implementation of canonical structures [@mahboubiCanonicalStructuresWorking2013] would be relatively simple in such a system due to the openness of both unification procedure and instance search.
 
 ## Tactic arguments and coercions  ## {#sec:coercion-tactics}
 
-In a similar fashion to the transformation of the `FillInImplicit` constraints to `InstanceSearch`, we could implement tactic arguments and coercive subtyping.
+In a similar fashion to the transformation of the `FillInImplicit` constraints to `InstanceSearch`, we can implement plugins for tactic arguments and coercive subtyping.
 
-The former would be quite similar to what we saw in the previous section  @sec:case-typeclasses, except we would have to resolve `FillInImplicit` to `RunTactic` constraint or fill in directly.
-The question of actually running the tactics is independent of constraints since it is essentially another type-checking action that we accomodate already for blockers.
+The former would be quite similar to what we saw in the previous section  @sec:case-typeclasses, except we would have to resolve `FillInImplicit` to a `RunTactic` constraint (or run the tactic directly).
+The question of how to actually run the tactics is independent of the constraint machinery, noting that we allow for running arbitrary type-checking actions during solving of constraints.
 
 Coercive subtyping is of a slightly different nature.
-First, it would be the most reliant on a pre-processor out of all of the examples described above, since naively one would insert a (potentially identity) coercion in each argument of the application and potentially around heads of applications and types of abstractions [@tassiBiDirectionalRefinementAlgorithm2012].
-This incurs not only syntactic noise but also potential performance penalty, which we describe further in Section @sec:limitations.
-The second challenge comes from the fact that unlike the above this feature would be anti-modular in the sense that in order to side-step the conflict between inference and coercions the solver would need to look at the whole graph of subytping constraints at the same time.
+First, it would be the most reliant on a pre-processor out of all of the examples described above, since coercions could potentially be inserted around each function argument, and potentially also around heads of applications and types of abstractions [@tassiBiDirectionalRefinementAlgorithm2012].
+However, blindly inserting placeholders for coercions in every position leads to constraints that cannot be resolved locally.
 Consider the following example:
 
 ```
@@ -772,7 +767,7 @@ t : ExpTy
 t = f _ arg
 ```
 
-This declaration would desugar to something like
+This declaration would desugar to
 
 ```
 t = coerce _ (f _ (coerce _ arg))
@@ -786,7 +781,9 @@ C3 : Coercion ?1 ExpTy
 ```
 
 Clearly, we can not solve the first constraint in isolation and need to consider all coercion constraints related to a particular type at the same time.
+Hence this feature would be anti-modular in the sense that in order to side-step the conflict between inference and coercions the solver would need to look at the whole graph of subtyping constraints at the same time.
 While we can accommodate such solvers, due to solvers having write access to the state, it becomes much harder to modulate interactions between different plugins.
+It also comes with a potential performance penalty, which we describe further in Section @sec:limitations.
 
 # Limitations # {#sec:limitations}
 
