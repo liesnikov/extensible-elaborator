@@ -788,24 +788,24 @@ It also comes with a potential performance penalty, which we describe further in
 # Limitations # {#sec:limitations}
 
 While our design offers a lot of flexibility, it does not solve every problem.
-In this section, we describe a few examples of extensions that do not quite fit in this framework and general limitations.
+In this section, we describe a few examples of extensions that do not quite fit in this framework as well as more general limitations.
 
 ## Handling of meta-variables outside of definition sites ##
 
-After we elaborate a definition there can still be unsolved metavariables in it.
+After we elaborate a definition, there can still be unsolved metavariables in it.
 This presents us with a design choice.
-The first option is to freeze the metavariables and instantiate them per-use site, essentially allowing for an expression to have multiple types.
+The first option is to generalize the definition over the metavariables and instantiate them per-use site, essentially considering the metavariables as additional (implicit) arguments to the definition.
 The second option is to leave them up to be solved later, which might make elaboration less predictable since now the use sites can influence whether a particular definition type-checks.
-The third option is to report them as an error and exit immediately.
+The third option is to freeze the metavariables by considering them to be postulates, and report them as an error at the end of type checking.
 
 In particular, the second option allows us to incorporate more involved inference algorithms into the system.
 For example, if we were to implement an erasure inference algorithm as described by @tejiscakDependentlyTypedCalculus2020, we would have to create metavariable annotations (described as "evars" in the paper) that can be instantiated beyond the definition site.
-The downside is that the definitions can change depending on their use and type-checking has to be done effectively for the whole program and not per-definition.
+The downside is that the meaning of a definition can then change depending on where they are used, making the outcome of elaboration depend on the file as a whole rather than the definition itself.
 
 ## The language is only as extensible, as the syntax traversal is ##
 
 Extensibility via constraints allows for a flexible user-specified control flow as soon as we step into the constraints world.
-But the control flow of the syntax traversal for the basic language elaborator is fixed by the basic language.
+However, not all features can be supported purely by adding constraints and solvers.
 For example, consider the following simplified lambda-function type-checking function[^agda-lambda-tc-source] from Agda:
 
 ``` haskell
@@ -817,56 +817,56 @@ checkLambda' cmp b xps typ body target = do
 ```
 
 Here Agda steps away from the bidirectional discipline and infers a (lambda) function if the target type is not fully known.
-If in our design the developer chooses to go only with a pure bidirectional style of type-checking inferred lambda functions would be impossible to emulate.
-
+In order to add such a rule to our implementation, we would have to update syntax traversal to be more flexible in where it allows lambda expressions to appear.
 The solution, in this case, is effectively to replicate what Agda is doing by implementing each type-checking rule in inference mode, essentially factoring out `dontUseTargetType` in Agda's code snippet above.
 
-Similarly, implementing something like commutativity and associativity unifier plugins can require modifications in the core, since we two terms that are equal during elaboration have to equal during core type-checking too.
+Likewise, implementing the commutativity and associativity unifier plugins from @holtenDependentTypeCheckingModulo2023 requires modifications in the core language, since we two terms that are equal during elaboration have to equal during core type-checking too.
 
 [^agda-lambda-tc-source]: [./src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Rules/Term.hs#L430-L518)
 
 ## Lack of backtracking ##
 
 We do not implement any backtracking in the solver dispatcher as it is now.
-This means that every step taken is committing, which can be a limitation in cases where one would like to have backtracking -- for example, Agda's instance arguments search (with `--overlapping-instances` flag) [@theagdateamAgdaUserManual2023a, chap. 3.18], as well as type classes in Lean [@selsamTabledTypeclassResolution2020].
+This means that every step taken is committing to a specific choice to how to solve the constraint, which can be a limitation in cases where one would like to have backtracking -- for example, Agda's instance arguments search (with `--overlapping-instances` flag) [@theagdateamAgdaUserManual2023a, chap. 3.18], as well as type classes in Lean [@selsamTabledTypeclassResolution2020].
 
 Backtracking in principle could be achieved by tracking changes to the state of the elaborator and the production graph for constraints, but such a system would be rather awkward.
-Alternatively, such a solver can be implemented within one solver, removing the extension points, but allowing arbitrary control flow within the algorithm.
+Alternatively, controlled backtracking can be implemented within one solver, removing the extension points, but allowing arbitrary control flow within the algorithm.
 
 ## Reliance on a pre-processor ##
 
 This work crucially relies on a pre-processor of some kind, be it macro expansion or some other way to extend the parser with custom desugaring rules.
-In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita[@tassiBiDirectionalRefinementAlgorithm2012, chap. 5] and others [@serranoQuickLookImpredicativity2020a; @kovacsElaborationFirstclassImplicit2020].
+In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita [@tassiBiDirectionalRefinementAlgorithm2012, chap. 5] and others [@serranoQuickLookImpredicativity2020a; @kovacsElaborationFirstclassImplicit2020].
 
 ## Eager reduction and performance ##
 
-As in the pre-processing step, we would have to insert a fair number of wrappers and un-wrappers for all implicits and even more for coercions, a performance regression would be expected due to a lot of spurious computation steps.
+As the pre-processing step inserts a fair number of wrappers and un-wrappers for all implicits and even more for coercions, we can expect a performance penalty due to larger terms and spurious computation steps.
+In particular, we expect this to be a major concern for coercive subtyping.
 
-We expect this to be a major concern for coercive subtyping.
-As one way to mitigate, we suggest a discipline with constraint solvers latching onto non-reduced types and terms in constraints.
-In that case, we can get around with a trick borrowed from Coq, where the wrappers and unwrappers are identity functions and `coerce f t` computes to `f t`.
+As one possible mitigation, we suggest a discipline where constraint solvers latch on to non-reduced types and terms in constraints.
+With this discipline, we can borrow a trick from the implementation of Coq, where the wrappers and unwrappers are identity functions and `coerce f t` computes to `f t`.
 This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`.
-In fact, we already do this to an extent for a different reason -- since the calculus allows only fully applied type constructors, we have to wrap each type class constructor in a lambda-abstraction for it to appear as an argument to `TypeClassT typeClassName argType`.
+
+In fact, we already use this trick to an extent for a different reason -- since the calculus allows only fully applied type constructors, we have to wrap each type class constructor in a lambda-abstraction for it to appear as an argument to `TypeClassT typeClassName argType`.
 Or, concretely, we have to define and use `PlusOperation' = \A . PlusOperation A` in place of `PlusOperation` in the elaboration example in Section @sec:case-typeclasses.
 
 ## Proving correctness ##
 
 As soon as we allow the users to implement their own solvers, there is little we can say about the correctness of the system as a whole without imposing proof obligations on the plugin writers.
-However, if one is willing to do that we can conjecture solution and type preservation -- Theorems 2 and 3, respectively [@abelHigherOrderDynamicPattern2011] -- assuming that each solver on its own satisfies these properties.
-For termination it is similar -- we can conjecture that if every solver in the system "reduces the weight" of the unification problem, in terms of Theorem 1 by @abelHigherOrderDynamicPattern2011, we can hope for termination guarantees.
 This is simply a consequence of the fact that we do not invent a new unification algorithm, but rather provide means of easier implementation for it.
+We conjecture that our system satisfies the solution and type preservation properties -- Theorems 2 and 3 from @abelHigherOrderDynamicPattern2011, respectively -- assuming that each solver on its own satisfies these properties.
+For termination the situation is similar -- we conjecture that if every solver in the system "reduces the weight" of the unification problem, in terms of Theorem 1 by @abelHigherOrderDynamicPattern2011, we can guarantee termination of the solving process as a whole.
 
 # Related work # {#sec:related_work}
 
 We are certainly not the first ones to try to tackle the extensibility of a language implementation.
 Dependently typed language implementations usually consist of at least four parts:
-parser, elaborator, core type-checker, and proper backend.
-The backend part is currently irrelevant to our interests, since for a language to be specified usually means for specification of the core, anything that happens after the core does not extend the language, but rather tries to preserve its semantics in some form.
+parser, elaborator, core type-checker, and code generation backend.
+The code generation part is currently irrelevant to our interests, since for a language to be specified usually means for specification of the core, anything that happens after the core does not extend the language, but rather tries to preserve its semantics in some form.
 Therefore we're left with three parts: parser, elaborator, and core type-checker.
 
 We see parser or syntax extensibility as a necessary part of an extensible language.
 This problem has been studied extensively in the past and has a multitude of existing solutions.
-Macros are one of them and are utilised heavily in various forms in almost all established languages [@thecoqdevelopmentteamCoqProofAssistant2022; @theagdateamAgdaUserManual2023a; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
+Macros are one of them and are used heavily in various forms in many established languages [@thecoqdevelopmentteamCoqProofAssistant2022; @theagdateamAgdaUserManual2023a; @ullrichNotationsHygienicMacro2020] and can be powerful enough to build a whole language around [@changDependentTypeSystems2019].
 
 Core extensibility, on the other hand, appears to be a problem with too many degrees of freedom.
 Andromeda [@bauerDesignImplementationAndromeda2018; @bauerEqualityCheckingGeneral2020] made an attempt at extensible definitional equality but is quite far from a usable dependently typed language.
@@ -875,17 +875,17 @@ In general, modifications of the core rules will result in fundamental changes i
 
 This leaves us with the question of the extensibility of an elaborator.
 We will make a division here between syntax traversals, constraint solving and all other features.
-The syntax traversal part of the elaborator is relatively stable and commonly implemented following a bidirectional discipline to some extent [@norellPracticalProgrammingLanguage2007; @tassiBiDirectionalRefinementAlgorithm2012; @ferreiraBidirectionalElaborationDependently2014], so there seems little reason to make it extensible.
+The syntax traversal part of the elaborator is relatively stable and commonly implemented following a (roughly) bidirectional discipline[@norellPracticalProgrammingLanguage2007; @tassiBiDirectionalRefinementAlgorithm2012; @ferreiraBidirectionalElaborationDependently2014], so there seems little reason to make it extensible.
 
 GHC has a plugin system that allows users to dynamically add custom constraint solvers, but the type of constraints itself is not extensible[^ghc-note] [@peytonjonesTypeInferenceConstraint2019; @vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
 
 Coq [@thecoqdevelopmentteamCoqProofAssistant2022], being one of the most popular proof assistants, invested a lot effort into user-facing features: work on tactics like a new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), the introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
 However, the implementation is quite hard to extend.
-One either has to modify the source code, which is mostly limited to the core development team, as seen from the [contributors graph](https://github.com/coq/coq/graphs/contributors).
-Or one has to use Coq plugin system, which is rather challenging, and in the end, the complexity of it gave rise to TemplateCoq/MetaCoq [@malechaExtensibleProofEngineering2014  ; @sozeauMetaCoqProject2020].
-And while MetaCoq did open the possibility for some plugins [@nielsenFormalisingDecentralisedExchanges2023; @liesnikovGeneratingInductionPrinciples2020; @forsterCertifyingExtractionTime2019] to be written in a simpler way, their capabilities are still limited.
+One either has to modify the source code, which is mostly limited to the core development team, as seen from the [contributors graph](https://github.com/coq/coq/graphs/contributors),
+or one has to use Coq plugin system, which is rather challenging, and in the end, the complexity of it gave rise to TemplateCoq/MetaCoq [@malechaExtensibleProofEngineering2014  ; @sozeauMetaCoqProject2020].
+While MetaCoq did open the possibility for some plugins [@nielsenFormalisingDecentralisedExchanges2023; @liesnikovGeneratingInductionPrinciples2020; @forsterCertifyingExtractionTime2019] to be written in a simpler way, their capabilities are still limited.
 
-Agda has historically experimented a lot with different extensions for both the type system and the elaborator, even though the design doesn't accommodate these changes naturally.
+Agda has historically experimented a lot with different extensions to both the type system and the elaborator, even though the design does not accommodate these changes naturally.
 Instead, each of these extensions is spread throughout many different parts of the code base[^agda-features-link].
 
 Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020].
@@ -896,10 +896,10 @@ Idris [@bradyIdrisGeneralpurposeDependently2013; @christiansenElaboratorReflecti
 Idris also focuses on tactics as the main mechanism for elaboration.
 
 Turnstile+ by @changDependentTypeSystems2019 uses macros to elaborate surface syntax to a smaller core.
-Macros allow them to modularly implement individual features, however, exactly as for Lean, combining different features which happens a lot in practice requires the user to re-define all macros from scratch.
+Macros allow them to modularly implement individual features, however combining different features requires the user to re-define all macros from scratch. This is the same problem as the one we mentioned for Lean.
 
 TypOS [@allaisTypOSOperatingSystem2022a; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
-First, they are building a domain-specific language for building type-checkers, while our design is language-agnostic, as long as it can model extensible datatypes in some capacity.
+First, it is a domain-specific language for building type-checkers, while our design is language-agnostic, as long as the host language can model extensible datatypes in some capacity.
 Second, their approach settles features of the language as they are decided by the main developer and does not concern future changes and evolution.
 Finally, we try to stay close to the designs of existing dependently typed languages and offer flexibility in terms of choices, while TypOS requires the developer to start from scratch and restricts certain capabilities like overlapping rules for unification.
 
@@ -914,18 +914,18 @@ We see three main prospects for future work:
 
 * **Exploration of different kinds of metavariables.**
   Currently, we implement metavariables only for terms, while for some applications such as erasure [@tejiscakDependentlyTypedCalculus2020] or irrelevance inference, it would be beneficial to have metavariables representing erasure and relevance annotations.
-  Alternatively, we can introduce metavariables for names and implement data constructor disambiguation more simply, since as of now we simply block on expected type to disambiguate.
-* **Rendering more elements of the elaborator as constraints** -- currently, components such as occurs-checker and reduction are simple functions.
+  Additionally, we can introduce metavariables for names and implement data constructor disambiguation more simply, which would remove the current need to block on the expected type of overloaded constructors.
+* **Rendering more elements of the elaborator as constraints.** Currently, components such as the occurs checking and reduction are simple function calls.
   Including them in the constraint machinery would make the implementation more uniform and allow users to extend them.
-* **Error messages** weren't the focus of present work, but it'd be interesting to see if we can incorporate ideas by @heerenScriptingTypeInference2003 into our system.
+* **Error messages** are not the focus of present work, but it would be interesting to see if we can incorporate ideas by @heerenScriptingTypeInference2003 into our system.
 * **Potential optimisations**.
   Currently, our system has a lot of room for potential optimisations.
-  The first step would be to allow handlers to pass some information to their respective solvers, which requires introduction of an existential type in the plugin.
-  Additionally, some expandable per-plugin store for the solvers would be handy, for example, to not recompute type class instances on every invocation.
-  Somewhat more challenging, one can imagine a caching system for constraints, allowing one to avoid solving the same constraint twice.
-  This might be beneficial for reduction since as of now we do a lot of redundant computations.
-  However, memory usage might be prohibitive.
-  Finally, we would also like to explore possibilities for concurrent solving, similar to the plans of @allaisTypOSOperatingSystem2022a with LVars for metavariables [@kuperLatticebasedDataStructures2015].
+  The first step would be to allow handlers to pass some information to their respective solvers, which is conceptually an easy change but technically requires introduction of an existential type in the plugin.
+  Additionally, some expandable per-plugin store for the solvers would be useful, for example, to avoid recompututation of type class instances on every invocation.
+  Somewhat more ambitiously, one can imagine a caching system for constraints, avoiding the need for solving the same constraint more than once.
+  In particular, caching of reduction seems like it would be beneficial since we currently do a lot of redundant computations.
+  However, the memory usage of such a caching system might be prohibitive.
+  Finally, we would also like to explore possibilities for concurrent solving, similar to the plans of @allaisTypOSOperatingSystem2022a to use LVars for representing metavariables [@kuperLatticebasedDataStructures2015].
 
 ::: {#refs}
 :::
