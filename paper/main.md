@@ -32,7 +32,7 @@ and are often not well isolated from each other.
 For example, implicit arguments and instance search in Agda can interact in unexpected ways 
 [@agdausersPerformanceRegressionIssue2018].
 Sized types in Agda [@abelExtensionMartinLofType2016] also come with their own solver that often interacts poorly with the regular solver for implicit arguments.
-In Coq, Canonical Structures are notorious for producing unpredictable results yet they were not properly documented for 15 years
+In Coq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years
 [@mahboubiCanonicalStructuresWorking2013].
 Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
 All these bespoke algorithms and their interactions put a toll on the language developer to specify and implement them and on the user to understand them.
@@ -102,12 +102,11 @@ Concretely, this code uses functions like `noConstraints`, `dontAssignMetas`, `c
 Other functions like `reduceB` and `abortIfBlocked` force the programmer to choose between letting the constraint system handle blockers or doing it manually.
 These things are known to be brittle and pose an increased mental overhead when making changes, with a corresponding risk of introducing new bugs.
 
-The unifier is called from many places throughout the type-checker: through function calls to `leqType` when type-checking terms and `compareType` when type-checking applications, and through raised constraints `ValueCmp` and `SortCmp` from `equalTerm` while checking applications or definitions and `ValueCmpOnFace` from `equalTermOnFace` again while checking applications.
+The unifier is called from many places throughout the type-checker: when checking applications of variables and defined functions, type annotations on lambda expressions, forced `dot' patterns, macro calls, and various primitive operations of Cubical Agda.
 At the same time, it is unintuitive and full of intricacies as indicated by multiple comments[^intricate-comments].
 
 We would like the compiler-writer to be able to separate managing constraints and blockers from the actual logic of the comparison function.
-If we zoom in on the `compareAtom` function, the core can be expressed in about 20 lines[^20lines-compareAtom] of simplified code, stripping out size checks, cumulativity, polarity, and forcing.
-This is precisely what we would like the developer to write.
+If we zoom in on the `compareAtom` function, the core logic can be expressed in about 20 lines[^20lines-compareAtom] of simplified code (ignoring advanced features like sized types, cumulativity, polarity, and forcing). This is precisely what we would like the developer to write.
 
 ``` haskell
 case (m, n) of
@@ -121,9 +120,8 @@ case (m, n) of
   ...
 ```
 
-
 The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large pieces of code that are hard to understand.
-The sizes of modules with unifiers are as follows: Idris (1.5kloc[^idris-unifier]), Lean (1.8kloc[^lean-unifier]), Coq (1.8kloc[^coq-unifier]).
+The sizes of modules with unifiers are as follows: Idris has 1.5kloc[^idris-unifier] of unification code, Lean 1.8kloc[^lean-unifier], and Coq 1.8kloc[^coq-unifier].
 For Haskell, which is not a dependently typed language yet, but does have a constraints system [@peytonjonesTypeInferenceConstraint2019], this number is at 2kloc[^ghc-unifier].
 
 [^conversion-check-agda]: [./src/full/Agda/TypeChecking/Conversion.hs](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs)
@@ -147,7 +145,7 @@ If we start from a simple case of type-checking an application of a function sym
 Take Agda -- when checking an application of a function with implicit arguments[^agda-insertion-of-implicit-arguments] we already have to carry the information on how the arguments will be resolved (e.g. through instance search) and then create a specific kind of metavariable[^agda-specific-kinds-of-metavariables] [@norellPracticalProgrammingLanguage2007, chap. 3] for each of those cases.
 
 For handling `auto` variables, Idris 2 [@theidristeamIdrisTutorial2021, chap. 13.1] has to essentially inline the search procedure through a chain of elaboration function calls (`checkApp` to `checkAppWith` to `checkAppWith'`) to `makeAutoImplicit`[^idris2-makeautoimplicit-source].
-This can accommodate interfaces (or type classes), but one can imagine that if a different kind of implicit was added, like tactic arguments or Canonical Structures, we would have to inline the search again, requiring a non-trivial modification to the elaboration mechanism.
+This can accommodate interfaces (or type classes), but one can imagine that if a different kind of implicit was added, like tactic arguments or canonical structures, we would have to inline the search again, requiring a non-trivial modification to the elaboration mechanism.
 
 [^idris2-makeautoimplicit-source]:
 [./src/TTImp/Elab/App.idr#L224-L241](https://github.com/idris-lang/Idris2/blob/870bc824371d504a03af937f326216302210a875/src/TTImp/Elab/App.idr#L224-L241)
@@ -162,14 +160,14 @@ While the codebases above show that it is certainly possible to extend languages
 
 While writing a unifier is hard enough as it is, at times the developers might want to give their users the ability to extend the unification procedure.
 
-Canonical Structures [@saibiOutilsGeneriquesModelisation1999; @mahboubiCanonicalStructuresWorking2013] was already mentioned as it is in the overlap between type classes and unification hints.
-Adding it to a language that does not support them requires an extension of the unification algorithm with a rule that says that projection from a canonical structure is an injective function [@mahboubiCanonicalStructuresWorking2013, eq. 1].
+Canonical structures [@saibiOutilsGeneriquesModelisation1999; @mahboubiCanonicalStructuresWorking2013] are one example as they are in the overlap between type classes and unification hints.
+Adding them to a language that does not support them requires an extension of the unification algorithm with a rule that says that projection from a canonical structure is injective [@mahboubiCanonicalStructuresWorking2013, eq. 1].
 
 One could also provide means to do so manually in a more general case, by allowing users to declare certain symbols as injective.
 This is one of the features requested by the Agda users [@agdausersInjectiveUnificationPragma2023].
 
-Another example of this can be adding rules of associativity and commutativity to the unifier, as described in the thesis by @holtenDependentTypeCheckingModulo2023.
-It required 2000 lines of code[^holten-source].
+Another example of user-extensible unification can be found in extensions with rules for associativity and commutativity, as described in the thesis by @holtenDependentTypeCheckingModulo2023.
+It required changes to 2000 lines of code[^holten-source].
 We would like to make changes such as this more feasible.
 
 [^holten-source]: [github.com/LHolten/agda-commassoc/tree/defenitional-commutativity](https://github.com/LHolten/agda-commassoc/tree/defenitional-commutativity) (sic)
@@ -177,9 +175,8 @@ We would like to make changes such as this more feasible.
 ## Summary of the issues ## {#sec:summary-of-the-issues}
 
 The examples above show that when building a dependently typed language the core might be perfectly elegant and simple, but the features that appear on top of it complicate the design.
-
-One can also observe that while the code in existing implementations might rely on constraints, the design at large does not put them at the centre of the picture and instead views them primarily as a gadget.
-Agda's constraint solver[^agda-constraint-solver-source] relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
+While the code in existing implementations often relies on constraints, the design at large does not put them at the centre of the picture and instead views them primarily as a gadget.
+For example, Agda's constraint solver[^agda-constraint-solver-source] relies on the type-checker to call it at the point where it is needed and has to be carefully engineered to work with the rest of the codebase.
 
 
 # A blueprint for extensible elaborators ## {#sec:what-is-our-design-bringing-into-the-picture}
