@@ -50,7 +50,7 @@ This allows developers to put all solvers related to one feature in one place, t
 The design also separates the 'what' the solvers are doing from the 'when', making the separation between different phases of elaboration explicit.
 As a result, this allows the developer to reason more easily about exceptions and asynchronicity during elaboration and add new features in a more isolated fashion.
 
-#### Contributions.
+**Contributions**.
 
 * We propose a new design blueprint for implementing an elaborator for a dependently typed language that is extensible with new constraints and new solvers. It supports type classes (Section @sec:case-typeclasses), implicit arguments (Section @sec:case-implicits), implicit coercions, and tactic arguments (Section @sec:coercion-tactics).
 * We propose a new view on metavariables as communication channels for the solvers, drawing parallels with asynchronous programming primitives (Section @sec:solvers-implementation).
