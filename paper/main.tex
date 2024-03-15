@@ -86,9 +86,20 @@
 \newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
 \newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
 \newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage[]{natbib}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+
 \widowpenalty=10000
 \clubpenalty=10000
 \displaywidowpenalty=10000
+
+\title{ExEl: Building an Elaborator Using Extensible Constraints}
+
 \author{Bohdan Liesnikov}
 \orcid{0009-0000-2216-8830}
 \affiliation{
@@ -103,21 +114,7 @@
   \city{Delft}
   \country{The Netherlands}}
 \email{J.G.H.Cockx@tudelft.nl}
-\begin{abstract}
-  Proof assistants and dependently typed languages such as Coq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
-  While much research has been done on their theoretical foundations, their actual implementations have been studied to a much lesser extent.
-  As a result, features that are not considered part of the theoretical foundations - such as implicit arguments and type classes - have their own bespoke implementation for each language, making for code bases that are hard to understand and maintain.
-  To address some of the common problems in the implementations of dependently typed languages, we present a modular architecture for implementing the transformation from user-friendly surface syntax into a small and well-behaved core language, also known as elaboration.
-  Our architecture is made modular through the use of an open type of constraints and a plugin system for solvers that work on these constraints, which means that each new feature is contained in its own module.
-  We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, implicit coercions, and instance arguments.
-\end{abstract}
-\ifLuaTeX
-  \usepackage{selnolig}  % disable illegal ligatures
-\fi
-\usepackage[]{natbib}
-%\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
-\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same} % disable monospaced font for URLs
+
 \hypersetup{
   pdftitle={ExEl: Building an Elaborator Using Extensible Constraints},
   pdfauthor={Bohdan Liesnikov and Jesper Cockx},
@@ -125,16 +122,26 @@
   pdfcreator={LaTeX via pandoc},
   pdfproducer={pdftex},
   hidelinks,
-  }
+}
 
-\title{ExEl: Building an Elaborator Using Extensible Constraints}
-\author{}
-\date{\today}
+\begin{abstract}
+  Proof assistants and dependently typed languages such as Coq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
+  While much research has been done on their theoretical foundations, their actual implementations have been studied to a much lesser extent.
+  As a result, features that are not considered part of the theoretical foundations - such as implicit arguments and type classes - have their own bespoke implementation for each language, making for code bases that are hard to understand and maintain.
+  To address some of the common problems in the implementations of dependently typed languages, we present a modular architecture for implementing the transformation from user-friendly surface syntax into a small and well-behaved core language, also known as elaboration.
+  Our architecture is made modular through the use of an open datatype of constraints and a plugin system for solvers that work on these constraints, which means that each new feature is contained in its own module.
+  We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, and instance arguments.
+\end{abstract}
 
 \begin{document}
 \maketitle
 
 \input{body.tex}
+
+\begin{acks}
+  Jesper Cockx holds an \grantsponsor{nwoviveni202216}{NWO Veni}{https://www.nwo.nl/en/projects/viveni202216} grant on `A trustworthy and extensible core language for Agda' \grantnum[https://www.nwo.nl/en/projects/viveni202216]{nwoviveni202216}{(VI.Veni.202.216)}.
+\end{acks}
+  
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}

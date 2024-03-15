@@ -26,14 +26,10 @@ Examples include implicit arguments in Agda, implicit coercions in Coq, and tact
 The inference of parts of the program must not be fully automatic but can also be interactive or partially automatic.
 Examples of interactive inference are holes in Agda and proof obligations in Coq, while canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq and program-synthesis for holes in Haskell [@koppelSearchingEntangledProgram2022] are partially automatic.
 
-Each of these different inference features has its own algoritms and extension points, 
-which often evolved organically over time together with the language, 
-and are often not well isolated from each other.
-For example, implicit arguments and instance search in Agda can interact in unexpected ways 
-[@agdausersPerformanceRegressionIssue2018].
+Each of these different inference features has its own algoritms and extension points, which often evolved organically over time together with the language, and are often not well isolated from each other.
+For example, implicit arguments and instance search in Agda can interact in unexpected ways [@agdausersPerformanceRegressionIssue2018].
 Sized types in Agda [@abelExtensionMartinLofType2016] also come with their own solver that often interacts poorly with the regular solver for implicit arguments.
-In Coq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years
-[@mahboubiCanonicalStructuresWorking2013].
+In Coq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years [@mahboubiCanonicalStructuresWorking2013].
 Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
 All these bespoke algorithms and their interactions put a toll on the language developer to specify and implement them and on the user to understand them.
 
@@ -186,7 +182,7 @@ Our idea for a new design is to shift focus more towards the constraints themsel
 1. We give an API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
 This is similar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, the view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or the communication between actors [@allaisTypOSOperatingSystem2022a].
 
-2. To make the language more modular, we make constraints an extensible data type in the style of data types à la carte [@swierstraDataTypesCarte2008] and give an API to define new solvers with the ability to specify what kinds of constraints they can solve.
+2. To make the language more modular, we make constraints an extensible data type and give an API to define new solvers with the ability to specify what kinds of constraints they can solve. Since we're working in Haskell we encode constraints in the style of Data types à la carte [@swierstraDataTypesCarte2008].
 
 In the examples in this paper, we follow the bidirectional style of type-checking.
 In practice, however, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
