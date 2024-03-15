@@ -273,7 +273,7 @@ The user has access to the type and term constructor, but not the ability to pat
 Instead, the language provides a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different constructors of an inductive type and produces an element of any type.
 
 On top of the above, the language includes indexed inductive datatypes and case-constructs for their elimination.
-Indexed inductive datatypes are encoded as parameterised datatypes with an equality argument constraining the index.
+Indexed inductive datatypes are encoded as parameterised datatypes with an equality argument constraining the index, also known as "Henry Ford" equality [@chapmanGentleArtLevitation2010a].
 
 As for metavariables `MetaVar`: as mentioned in the introduction, they are placeholders in the syntax tree (AST) that are produced in the process of elaboration.
 Metavariables do not appear in the surface syntax as they are not created by the user.
