@@ -1,0 +1,178 @@
+\pdfminorversion=7
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[sigconf, screen]{acmart}
+
+\usepackage{xcolor}
+%\usepackage{cleveref}
+\usepackage{color}
+\usepackage{fancyvrb}
+\usepackage{acmart-taps}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{\textbf{#1}}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newlength{\cslentryspacingunit} % times entry-spacing
+\setlength{\cslentryspacingunit}{\parskip}
+\newenvironment{CSLReferences}[2] % #1 hanging-ident, #2 entry spacing
+ {% don't indent paragraphs
+  \setlength{\parindent}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+  \let\oldpar\par
+  \def\par{\hangindent=\cslhangindent\oldpar}
+  \fi
+  % set entry spacing
+  \setlength{\parskip}{#2\cslentryspacingunit}
+ }%
+ {}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{#1\hfill\break}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+
+%\ifLuaTeX
+%  \usepackage{selnolig}  % disable illegal ligatures
+%\fi
+%\usepackage[]{natbib}
+%\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+%\urlstyle{same} % disable monospaced font for URLs
+
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+
+\copyrightyear{2023}
+\acmYear{2023}
+\setcopyright{rightsretained}
+\acmConference[IFL 2023]{The 35th Symposium on Implementation and Application of Functional Languages}{August 29--31, 2023}{Braga, Portugal}
+\acmBooktitle{The 35th Symposium on Implementation and Application of Functional Languages (IFL 2023), August 29--31, 2023, Braga, Portugal}
+\acmDOI{10.1145/3652561.3652565}
+\acmISBN{979-8-4007-1631-7/23/08}
+\keywords{dependent types, elaborators, elaboration, open datatype, extensible datatype, type-checking}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10011007.10011006.10011008.10011009.10011012</concept_id>
+       <concept_desc>Software and its engineering~Functional languages</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011074.10011075.10011077</concept_id>
+       <concept_desc>Software and its engineering~Software design engineering</concept_desc>
+       <concept_significance>300</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10003752.10003790.10011740</concept_id>
+       <concept_desc>Theory of computation~Type theory</concept_desc>
+       <concept_significance>300</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10002944.10011123.10011673</concept_id>
+       <concept_desc>General and reference~Design</concept_desc>
+       <concept_significance>100</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Software and its engineering~Functional languages}
+\ccsdesc[300]{Software and its engineering~Software design engineering}
+\ccsdesc[300]{Theory of computation~Type theory}
+\ccsdesc[100]{General and reference~Design}
+
+
+\begin{document}
+
+\title{ExEl: Building an Elaborator Using Extensible Constraints}
+
+\author{Bohdan Liesnikov}
+\orcid{0009-0000-2216-8830}
+\affiliation{
+  \institution{Delft University of Technology}
+  \city{Delft}
+  \country{The Netherlands}}
+\email{B.Liesnikov@tudelft.nl}
+\author{Jesper Cockx}
+\orcid{0000-0003-3862-4073}
+\affiliation{
+  \institution{Delft University of Technology}
+  \city{Delft}
+  \country{The Netherlands}}
+\email{J.G.H.Cockx@tudelft.nl}
+
+\hypersetup{
+  pdftitle={ExEl: Building an Elaborator Using Extensible Constraints},
+  pdfauthor={Bohdan Liesnikov and Jesper Cockx},
+  pdfkeywords={dependent types, elaborators, elaboration, open datatype, extensible datatype, type-checking},
+  pdfcreator={LaTeX via pandoc},
+  pdfproducer={pdftex},
+  hidelinks,
+}
+
+\begin{abstract}
+  Proof assistants and dependently typed languages such as Coq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
+  While much research has been done on their theoretical foundations, their actual implementations have been studied to a much lesser extent.
+  As a result, features that are not considered part of the theoretical foundations - such as implicit arguments and type classes - have their own bespoke implementation for each language, making for code bases that are hard to understand and maintain.
+  To address some of the common problems in the implementations of dependently typed languages, we present a modular architecture for implementing the transformation from user-friendly surface syntax into a small and well-behaved core language, also known as elaboration.
+  Our architecture is made modular through the use of an open datatype of constraints and a plugin system for solvers that work on these constraints, which means that each new feature is contained in its own module.
+  We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, and instance arguments.
+\end{abstract}
+
+
+\maketitle
+
+
+\input{body.tex}
+
+\begin{acks}
+  Jesper Cockx holds an \grantsponsor{nwoviveni202216}{NWO Veni}{https://www.nwo.nl/en/projects/viveni202216} grant on `A trustworthy and extensible core language for Agda' (\href{https://www.nwo.nl/en/projects/viveni202216}{VI.Veni.202.216}).
+\end{acks}
+  
+\bibliographystyle{ACM-Reference-Format}
+
+\bibliography{bib.bib}
+
+\end{document}
