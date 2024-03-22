@@ -51,7 +51,10 @@ As a result, this allows the developer to reason more easily about exceptions an
 * We propose a new design blueprint for implementing an elaborator for a dependently typed language that is extensible with new constraints and new solvers. It supports type classes (Section @sec:case-typeclasses), implicit arguments (Section @sec:case-implicits), implicit coercions, and tactic arguments (Section @sec:coercion-tactics).
 * We propose a new view on metavariables as communication channels for the solvers, drawing parallels with asynchronous programming primitives (Section @sec:solvers-implementation).
 * We decompose the usual components of an elaborator, like the unifier in Agda, into a suite of solvers which can be extended and interleaved by user-provided plugins (Section @sec:constraints_and_unification).
-* Following the blueprint, we present a prototype implementation of a dependently typed language available at [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator).
+* Following the blueprint, we present a prototype implementation of a dependently typed language available at [github.com/liesnikov/extensible-elaborator](https://github.com/liesnikov/extensible-elaborator) [^archived-source].
+
+
+[^archived-source]: Also archived at [doi.org/10.4121/e74fd14a-da79-4686-97e8-143ac5e0858d.v1](https://doi.org/10.4121/e74fd14a-da79-4686-97e8-143ac5e0858d.v1)
 
 # Unification, constraint-based elaboration and design challenges # {#sec:unification_constraint_based_elaboration_and_design_challanges}
 
