@@ -1,4 +1,0 @@
-module PiInjectivityTest where
-
-idr : (z:Type) -> z -> z
-idr = \x y. (y : x)

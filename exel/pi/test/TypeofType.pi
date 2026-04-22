@@ -1,4 +1,0 @@
-module TypeofType where
-
-t : Type
-t = Type

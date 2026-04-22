@@ -1,7 +1,0 @@
-module IdTest where
-
-id : (x:Type) -> x -> x
-id = \y z . z
-
-id2 : (a:Type) -> a -> (id Type a)
-id2 = \b c . c
