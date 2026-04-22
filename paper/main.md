@@ -30,7 +30,7 @@ Each of these different inference features has its own algoritms and extension p
 For example, implicit arguments and instance search in Agda can interact in unexpected ways [@agdausersPerformanceRegressionIssue2018].
 Sized types in Agda [@abelExtensionMartinLofType2016] also come with their own solver that often interacts poorly with the regular solver for implicit arguments.
 In Coq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years [@mahboubiCanonicalStructuresWorking2013].
-Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLeanMetaprogramming2021] using elaboration monads [@mouraLeanTheoremProver2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
+Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLean4Metaprogramming2021] using elaboration monads [@demouraLean4Theorem2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
 All these bespoke algorithms and their interactions put a toll on the language developer to specify and implement them and on the user to understand them.
 
 The part of the implementation of a dependently typed language that is responsible for type checking user-facing surface syntax and inferring the parts that have been left implicit is known as the *elaborator*.
@@ -59,9 +59,9 @@ As a result, this allows the developer to reason more easily about exceptions an
 # Unification, constraint-based elaboration and design challenges # {#sec:unification_constraint_based_elaboration_and_design_challanges}
 
 Constraints have been an integral part of compilers for strongly typed languages for a long time [@oderskyTypeInferenceConstrained1999].
-For example, the implementations of both Haskell [@vytiniotisOutsideInModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
-In the former case, they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010a, chap. 6.10.3; @ghcdevelopmentteamGHCUserGuide2022].
-This has proven to be a good design decision for GHC, as is reflected for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
+For example, the implementations of both Haskell [@vytiniotisOutsideInXModularType2011] and Agda [@norellPracticalProgrammingLanguage2007 chap. 3] use constraints extensively.
+In the former case, they are even reflected and can be manipulated by the user [@orchardHaskellTypeConstraints2010, chap. 6.10.3; @ghcdevelopmentteamGHC942Users2022].
+This has proven to be a good design decision for GHC, as is reflected for example in a talk by @peytonjonesTypeInferenceConstraint2019, as well as in a few published sources [@vytiniotisOutsideInXModularType2011; @peytonjonesPracticalTypeInference2007].
 
 In the land of dependently typed languages constraints are often used in a much less principled manner.
 Agda has a family of constraints that grew organically, currently counting 19 constructors.[^agda-constraints-datatype]
@@ -183,7 +183,7 @@ For example, Agda's constraint solver[^agda-constraint-solver-source] relies on 
 Our idea for a new design is to shift focus more towards the constraints themselves:
 
 1. We give an API for raising constraints that can be called by the type-checker, essentially creating an "ask" to be fulfilled by the solvers.
-This is similar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, the view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or the communication between actors [@allaisTypOSOperatingSystem2022a].
+This is similar to the idea of mapping object-language unification variables to host-language ones as done by @guidiImplementingTypeTheory2017, the view of the "asks" as a general effect [@bauerEqualityCheckingGeneral2020, chap. 4.4], or the communication between actors [@allaisTypOSOperatingSystem2022].
 
 2. To make the language more modular, we make constraints an extensible data type and give an API to define new solvers with the ability to specify what kinds of constraints they can solve. Since we're working in Haskell we encode constraints in the style of Data types à la carte [@swierstraDataTypesCarte2008].
 
@@ -272,7 +272,7 @@ The user has access to the type and term constructor, but not the ability to pat
 Instead, the language provides a `subst` primitive of type `(A x) -> (x=y) -> A y` and `contra` that takes an equality of two different constructors of an inductive type and produces an element of any type.
 
 On top of the above, the language includes indexed inductive datatypes and case-constructs for their elimination.
-Indexed inductive datatypes are encoded as parameterised datatypes with an equality argument constraining the index, also known as "Henry Ford" equality [@chapmanGentleArtLevitation2010a].
+Indexed inductive datatypes are encoded as parameterised datatypes with an equality argument constraining the index, also known as "Henry Ford" equality [@chapmanGentleArtLevitation2010].
 
 As for metavariables `MetaVar`: as mentioned in the introduction, they are placeholders in the syntax tree (AST) that are produced in the process of elaboration.
 Metavariables do not appear in the surface syntax as they are not created by the user.
@@ -655,12 +655,12 @@ However, in the example above it does not make a difference.
 
 A limitation of this scheme is that we can only support functions with "obvious" implicit arguments -- i.e. those that appear syntactically in the declaration of the function.
 This is due to the fact that insertion of metavariables happens before any type information is available.
-For this reason Haskell-like impredicativity [@serranoQuickLookImpredicativity2020a] in type inference cannot be supported.
+For this reason Haskell-like impredicativity [@serranoQuickLookImpredicativity2020] in type inference cannot be supported.
 If a more comprehensive support for implicit arguments is desired, our system could be extended with support for first-class implicits [@kovacsElaborationFirstclassImplicit2020].
 
 ## Type classes ## {#sec:case-typeclasses}
 
-Next, let us implement a plugin that adds support for type classes by means of instance arguments [@DevrieseP11-1].
+Next, let us implement a plugin that adds support for type classes by means of instance arguments [@devrieseBrightSideType2011].
 As in the case for implicit arguments in general, we rely again on a pre-processor to insert placeholder arguments of type `Instance a` for each instance argument of type `a`.
 
 Let us start by going through an example of the elaboration process for a simple term.
@@ -834,7 +834,7 @@ Alternatively, controlled backtracking can be implemented within one solver, rem
 ## Reliance on a pre-processor ##
 
 This work crucially relies on a pre-processor of some kind, be it macro expansion or some other way to extend the parser with custom desugaring rules.
-In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita [@tassiBiDirectionalRefinementAlgorithm2012, chap. 5] and others [@serranoQuickLookImpredicativity2020a; @kovacsElaborationFirstclassImplicit2020].
+In particular, in order to implement n-ary implicit arguments correctly and easily we need the pre-processor to expand them to the right arity, similar to Matita [@tassiBiDirectionalRefinementAlgorithm2012, chap. 5] and others [@serranoQuickLookImpredicativity2020; @kovacsElaborationFirstclassImplicit2020].
 
 ## Eager reduction and performance ##
 
@@ -876,7 +876,7 @@ This leaves us with the question of the extensibility of an elaborator.
 We will make a division here between syntax traversals, constraint solving and all other features.
 The syntax traversal part of the elaborator is relatively stable and commonly implemented following a (roughly) bidirectional discipline[@norellPracticalProgrammingLanguage2007; @tassiBiDirectionalRefinementAlgorithm2012; @ferreiraBidirectionalElaborationDependently2014], so there seems little reason to make it extensible.
 
-GHC has a plugin system that allows users to dynamically add custom constraint solvers, but the type of constraints itself is not extensible[^ghc-note] [@peytonjonesTypeInferenceConstraint2019; @vytiniotisOutsideInModularType2011; @peytonjonesPracticalTypeInference2007].
+GHC has a plugin system that allows users to dynamically add custom constraint solvers, but the type of constraints itself is not extensible[^ghc-note] [@peytonjonesTypeInferenceConstraint2019; @vytiniotisOutsideInXModularType2011; @peytonjonesPracticalTypeInference2007].
 
 Coq [@thecoqdevelopmentteamCoqProofAssistant2022], being one of the most popular proof assistants, invested a lot effort into user-facing features: work on tactics like a new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), the introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
 However, the implementation is quite hard to extend.
@@ -887,7 +887,7 @@ While MetaCoq did open the possibility for some plugins [@nielsenFormalisingDece
 Agda has historically experimented a lot with different extensions to both the type system and the elaborator, even though the design does not accommodate these changes naturally.
 Instead, each of these extensions is spread throughout many different parts of the code base[^agda-features-link].
 
-Lean introduced elaborator extensions [@leonardodemouraLeanMetaprogramming2021; @ullrichNotationsHygienicMacro2020].
+Lean introduced elaborator extensions [@leonardodemouraLean4Metaprogramming2021; @ullrichNotationsHygienicMacro2020].
 They allow the user to overload the commands, but if one defines a particular elaborator it becomes hard to interleave with others.
 In a way, this is an imperative view on extensibility.
 
@@ -897,7 +897,7 @@ Idris also focuses on tactics as the main mechanism for elaboration.
 Turnstile+ by @changDependentTypeSystems2019 uses macros to elaborate surface syntax to a smaller core.
 Macros allow them to modularly implement individual features, however combining different features requires the user to re-define all macros from scratch. This is the same problem as the one we mentioned for Lean.
 
-TypOS [@allaisTypOSOperatingSystem2022a; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
+TypOS [@allaisTypOSOperatingSystem2022; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
 First, it is a domain-specific language for building type-checkers, while our design is language-agnostic, as long as the host language can model extensible datatypes in some capacity.
 Second, their approach settles features of the language as they are decided by the main developer and does not concern future changes and evolution.
 Finally, we try to stay close to the designs of existing dependently typed languages and offer flexibility in terms of choices, while TypOS requires the developer to start from scratch and restricts certain capabilities like overlapping rules for unification.
@@ -924,7 +924,7 @@ We see three main prospects for future work:
   Somewhat more ambitiously, one can imagine a caching system for constraints, avoiding the need for solving the same constraint more than once.
   In particular, caching of reduction seems like it would be beneficial since we currently do a lot of redundant computations.
   However, the memory usage of such a caching system might be prohibitive.
-  Finally, we would also like to explore possibilities for concurrent solving, similar to the plans of @allaisTypOSOperatingSystem2022a to use LVars for representing metavariables [@kuperLatticebasedDataStructures2015].
+  Finally, we would also like to explore possibilities for concurrent solving, similar to the plans of @allaisTypOSOperatingSystem2022 to use LVars for representing metavariables [@kuperLatticebasedDataStructures2015].
 
 ::: {#refs}
 :::
