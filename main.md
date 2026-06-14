@@ -25,7 +25,7 @@ Our architecture is made modular through the use of an open datatype of constrai
 We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, and instance arguments.
 \end{abstract}
 
-\blfootnote{This chapter is based on \faFileTextO~\citet{liesnikovExElBuildingElaborator2024}.}
+\blfootnote{This chapter is based on \faFileTextO~\citeauthor{liesnikovExElBuildingElaborator2024}, ``\usebibentry{liesnikovExElBuildingElaborator2024}{title}''~\citep{liesnikovExElBuildingElaborator2024}.}
 
 
 # Introduction #  {#sec:introduction}
