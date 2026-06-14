@@ -43,7 +43,7 @@ Examples include implicit arguments in Agda, implicit coercions in Coq, and tact
 The inference of parts of the program must not be fully automatic but can also be interactive or partially automatic.
 Examples of interactive inference are holes in Agda and proof obligations in Coq, while canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq and program-synthesis for holes in Haskell [@koppelSearchingEntangledProgram2022] are partially automatic.
 
-Each of these different inference features has its own algoritms and extension points, which often evolved organically over time together with the language, and are often not well isolated from each other.
+Each of these different inference features has its own algorithms and extension points, which often evolved organically over time together with the language, and are often not well isolated from each other.
 For example, implicit arguments and instance search in Agda can interact in unexpected ways [@agdausersPerformanceRegressionIssue2018].
 Sized types in Agda [@abelExtensionMartinLofType2016] also come with their own solver that often interacts poorly with the regular solver for implicit arguments.
 In Coq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years [@mahboubiCanonicalStructuresWorking2013].
@@ -53,7 +53,7 @@ All these bespoke algorithms and their interactions put a toll on the language d
 The part of the implementation of a dependently typed language that is responsible for type checking user-facing surface syntax and inferring the parts that have been left implicit is known as the *elaborator*.
 One common piece of infrastructure used by elaborators are metavariables, also known as "existential variables" [@thecoqdevelopmentteamCoqProofAssistant2022, chap. 2.2.1], which represent as-of-yet unknown parts of the program.
 Together with metavariables also comes unification, i.e. the ability to constrain two terms to be equal.
-Metavariables and unification are heavily used throughout many elaborators for infering implicit arguments and for general type-checking, making them sensitive towards changes in unification algorithms.
+Metavariables and unification are heavily used throughout many elaborators for inferring implicit arguments and for general type-checking, making them sensitive towards changes in unification algorithms.
 Because of the complexity unification, breaking changes are often discovered only when run against a large existing project on CI, such as the Standard and Cubical libraries for Agda or the `unimath` library for Coq.
 
 To move towards a cleaner and more maintainable model for implementing elaborators, we propose a new architecture for an extensible elaborator for dependently typed languages.
@@ -937,7 +937,7 @@ We see three main prospects for future work:
 * **Potential optimisations**.
   Currently, our system has a lot of room for potential optimisations.
   The first step would be to allow handlers to pass some information to their respective solvers, which is conceptually an easy change but technically requires introduction of an existential type in the plugin.
-  Additionally, some expandable per-plugin store for the solvers would be useful, for example, to avoid recompututation of type class instances on every invocation.
+  Additionally, some expandable per-plugin store for the solvers would be useful, for example, to avoid recomputation of type class instances on every invocation.
   Somewhat more ambitiously, one can imagine a caching system for constraints, avoiding the need for solving the same constraint more than once.
   In particular, caching of reduction seems like it would be beneficial since we currently do a lot of redundant computations.
   However, the memory usage of such a caching system might be prohibitive.
