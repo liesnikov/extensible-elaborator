@@ -917,7 +917,7 @@ Macros allow them to modularly implement individual features, however combining 
 TypOS [@allaisTypOSOperatingSystem2022; @guillaumeallaisTypOS2022] is perhaps the closest to our work, but there are two important differences.
 First, it is a domain-specific language for building type-checkers, while our design is language-agnostic, as long as the host language can model extensible datatypes in some capacity.
 Second, their approach settles features of the language as they are decided by the main developer and does not concern future changes and evolution.
-Finally, we try to stay close to the designs of existing dependently typed languages and offer flexibility in terms of choices, while TypOS requires the developer to start from scratch and restricts certain capabilities like overlapping rules for unification.
+Finally, we try to stay close to the designs of existing dependently typed languages and offer flexibility in terms of choices, while TypOS requires the developer to start anew and restricts certain capabilities like overlapping rules for unification.
 
 [^ghc-note]: [gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes](https://gitlab.haskell.org/ghc/ghc/-/wikis/plugins/type-checker/notes)
 
@@ -932,7 +932,7 @@ We see three main prospects for future work:
   Currently, we implement metavariables only for terms, while for some applications such as erasure [@tejiscakDependentlyTypedCalculus2020] or irrelevance inference, it would be beneficial to have metavariables representing erasure and relevance annotations.
   Additionally, we can introduce metavariables for names and implement data constructor disambiguation more simply, which would remove the current need to block on the expected type of overloaded constructors.
 * **Rendering more elements of the elaborator as constraints.** Currently, components such as the occurs checking and reduction are simple function calls.
-  Including them in the constraint machinery would make the implementation more uniform and allow users to extend them.
+  Including them in the constraint machinery would make the implementation uniform and allow users to extend them.
 * **Error messages** are not the focus of present work, but it would be interesting to see if we can incorporate ideas by @heerenScriptingTypeInference2003 into our system.
 * **Potential optimisations**.
   Currently, our system has a lot of room for potential optimisations.
