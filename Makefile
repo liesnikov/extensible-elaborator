@@ -12,15 +12,15 @@ open: main.pdf
 nix-build: main.md Makefile bib.bib
 	nix-build . ""
 
-main.pdf: main.tex body.tex Makefile
+main.pdf: main.tex Makefile
 	latexmk -pdf main.tex
 
-body.tex: main.md bib.bib Makefile
+main.tex: main.md bib.bib Makefile
 	pandoc main.md \
   --filter pandoc-secnos \
   --bibliography bib.bib \
   --natbib \
-  -o body.tex
+  -o main.tex
 
 allclean: clean
 	rm -f main.pdf main.tex

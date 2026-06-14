@@ -11,6 +11,23 @@ classoption:
 numbersections: true
 ---
 
+\chapter{ExEl: Building an Elaborator Using Extensible Constraints}
+\label{ch:exel}
+
+\begin{abstract}
+Proof assistants and dependently typed languages such as Coq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
+While much research has been done on their theoretical foundations, their actual implementations have been studied to a much lesser extent.
+In particular, the details of the elaborator---the component that translates from the surface language into the well-typed core language---are often hidden in the source code.
+Moreover, proof assistants are not easily extensible, requiring changes to the existing codebase instead of a modular addition.
+
+In this paper we present an architecture for a modular, extensible elaborator.
+Our architecture is made modular through the use of an open datatype of constraints and a plugin system for solvers that work on these constraints, which means that each new feature is contained in its own module.
+We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, and instance arguments.
+\end{abstract}
+
+\blfootnote{This chapter is based on \faFileTextO~\citet{liesnikovExElBuildingElaborator2024}.}
+
+
 # Introduction #  {#sec:introduction}
 
 Statically typed languages allow us to catch large classes of bugs at compile-time by checking the implementation against its type signature.
@@ -928,6 +945,9 @@ We see three main prospects for future work:
 
 ::: {#refs}
 :::
+
+\section*{Acknowledgements}
+Jesper Cockx holds an NWO Veni grant (\href{https://www.nwo.nl/en/projects/viveni202216}{VI.Veni.202.216}) on `A trustworthy and extensible core language for Agda'.
 
 <!---
 Local Variables:
