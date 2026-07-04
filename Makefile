@@ -20,6 +20,7 @@ main.tex: main.md bib.bib Makefile
   --filter pandoc-secnos \
   --bibliography bib.bib \
   --natbib \
+  --listings \
   -o main.tex
 
 allclean: clean
