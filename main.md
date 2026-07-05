@@ -15,7 +15,7 @@ numbersections: true
 \label{ch:exel}
 
 \begin{abstract}
-Proof assistants and dependently typed languages such as Coq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
+Proof assistants and dependently typed languages such as Rocq, Agda, Lean, and Idris can be used to ascertain the correctness of software with mathematical precision.
 While much research has been done on their theoretical foundations, their actual implementations have been studied to a much lesser extent.
 In particular, the details of the elaborator---the component that translates from the surface language into the well-typed core language---are often hidden in the source code.
 Moreover, proof assistants are not easily extensible, requiring changes to the existing codebase instead of a modular addition.
@@ -37,16 +37,16 @@ Many languages choose to infer types as a result, but another option is to use t
 This idea was aptly worded by Conor McBride as "Write more types and fewer programs." [@ptoopTypeInferenceThought2022; @mcbrideEpigramPracticalProgramming2005, chap. 2.1]
 Some examples of this include overloaded functions in Java, implicits in Scala, and type classes in Haskell.
 
-In dependently typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2023a], Coq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
+In dependently typed languages like Agda [@norellPracticalProgrammingLanguage2007; @theagdateamAgdaUserManual2023a], Rocq [@thecoqdevelopmentteamCoqProofAssistant2022] or Idris [@bradyIdrisGeneralpurposeDependently2013] the types can be much more precise.
 This allows us to infer even larger parts of the program from the type.
-Examples include implicit arguments in Agda, implicit coercions in Coq, and tactic arguments in Idris.
+Examples include implicit arguments in Agda, implicit coercions in Rocq, and tactic arguments in Idris.
 The inference of parts of the program must not be fully automatic but can also be interactive or partially automatic.
-Examples of interactive inference are holes in Agda and proof obligations in Coq, while canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq and program-synthesis for holes in Haskell [@koppelSearchingEntangledProgram2022] are partially automatic.
+Examples of interactive inference are holes in Agda and proof obligations in Rocq, while canonical structures [@mahboubiCanonicalStructuresWorking2013] in Coq and program-synthesis for holes in Haskell [@koppelSearchingEntangledProgram2022] are partially automatic.
 
 Each of these different inference features has its own algorithms and extension points, which often evolved organically over time together with the language, and are often not well isolated from each other.
 For example, implicit arguments and instance search in Agda can interact in unexpected ways [@agdausersPerformanceRegressionIssue2018].
 Sized types in Agda [@abelExtensionMartinLofType2016] also come with their own solver that often interacts poorly with the regular solver for implicit arguments.
-In Coq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years [@mahboubiCanonicalStructuresWorking2013].
+In Rocq, canonical structures are notorious for producing unpredictable results yet they were not properly documented for 15 years [@mahboubiCanonicalStructuresWorking2013].
 Lean 4 aims to allow the users to develop new surface-level features [@leonardodemouraLean4Metaprogramming2021] using elaboration monads [@demouraLean4Theorem2021], somewhat akin to elaborator reflection in Idris [@christiansenElaboratorReflectionExtending2016], but Lean 3 was built in a more conventional way [@demouraLeanTheoremProver2015].
 All these bespoke algorithms and their interactions put a toll on the language developer to specify and implement them and on the user to understand them.
 
@@ -54,7 +54,7 @@ The part of the implementation of a dependently typed language that is responsib
 One common piece of infrastructure used by elaborators are metavariables, also known as "existential variables" [@thecoqdevelopmentteamCoqProofAssistant2022, chap. 2.2.1], which represent as-of-yet unknown parts of the program.
 Together with metavariables also comes unification, i.e. the ability to constrain two terms to be equal.
 Metavariables and unification are heavily used throughout many elaborators for inferring implicit arguments and for general type-checking, making them sensitive towards changes in unification algorithms.
-Because of the complexity unification, breaking changes are often discovered only when run against a large existing project on CI, such as the Standard and Cubical libraries for Agda or the `unimath` library for Coq.
+Because of the complexity unification, breaking changes are often discovered only when run against a large existing project on CI, such as the Standard and Cubical libraries for Agda or the `unimath` library for Rocq.
 
 To move towards a cleaner and more maintainable model for implementing elaborators, we propose a new architecture for an extensible elaborator for dependently typed languages.
 Practically, our architecture allows each feature to be contained within one module, as opposed to being spread around the codebase.
@@ -137,7 +137,7 @@ case (m, n) of
 ```
 
 The functions described above are specific to Agda but in other major languages we can find similar problems with unifiers being large pieces of code that are hard to understand.
-The sizes of modules with unifiers are as follows: Idris has 1.5kloc[^idris-unifier] of unification code, Lean 1.8kloc[^lean-unifier], and Coq 1.8kloc[^coq-unifier].
+The sizes of modules with unifiers are as follows: Idris has 1.5kloc[^idris-unifier] of unification code, Lean 1.8kloc[^lean-unifier], and Rocq 1.8kloc[^coq-unifier].
 For Haskell, which is not a dependently typed language yet, but does have a constraints system [@peytonjonesTypeInferenceConstraint2019], this number is at 2kloc[^ghc-unifier].
 
 [^conversion-check-agda]: [./src/full/Agda/TypeChecking/Conversion.hs](https://github.com/agda/agda/blob/v2.6.4/src/full/Agda/TypeChecking/Conversion.hs)
@@ -148,7 +148,7 @@ For Haskell, which is not a dependently typed language yet, but does have a cons
 
 [^idris-unifier]: [./src/Core/Unify.idr](https://github.com/idris-lang/Idris2/blob/102d7ebc18a9e881021ed4b05186cccda5274cbe/src/Core/Unify.idr)
 [^lean-unifier]: [./src/Lean/Meta/ExprDefEq.lean](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)
-[^coq-unifier]: [./pretyping/evarconv.mli](https://github.com/coq/coq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/pretyping/evarconv.mli) at [github.com/coq/coq/blob/b35c06](github.com/coq/coq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/)
+[^coq-unifier]: [./pretyping/evarconv.mli](https://github.com/rocq-prover/rocq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/pretyping/evarconv.mli) at [github.com/rocq-prover/rocq/blob/b35c06](https://github.com/rocq-prover/rocq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1)
 [^ghc-unifier]:
 [./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs) at  
 [gitlab.haskell.org/ghc/ghc/-/blob/b81cd709d](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840)
@@ -859,7 +859,7 @@ As the pre-processing step inserts a fair number of wrappers and un-wrappers for
 In particular, we expect this to be a major concern for coercive subtyping.
 
 As one possible mitigation, we suggest a discipline where constraint solvers latch on to non-reduced types and terms in constraints.
-With this discipline, we can borrow a trick from the implementation of Coq, where the wrappers and unwrappers are identity functions and `coerce f t` computes to `f t`.
+With this discipline, we can borrow a trick from the implementation of Rocq, where the wrappers and unwrappers are identity functions and `coerce f t` computes to `f t`.
 This also means that constraints can/have to match on unreduced types in the e.g. `FillInTheTherm`.
 
 In fact, we already use this trick to an extent for a different reason -- since the calculus allows only fully applied type constructors, we have to wrap each type class constructor in a lambda-abstraction for it to appear as an argument to `TypeClassT typeClassName argType`.
@@ -895,11 +895,11 @@ The syntax traversal part of the elaborator is relatively stable and commonly im
 
 GHC has a plugin system that allows users to dynamically add custom constraint solvers, but the type of constraints itself is not extensible[^ghc-note] [@peytonjonesTypeInferenceConstraint2019; @vytiniotisOutsideInXModularType2011; @peytonjonesPracticalTypeInference2007].
 
-Coq [@thecoqdevelopmentteamCoqProofAssistant2022], being one of the most popular proof assistants, invested a lot effort into user-facing features: work on tactics like a new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), the introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
+Rocq [@thecoqdevelopmentteamCoqProofAssistant2022], being one of the most popular proof assistants, invested a lot effort into user-facing features: work on tactics like a new tactic engine [@spiwackVerifiedComputingHomological2011] and tactic languages (Ltac2 [@pedrotLtac2TacticalWarfare2019], SSReflect [@gonthierSmallScaleReflection2008], etc.), the introduction of a virtual machine for performance [@gregoireCompiledImplementationStrong2002] and others.
 However, the implementation is quite hard to extend.
 One either has to modify the source code, which is mostly limited to the core development team, as seen from the [contributors graph](https://github.com/coq/coq/graphs/contributors),
-or one has to use Coq plugin system, which is rather challenging, and in the end, the complexity of it gave rise to TemplateCoq/MetaCoq [@malechaExtensibleProofEngineering2014  ; @sozeauMetaCoqProject2020].
-While MetaCoq did open the possibility for some plugins [@nielsenFormalisingDecentralisedExchanges2023; @liesnikovGeneratingInductionPrinciples2020; @forsterCertifyingExtractionTime2019] to be written in a simpler way, their capabilities are still limited.
+or one has to use Rocq plugin system, which is rather challenging, and in the end, the complexity of it gave rise to TemplateCoq/MetaRocq [@malechaExtensibleProofEngineering2014  ; @sozeauMetaCoqProject2020].
+While MetaRocq did open the possibility for some plugins [@nielsenFormalisingDecentralisedExchanges2023; @liesnikovGeneratingInductionPrinciples2020; @forsterCertifyingExtractionTime2019] to be written in a simpler way, their capabilities are still limited.
 
 Agda has historically experimented a lot with different extensions to both the type system and the elaborator, even though the design does not accommodate these changes naturally.
 Instead, each of these extensions is spread throughout many different parts of the code base[^agda-features-link].
