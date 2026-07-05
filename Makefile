@@ -5,7 +5,7 @@ tex: main.tex
 main.tex: main.md Makefile
 	pandoc main.md \
 	--filter pandoc-secnos \
-	--filter latex-placement \
+	--filter break-links \
 	--natbib \
 	--listings \
 	-o main.tex
