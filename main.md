@@ -150,7 +150,7 @@ For Haskell, which is not a dependently typed language yet, but does have a cons
 [^lean-unifier]: [./src/Lean/Meta/ExprDefEq.lean](https://github.com/leanprover/lean4/blob/75252d2b85df8cb9231020a556a70f6d736e7ee5/src/Lean/Meta/ExprDefEq.lean)
 [^coq-unifier]: [./pretyping/evarconv.mli](https://github.com/rocq-prover/rocq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1/pretyping/evarconv.mli) at [github.com/rocq-prover/rocq/blob/b35c06](https://github.com/rocq-prover/rocq/blob/b35c06c3ab3ed4911311b4a9428a749658d3eff1)
 [^ghc-unifier]:
-[./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs) at  
+[./compiler/GHC/Core/Unify.hs](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840/compiler/GHC/Core/Unify.hs) at 
 [gitlab.haskell.org/ghc/ghc/-/blob/b81cd709d](https://gitlab.haskell.org/ghc/ghc/-/blob/b81cd709df8054b8b98ac05d3b9affcee9a8b840)
 
 ## Type-checking function application in the presence of implicit arguments ## {#sec:implicit-arguments}
@@ -239,7 +239,7 @@ This is not necessity and a system that dynamically loads plugins is possible to
 
 [^plugins-link]: [mpickering.github.io/plugins.html](https://mpickering.github.io/plugins.html)
 
-[^acclerate-link]: [github.com/tmcdonell/accelerate-llvm/blob/master/accelerate-llvm-native/src/Data/Array/Accelerate/LLVM/Native/Link/Runtime.hs](https://github.com/tmcdonell/accelerate-llvm/blob/master/accelerate-llvm-native/src/Data/Array/Accelerate/LLVM/Native/Link/Runtime.hs#L40)
+[^acclerate-link]: [./accelerate-llvm-native/src/Data/Array/Accelerate/LLVM/Native/Link/Runtime.hs#L41](https://github.com/AccelerateHS/accelerate-llvm/blob/v1.4.0.0/accelerate-llvm-native/src/Data/Array/Accelerate/LLVM/Native/Link/Runtime.hs#L41) at [github.com/AccelerateHS/accelerate-llvm/blob/v1.4.0.0](https://github.com/AccelerateHS/accelerate-llvm/blob/v1.4.0.0)
 
 # Dependently typed calculus and bidirectional typing # {#sec:bidirectional}
 
