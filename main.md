@@ -20,7 +20,7 @@ While much research has been done on their theoretical foundations, their actual
 In particular, the details of the elaborator---the component that translates from the surface language into the well-typed core language---are often hidden in the source code.
 Moreover, proof assistants are not easily extensible, requiring changes to the existing codebase instead of a modular addition.
 
-In this paper we present an architecture for a modular, extensible elaborator.
+In this chapter we present an architecture for a modular, extensible elaborator.
 Our architecture is made modular through the use of an open datatype of constraints and a plugin system for solvers that work on these constraints, which means that each new feature is contained in its own module.
 We showcase our design with a proof-of-concept elaborator for a language with dependent types, implicit arguments, higher-order unification, and instance arguments.
 \end{abstract}
@@ -204,7 +204,7 @@ This is similar to the idea of mapping object-language unification variables to 
 
 2. To make the language more modular, we make constraints an extensible data type and give an API to define new solvers with the ability to specify what kinds of constraints they can solve. Since we're working in Haskell we encode constraints in the style of Data types à la carte [@swierstraDataTypesCarte2008].
 
-In the examples in this paper, we follow the bidirectional style of type-checking.
+In the examples in this chapter, we follow the bidirectional style of type-checking.
 In practice, however, the design decisions are agnostic of the underlying system, as long as it adheres to the principle of stating the requirements on terms in terms of raising a constraint and not by, say, pattern-matching on a concrete term representation.
 
 \begin{figure*}
@@ -293,7 +293,7 @@ Indexed inductive datatypes are encoded as parameterised datatypes with an equal
 
 As for metavariables `MetaVar`: as mentioned in the introduction, they are placeholders in the syntax tree (AST) that are produced in the process of elaboration.
 Metavariables do not appear in the surface syntax as they are not created by the user.
-In this paper we implement metavariables in the contextual style, as described by @abelHigherOrderDynamicPattern2011, therefore they are paired with a closure of type `MetaClosure`.
+In this chapter we implement metavariables in the contextual style, as described by @abelHigherOrderDynamicPattern2011, therefore they are paired with a closure of type `MetaClosure`.
 
 ## Syntax traversal ##
 
@@ -457,7 +457,7 @@ rightMetaPlugin =
 
 [^list-solvers]: In the prototype we implement a subset of all unification rules, specifically: `identityPlugin`, `propagateMetasEqPlugin`, `reduceLeftPlugin`, `reduceRightPlugin`, `leftMetaPlugin`, `rightMetaPlugin`, `typeConstructorPlugin`, `typeConstructorWithMetasPlugin`, `piEqInjectivityPlugin`, `tyEqInjectivityPlugin`, `consInjectivityPlugin`, `typeInjectivityPlugin`, `unificationStartMarker`, and `unificationEndMarker`.
 
-[^code-note]: The code shown above and in the rest of the paper is close to the actual implementation, but has been simplified for presentation purposes. `HandlerType a` and `SolverType a` both morally correspond to `(ConstraintF cs) -> SolverMonad Bool`.
+[^code-note]: The code shown above and in the rest of the chapter is close to the actual implementation, but has been simplified for presentation purposes. `HandlerType a` and `SolverType a` both morally correspond to `(ConstraintF cs) -> SolverMonad Bool`.
 
 
 ## Implementation of the solvers and unification details ## {#sec:solvers-implementation}
